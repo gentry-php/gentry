@@ -1,0 +1,61 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "This file is @generated automatically"
+    ],
+    "hash": "d1c5082cbf3275eb150dcbc4c3a660fb",
+    "packages": [
+        {
+            "name": "pwfisher/command-line-php",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/pwfisher/CommandLine.php.git",
+                "reference": "ce756a94efa3544b56d03a02d3634a8d969ee962"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/pwfisher/CommandLine.php/zipball/ce756a94efa3544b56d03a02d3634a8d969ee962",
+                "reference": "ce756a94efa3544b56d03a02d3634a8d969ee962",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "type": "library",
+            "autoload": {
+                "classmap": [
+                    "CommandLine.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "CC-BY-3.0"
+            ],
+            "authors": [
+                {
+                    "name": "Patrick Fisher",
+                    "email": "patrick@pwfisher.com"
+                }
+            ],
+            "description": "PHP Command Line interface class. Provides friendly and flexible CLI argument parsing.",
+            "keywords": [
+                "cli",
+                "parser",
+                "parsing"
+            ],
+            "time": "2014-09-23 01:07:11"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "dev",
+    "stability-flags": {
+        "pwfisher/command-line-php": 20
+    },
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": []
+}
