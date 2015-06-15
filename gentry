@@ -1,0 +1,69 @@
+#!/usr/bin/env php
+<?php
+/**
+ * "Borrowed" from the PHPUnit executable.
+ */
+
+if (!ini_get('date.timezone')) {
+    ini_set('date.timezone', 'UTC');
+}
+
+foreach ([
+    __DIR__.'/../../autoload.php',
+    __DIR__.'/../vendor/autoload.php',
+    __DIR__.'/vendor/autoload.php',
+] as $file) {
+    if (file_exists($file)) {
+        define('GENTRY_COMPOSER_INSTALL', $file);
+        break;
+    }
+}
+
+unset($file);
+
+if (!defined('GENTRY_COMPOSER_INSTALL')) {
+    fwrite(STDERR,
+        'You need to set up the project dependencies using the following commands:'.PHP_EOL.
+        'wget http://getcomposer.org/composer.phar'.PHP_EOL.
+        'php composer.phar install'.PHP_EOL
+    );
+    die(1);
+}
+
+require GENTRY_COMPOSER_INSTALL;
+
+$arguments = CommandLine::parseArgs($argv);
+
+$usage = str_replace("\n", PHP_EOL, <<<EOT
+
+PHP Unit test generation tool
+
+Usage:
+./gentry --code path/to/code --tests path/to/tests
+
+Options:
+--code|-c Path to code files, relative to cwd [required]
+--tests|-t Path to test classes, relative to cwd [required]
+--base|-b Optional base class [defaults to PHPUnit_Framework_TestCase]
+
+EOT
+);
+
+// Map short to long arguments for consistency:
+$args = [];
+foreach ([
+    'c' => 'code',
+    't' => 'tests',
+    'b' => 'base',
+] as $key => $value) {
+    if (isset($arguments[$key])) {
+        $args[$value] = $arguments[$key];
+    } elseif (isset($arguments[$value])) {
+        $args[$value] = $arguments[$value];
+    }
+}
+if (!isset($args['code'], $args['tests'])) {
+    fwrite(STDERR, $usage);
+    die(1);
+}
+
