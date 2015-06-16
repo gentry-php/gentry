@@ -1,5 +1,8 @@
 #!/usr/bin/env php
 <?php
+
+use zpt\anno\Annotations;
+
 /**
  * "Borrowed" from the PHPUnit executable.
  */
@@ -10,6 +13,7 @@ if (!ini_get('date.timezone')) {
 
 foreach ([
     __DIR__.'/../../autoload.php',
+    __DIR__.'/../../vendor/autoload.php',
     __DIR__.'/../vendor/autoload.php',
     __DIR__.'/vendor/autoload.php',
 ] as $file) {
@@ -30,7 +34,8 @@ if (!defined('GENTRY_COMPOSER_INSTALL')) {
     die(1);
 }
 
-require GENTRY_COMPOSER_INSTALL;
+$autoloader = require GENTRY_COMPOSER_INSTALL;
+$autoloader->setUseIncludePath(true);
 
 $arguments = CommandLine::parseArgs($argv);
 
@@ -39,7 +44,11 @@ $usage = str_replace("\n", PHP_EOL, <<<EOT
 PHP Unit test generation tool
 
 Usage:
-./gentry --code path/to/code --tests path/to/tests
+./gentry command --code path/to/code --tests path/to/tests
+
+Commands:
+- test: Test coverage and output analysis results.
+- add: Generate tests for all missing classes/methods.
 
 Options:
 --code|-c Path to code files, relative to cwd [required]
@@ -51,6 +60,9 @@ EOT
 
 // Map short to long arguments for consistency:
 $args = [];
+if (isset($arguments[0])) {
+    $args[0] = $arguments[0];
+}
 foreach ([
     'c' => 'code',
     't' => 'tests',
@@ -62,8 +74,137 @@ foreach ([
         $args[$value] = $arguments[$value];
     }
 }
-if (!isset($args['code'], $args['tests'])) {
+if (!isset($args[0], $args['code'], $args['tests'])
+    || !in_array($args[0], ['test', 'add'])
+) {
     fwrite(STDERR, $usage);
     die(1);
+}
+$cwd = getcwd();
+foreach (['code', 'tests'] as $param) {
+    if ($args[$param]{0} != '.') {
+        if ($args[$param]{0} == '/') {
+            $args[$param] = substr($args[$param], 1);
+        }
+        $args[$param] = "$cwd/{$args[$param]}";
+    }
+}
+set_include_path(get_include_path().PATH_SEPARATOR.$args['tests']);
+
+fwrite(STDOUT, "Analysing existing unit tests...".PHP_EOL);
+$coveredMethods = [];
+$covered = 0;
+$notcovered = [];
+$testfiles = Gentry\Walker::walk($args['tests'], function ($reflection) use (&$coveredMethods, &$covered, &$notcovered) {
+    foreach ($reflection->getMethods() as $method) {
+        if (substr($method->name, 0, 4) != 'test') {
+            continue;
+        }
+        if ($method->class == $reflection->getName()) {
+            $annotations = new Annotations($method);
+            if (isset($annotations['covers'])) {
+                $covers = $annotations['covers'];
+                if (!is_array($covers)) {
+                    $covers = [$covers];
+                }
+                foreach ($covers as $cover) {
+                    $parts = explode('::', $cover);
+                    if (!isset($coveredMethods[$parts[0]])) {
+                        $coveredMethods[$parts[0]] = [];
+                    }
+                    if (!isset($coveredMethods[$parts[0]][$parts[1]])) {
+                        $coveredMethods[$parts[0]][$parts[1]] = true;
+                        $covered++;
+                    }
+                }
+            } else {
+                $notcovered[] = "{$method->class}::{$method->name}";
+            }
+        }
+    }
+});
+fwrite(STDOUT, "Ok, ".$covered." class methods currently covered.".PHP_EOL);
+if (count($notcovered)) {
+    fwrite(STDOUT, "Additionally, ".count($notcovered)." method tests were found w/o @covers annotation. Fix those first.".PHP_EOL);
+    fwrite(STDOUT, "    Annotate these test methods:".PHP_EOL);
+    foreach ($notcovered as $method) {
+        fwrite(STDOUT, "    - $method".PHP_EOL);
+    }
+}
+fwrite(STDOUT, "Analysing existing code base...".PHP_EOL);
+$suppliedMethods = [];
+$missing = 0;
+Gentry\Walker::walk($args['code'], function ($reflection) use (&$suppliedMethods, $coveredMethods, $args, &$missing) {
+    if (strpos($reflection->getFileName(), $args['code']) !== 0) {
+        return;
+    }
+    foreach ($reflection->getMethods() as $method) {
+        if (substr($method->name, 0, 1) == '_') {
+            // Assume we never want to test these "private" or magic methods.
+            continue;
+        }
+        if ($method->getFileName() != $reflection->getFileName()) {
+            // Assume we only want to test for "base level" methods.
+            // If you really need to test methods inherited from some abstract
+            // base class or a trait, add tests manually. Sorry. :)
+            continue;
+        }
+        if ($method->isPublic()) {
+            if (!isset($coveredMethods[$method->class][$method->name])) {
+                if (!isset($suppliedMethods[$method->class])) {
+                    $suppliedMethods[$method->class] = [];
+                }
+                $missing++;
+                $suppliedMethods[$method->class][$method->name] = true;
+            }
+        }
+    }
+});
+fwrite(STDOUT, "Currently missing tests for ".$missing." class methods in ".count($suppliedMethods)." classes.".PHP_EOL);
+if (count($notcovered)) {
+    fwrite(STDOUT, "Aborting due to unannotated existing tests.".PHP_EOL);
+}
+if ($missing) {
+    if ($args[0] == 'test') {
+        fwrite(STDOUT, "Run gentry add -c=... -t=... [-b=...] to generate skeletons.".PHP_EOL);
+        die(0);
+    } else {
+        $tpl = <<<EOT
+<?php
+
+class %1\$s
+{%2\$s}
+
+
+EOT;
+        $base = isset($args['base']) ? $args['base'] : 'PHPUnit_Framework_TestCase';
+        foreach ($suppliedMethods as $class => $methods) {
+            $parts = explode('\\', $class);
+            $testclass = array_pop($parts).'Test';
+            @mkdir($args['tests'].'/'.implode('/', $parts));
+            $code = [];
+            foreach ($methods as $method => $dummy) {
+                $method = ucfirst($method);
+                $code[] = <<<EOT
+    /**
+     * @covers $class::$method
+     */
+    public function test{$method}()
+    {
+        fwrite(STDOUT, "Note: $class::$method has an empty test.".PHP_EOL);
+        \$this->assertTrue(true);
+    }
+EOT;
+            }
+            file_put_contents(
+                $args['tests'].'/'.implode('/', $parts).'/'.$testclass.'.php',
+                sprintf(
+                    $tpl,
+                    implode('', $parts).$testclass.' extends '.$base,
+                    $code ? "\n".implode("\n\n", $code)."\n" : ''
+                )
+            );
+        }
+    }
 }
 
