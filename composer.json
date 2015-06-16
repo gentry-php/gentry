@@ -10,7 +10,8 @@
         }
     ],
     "require": {
-        "pwfisher/command-line-php": "dev-master"
+        "pwfisher/command-line-php": "dev-master",
+        "zeptech/annotations": "dev-master"
     },
     "bin": [
         "phpunit"

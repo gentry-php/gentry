@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "d1c5082cbf3275eb150dcbc4c3a660fb",
+    "hash": "b6b4884cc1900120fdc1559502c5c484",
     "packages": [
         {
             "name": "pwfisher/command-line-php",
@@ -46,13 +46,54 @@
                 "parsing"
             ],
             "time": "2014-09-23 01:07:11"
+        },
+        {
+            "name": "zeptech/annotations",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/pgraham/php-annotations.git",
+                "reference": "a3cd4742609b01cb0bd5b04fb9fd4d4402cea7b7"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/pgraham/php-annotations/zipball/a3cd4742609b01cb0bd5b04fb9fd4d4402cea7b7",
+                "reference": "a3cd4742609b01cb0bd5b04fb9fd4d4402cea7b7",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "zpt\\anno": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD"
+            ],
+            "authors": [
+                {
+                    "name": "Philip Graham",
+                    "email": "philip@zeptech.ca"
+                }
+            ],
+            "description": "DOC Block annotation parsing for PHP",
+            "homepage": "https://github.com/pgraham/php-annotations",
+            "keywords": [
+                "annotations"
+            ],
+            "time": "2014-02-18 16:45:15"
         }
     ],
     "packages-dev": [],
     "aliases": [],
     "minimum-stability": "dev",
     "stability-flags": {
-        "pwfisher/command-line-php": 20
+        "pwfisher/command-line-php": 20,
+        "zeptech/annotations": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,
