@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "2f1b078f62ae813c314a64430ad9dab3",
+    "hash": "ee4da8c5fbf010df5581e84c59860de8",
     "packages": [
         {
             "name": "pwfisher/command-line-php",

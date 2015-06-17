@@ -10,7 +10,7 @@
         }
     ],
     "require": {
-        "pwfisher/command-line-php": "@dev",
+        "pwfisher/command-line-php": "dev-master",
         "zeptech/annotations": "^1.0.0"
     },
     "bin": [
