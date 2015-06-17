@@ -10,8 +10,8 @@
         }
     ],
     "require": {
-        "pwfisher/command-line-php": "dev-master",
-        "zeptech/annotations": "dev-master"
+        "pwfisher/command-line-php": "@dev",
+        "zeptech/annotations": "^1.0.0"
     },
     "bin": [
         "gentry"
@@ -23,6 +23,5 @@
         "psr-4": {
             "Gentry\\": "src"
         }
-    },
-    "minimum-stability": "dev"
+    }
 }

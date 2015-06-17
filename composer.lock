@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "b6b4884cc1900120fdc1559502c5c484",
+    "hash": "2f1b078f62ae813c314a64430ad9dab3",
     "packages": [
         {
             "name": "pwfisher/command-line-php",
@@ -49,16 +49,16 @@
         },
         {
             "name": "zeptech/annotations",
-            "version": "dev-master",
+            "version": "1.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/pgraham/php-annotations.git",
-                "reference": "a3cd4742609b01cb0bd5b04fb9fd4d4402cea7b7"
+                "reference": "9cd042daa9ace184d04b49f0605edf73f19a9c71"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pgraham/php-annotations/zipball/a3cd4742609b01cb0bd5b04fb9fd4d4402cea7b7",
-                "reference": "a3cd4742609b01cb0bd5b04fb9fd4d4402cea7b7",
+                "url": "https://api.github.com/repos/pgraham/php-annotations/zipball/9cd042daa9ace184d04b49f0605edf73f19a9c71",
+                "reference": "9cd042daa9ace184d04b49f0605edf73f19a9c71",
                 "shasum": ""
             },
             "require": {
@@ -85,15 +85,14 @@
             "keywords": [
                 "annotations"
             ],
-            "time": "2014-02-18 16:45:15"
+            "time": "2013-05-29 02:35:23"
         }
     ],
     "packages-dev": [],
     "aliases": [],
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "stability-flags": {
-        "pwfisher/command-line-php": 20,
-        "zeptech/annotations": 20
+        "pwfisher/command-line-php": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,
