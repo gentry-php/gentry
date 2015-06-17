@@ -14,7 +14,7 @@
         "zeptech/annotations": "dev-master"
     },
     "bin": [
-        "phpunit"
+        "gentry"
     ],
     "config": {
         "bin-dir": "bin"
