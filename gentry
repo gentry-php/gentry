@@ -37,7 +37,8 @@ if (!defined('GENTRY_COMPOSER_INSTALL')) {
 $autoloader = require GENTRY_COMPOSER_INSTALL;
 $autoloader->setUseIncludePath(true);
 
-$arguments = CommandLine::parseArgs($argv);
+require 'src/parseArgs.php';
+$arguments = Gentry\parseArgs($argv);
 
 $usage = str_replace("\n", PHP_EOL, <<<EOT
 
@@ -75,7 +76,7 @@ foreach ([
     }
 }
 if (!isset($args[0], $args['code'], $args['tests'])
-    || !in_array($args[0], ['test', 'add'])
+    || !in_array($args[0], ['test', 'add', 'dryrun'])
 ) {
     fwrite(STDERR, $usage);
     die(1);
@@ -181,29 +182,34 @@ EOT;
         foreach ($suppliedMethods as $class => $methods) {
             $parts = explode('\\', $class);
             $testclass = array_pop($parts).'Test';
-            @mkdir($args['tests'].'/'.implode('/', $parts));
             $code = [];
             foreach ($methods as $method => $dummy) {
                 $method = ucfirst($method);
                 $code[] = <<<EOT
-    /**
-     * @covers $class::$method
-     */
-    public function test{$method}()
-    {
-        fwrite(STDOUT, "Note: $class::$method has an empty test.".PHP_EOL);
-        \$this->assertTrue(true);
-    }
+/**
+ * @covers $class::$method
+ */
+public function test{$method}()
+{
+    fwrite(STDOUT, "Note: $class::$method has an empty test.".PHP_EOL);
+    \$this->assertTrue(true);
+}
 EOT;
             }
-            file_put_contents(
-                $args['tests'].'/'.implode('/', $parts).'/'.$testclass.'.php',
-                sprintf(
-                    $tpl,
-                    implode('', $parts).$testclass.' extends '.$base,
-                    $code ? "\n".implode("\n\n", $code)."\n" : ''
-                )
+            $gen = sprintf(
+                $tpl,
+                implode('', $parts).$testclass.' extends '.$base,
+                $code ? "\n".implode("\n\n", $code)."\n" : ''
             );
+            if ($args[0] == 'add') {
+                @mkdir($args['tests'].'/'.implode('/', $parts));
+                file_put_contents(
+                    $args['tests'].'/'.implode('/', $parts).'/'.$testclass.'.php',
+                    $gen
+                );
+            } elseif ($args[0] == 'dryrun') {
+                fwrite(STDOUT, PHP_EOL."File: ".implode('/', $parts).'/'.$testclass.'.php'.PHP_EOL.$gen.PHP_EOL);
+            }
         }
     }
 }
