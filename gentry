@@ -49,7 +49,8 @@ Usage:
 
 Commands:
 - test: Test coverage and output analysis results.
-- add: Generate tests for all missing classes/methods.
+- dryrun: Generate tests for all missing classes/methods but dump to STDOUT.
+- add: Generate tests for all missing classes/methods and write to file.
 
 Options:
 --code|-c Path to code files, relative to cwd [required]
@@ -164,6 +165,7 @@ Gentry\Walker::walk($args['code'], function ($reflection) use (&$suppliedMethods
 fwrite(STDOUT, "Currently missing tests for ".$missing." class methods in ".count($suppliedMethods)." classes.".PHP_EOL);
 if (count($notcovered)) {
     fwrite(STDOUT, "Aborting due to unannotated existing tests.".PHP_EOL);
+    die(1);
 }
 if ($missing) {
     if ($args[0] == 'test') {
