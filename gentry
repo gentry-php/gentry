@@ -58,6 +58,8 @@ Options:
 --base|-b Optional base class [defaults to PHPUnit_Framework_TestCase]
 --include_path|-i Optional include path to use
 --prepend|-p Optional PHP file to prepend (e.g. custom autoloader)
+--strip|-s Optional regular expression to strip from the beginning of paths.
+           This is useful if you rely on include_path to override classes.
 
 EOT
 );
@@ -73,6 +75,7 @@ foreach ([
     'b' => 'base',
     'i' => 'include_path',
     'p' => 'prepend',
+    's' => 'strip',
 ] as $key => $value) {
     if (isset($arguments[$key])) {
         $args[$value] = $arguments[$key];
@@ -134,7 +137,7 @@ $testfiles = Gentry\Walker::walk($args['tests'], function ($reflection) use (&$c
             }
         }
     }
-});
+}, isset($args['strip']) ? $args['strip'] : null);
 fwrite(STDOUT, "Ok, ".$covered." class methods currently covered.".PHP_EOL);
 if (count($notcovered)) {
     fwrite(STDOUT, "Additionally, ".count($notcovered)." method tests were found w/o @covers annotation. Fix those first.".PHP_EOL);
@@ -171,7 +174,7 @@ Gentry\Walker::walk($args['code'], function ($reflection) use (&$suppliedMethods
             }
         }
     }
-});
+}, isset($args['strip']) ? $args['strip'] : null);
 fwrite(STDOUT, "Currently missing tests for ".$missing." class methods in ".count($suppliedMethods)." classes.".PHP_EOL);
 if (count($notcovered)) {
     fwrite(STDOUT, "Aborting due to unannotated existing tests.".PHP_EOL);
