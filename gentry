@@ -188,14 +188,14 @@ EOT;
             foreach ($methods as $method => $dummy) {
                 $method = ucfirst($method);
                 $code[] = <<<EOT
-/**
- * @covers $class::$method
- */
-public function test{$method}()
-{
-    fwrite(STDOUT, "Note: $class::$method has an empty test.".PHP_EOL);
-    \$this->assertTrue(true);
-}
+    /**
+     * @covers $class::$method
+     */
+    public function test{$method}()
+    {
+        fwrite(STDOUT, "Note: $class::$method has an empty test.".PHP_EOL);
+        \$this->assertTrue(true);
+    }
 EOT;
             }
             $gen = sprintf(
@@ -204,7 +204,7 @@ EOT;
                 $code ? "\n".implode("\n\n", $code)."\n" : ''
             );
             if ($args[0] == 'add') {
-                @mkdir($args['tests'].'/'.implode('/', $parts));
+                @mkdir($args['tests'].'/'.implode('/', $parts), 0755, true);
                 file_put_contents(
                     $args['tests'].'/'.implode('/', $parts).'/'.$testclass.'.php',
                     $gen
