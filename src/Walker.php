@@ -3,6 +3,7 @@
 namespace Gentry;
 
 use ReflectionClass;
+use Exception;
 
 abstract class Walker
 {
@@ -18,9 +19,14 @@ abstract class Walker
                 self::walk("$dir/$entry", $callback);
             } elseif (substr($entry, -4) == '.php') {
                 $old = get_declared_classes();
+                echo "$dir/$entry... ";
                 ob_start();
-                @require_once "$dir/$entry";
+                try {
+                    @require_once "$dir/$entry";
+                } catch (Exception $e) {
+                }
                 ob_end_clean();
+                echo "ok\n";
                 $new = get_declared_classes();
                 foreach (array_diff($new, $old) as $added) {
                     $reflected = new ReflectionClass($added);
