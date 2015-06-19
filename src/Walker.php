@@ -7,7 +7,7 @@ use Exception;
 
 abstract class Walker
 {
-    public static function walk($dir, callable $callback)
+    public static function walk($dir, callable $callback, $strip = null)
     {
         $d = Dir($dir);
         $entries = [];
@@ -16,13 +16,17 @@ abstract class Walker
                 continue;
             }
             if (is_dir("$dir/$entry")) {
-                self::walk("$dir/$entry", $callback);
+                self::walk("$dir/$entry", $callback, $strip);
             } elseif (substr($entry, -4) == '.php') {
                 $old = get_declared_classes();
-                echo "$dir/$entry... ";
+                $path = "$dir/$entry";
+                if (isset($strip)) {
+                    $path = preg_replace("@^$strip/*@", '', $path);
+                }
+                echo "$path... ";
                 ob_start();
                 try {
-                    @require_once "$dir/$entry";
+                    @require_once $path;
                 } catch (Exception $e) {
                 }
                 ob_end_clean();
