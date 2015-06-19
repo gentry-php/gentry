@@ -56,6 +56,8 @@ Options:
 --code|-c Path to code files, relative to cwd [required]
 --tests|-t Path to test classes, relative to cwd [required]
 --base|-b Optional base class [defaults to PHPUnit_Framework_TestCase]
+--include_path|-i Optional include path to use
+--prepend|-p Optional PHP file to prepend (e.g. custom autoloader)
 
 EOT
 );
@@ -69,6 +71,8 @@ foreach ([
     'c' => 'code',
     't' => 'tests',
     'b' => 'base',
+    'i' => 'include_path',
+    'p' => 'prepend',
 ] as $key => $value) {
     if (isset($arguments[$key])) {
         $args[$value] = $arguments[$key];
@@ -91,7 +95,13 @@ foreach (['code', 'tests'] as $param) {
         $args[$param] = "$cwd/{$args[$param]}";
     }
 }
+if (isset($args['include_path'])) {
+    set_include_path($args['include_path']);
+}
 set_include_path(get_include_path().PATH_SEPARATOR.$args['tests']);
+if (isset($args['prepend'])) {
+    include $args['prepend'];
+}
 
 fwrite(STDOUT, "Analysing existing unit tests...".PHP_EOL);
 $coveredMethods = [];
