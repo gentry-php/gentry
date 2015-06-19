@@ -1,0 +1,8 @@
+site_name: Gentry
+site_url: http://gentry.monomelodies.nl/docs/
+repo_url: https://github.com/monomelodies/gentry
+
+pages:
+- Home:
+    - 'Quickstart': 'index.md'
+
