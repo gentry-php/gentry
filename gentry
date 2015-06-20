@@ -206,8 +206,8 @@ EOT;
      */
     public function test{$method}()
     {
-        fwrite(STDOUT, "Note: $class::$method has an empty test.".PHP_EOL);
         \$this->assertTrue(true);
+        \$this->markTestIncomplete("Note: $class::$method has an empty test.");
     }
 EOT;
             }
