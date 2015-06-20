@@ -1,6 +1,8 @@
 #!/usr/bin/env php
 <?php
 
+namespace Gentry;
+
 use zpt\anno\Annotations;
 
 /**
@@ -18,14 +20,14 @@ foreach ([
     __DIR__.'/vendor/autoload.php',
 ] as $file) {
     if (file_exists($file)) {
-        define('GENTRY_COMPOSER_INSTALL', $file);
+        define('Gentry\COMPOSER_INSTALL', $file);
         break;
     }
 }
 
 unset($file);
 
-if (!defined('GENTRY_COMPOSER_INSTALL')) {
+if (!defined('Gentry\COMPOSER_INSTALL')) {
     fwrite(STDERR,
         'You need to set up the project dependencies using the following commands:'.PHP_EOL.
         'wget http://getcomposer.org/composer.phar'.PHP_EOL.
@@ -34,11 +36,11 @@ if (!defined('GENTRY_COMPOSER_INSTALL')) {
     die(1);
 }
 
-$autoloader = require GENTRY_COMPOSER_INSTALL;
+$autoloader = require COMPOSER_INSTALL;
 $autoloader->setUseIncludePath(true);
 
 require 'src/parseArgs.php';
-$arguments = Gentry\parseArgs($argv);
+$arguments = parseArgs($argv);
 
 $usage = str_replace("\n", PHP_EOL, <<<EOT
 
@@ -110,7 +112,7 @@ fwrite(STDOUT, "Analysing existing unit tests...".PHP_EOL);
 $coveredMethods = [];
 $covered = 0;
 $notcovered = [];
-$testfiles = Gentry\Walker::walk($args['tests'], function ($reflection) use (&$coveredMethods, &$covered, &$notcovered) {
+$testfiles = Walker::walk($args['tests'], function ($reflection) use (&$coveredMethods, &$covered, &$notcovered) {
     foreach ($reflection->getMethods() as $method) {
         if (substr($method->name, 0, 4) != 'test') {
             continue;
@@ -149,7 +151,7 @@ if (count($notcovered)) {
 fwrite(STDOUT, "Analysing existing code base...".PHP_EOL);
 $suppliedMethods = [];
 $missing = 0;
-Gentry\Walker::walk($args['code'], function ($reflection) use (&$suppliedMethods, $coveredMethods, $args, &$missing) {
+Walker::walk($args['code'], function ($reflection) use (&$suppliedMethods, $coveredMethods, $args, &$missing) {
     if (strpos($reflection->getFileName(), $args['code']) !== 0) {
         return;
     }
