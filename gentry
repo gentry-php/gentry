@@ -201,12 +201,12 @@ EOT;
             $testclass = array_pop($parts).'Test';
             $code = [];
             foreach ($methods as $method => $dummy) {
-                $method = ucfirst($method);
+                $fname = ucfirst($method);
                 $code[] = <<<EOT
     /**
      * @covers $class::$method
      */
-    public function test{$method}()
+    public function test{$fname}()
     {
         \$this->assertTrue(true);
         \$this->markTestIncomplete("Note: $class::$method has an empty test.");
