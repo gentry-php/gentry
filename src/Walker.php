@@ -16,7 +16,7 @@ abstract class Walker
                 continue;
             }
             if (is_dir("$dir/$entry")) {
-                self::walk("$dir/$entry", $callback, $strip);
+                self::walk("$dir/$entry", $callback, $strip, $verbose);
             } elseif (substr($entry, -4) == '.php') {
                 $old = get_declared_classes();
                 $path = "$dir/$entry";
