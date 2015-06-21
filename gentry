@@ -62,6 +62,7 @@ Options:
 --prepend|-p Optional PHP file to prepend (e.g. custom autoloader)
 --strip|-s Optional regular expression to strip from the beginning of paths.
            This is useful if you rely on include_path to override classes.
+--verbose|-v Be verbose. Useful to catch errors.
 
 EOT
 );
@@ -78,6 +79,7 @@ foreach ([
     'i' => 'include_path',
     'p' => 'prepend',
     's' => 'strip',
+    'v' => 'verbose',
 ] as $key => $value) {
     if (isset($arguments[$key])) {
         $args[$value] = $arguments[$key];
@@ -139,7 +141,7 @@ $testfiles = Walker::walk($args['tests'], function ($reflection) use (&$coveredM
             }
         }
     }
-}, isset($args['strip']) ? $args['strip'] : null);
+}, isset($args['strip']) ? $args['strip'] : null, isset($args['verbose']));
 fwrite(STDOUT, "Ok, ".$covered." class methods currently covered.".PHP_EOL);
 if (count($notcovered)) {
     fwrite(STDOUT, "Additionally, ".count($notcovered)." method tests were found w/o @covers annotation. Fix those first.".PHP_EOL);
@@ -176,7 +178,7 @@ Walker::walk($args['code'], function ($reflection) use (&$suppliedMethods, $cove
             }
         }
     }
-}, isset($args['strip']) ? $args['strip'] : null);
+}, isset($args['strip']) ? $args['strip'] : null, isset($args['verbose']));
 fwrite(STDOUT, "Currently missing tests for ".$missing." class methods in ".count($suppliedMethods)." classes.".PHP_EOL);
 if (count($notcovered)) {
     fwrite(STDOUT, "Aborting due to unannotated existing tests.".PHP_EOL);
@@ -184,7 +186,8 @@ if (count($notcovered)) {
 }
 if ($missing) {
     if ($args[0] == 'test') {
-        fwrite(STDOUT, "Run gentry add -c=... -t=... [-b=...] to generate skeletons.".PHP_EOL);
+        fwrite(STDOUT, "Run gentry dryrun -c=... -t=... [-b|s|v|i=...] to review what we'll try to generate.".PHP_EOL);
+        fwrite(STDOUT, "Run gentry add -c=... -t=... [-b|s|v|i=...] to generate skeletons.".PHP_EOL);
         die(0);
     } else {
         $tpl = <<<EOT
@@ -201,6 +204,12 @@ EOT;
             $testclass = array_pop($parts).'Test';
             $code = [];
             foreach ($methods as $method => $dummy) {
+                if (isset($coveredMethods[$class])) {
+                    if (!isset($coveredMethods[$class][$method])) {
+                        fwrite(STDOUT, "Warning: {$testclass} exists, but does not yet cover {$method}.".PHP_EOL);
+                    }
+                    continue;
+                }
                 $fname = ucfirst($method);
                 $code[] = <<<EOT
     /**
