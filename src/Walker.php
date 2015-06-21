@@ -7,7 +7,7 @@ use Exception;
 
 abstract class Walker
 {
-    public static function walk($dir, callable $callback, $strip = null)
+    public static function walk($dir, callable $callback, $strip = null, $verbose = null)
     {
         $d = Dir($dir);
         $entries = [];
@@ -23,14 +23,18 @@ abstract class Walker
                 if (isset($strip)) {
                     $path = preg_replace("@^$strip/*@", '', $path);
                 }
-                echo "$path... ";
-                ob_start();
-                try {
-                    @require_once $path;
-                } catch (Exception $e) {
+                if ($verbose) {
+                    echo "$path... ";
+                    require_once $path;
+                    echo "ok\n";
+                } else {
+                    ob_start();
+                    try {
+                        @require_once $path;
+                    } catch (Exception $e) {
+                    }
+                    ob_end_clean();
                 }
-                ob_end_clean();
-                echo "ok\n";
                 $new = get_declared_classes();
                 foreach (array_diff($new, $old) as $added) {
                     $reflected = new ReflectionClass($added);
