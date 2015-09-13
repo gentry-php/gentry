@@ -5,6 +5,8 @@ namespace Gentry;
 
 use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
+use ReflectionClass;
+use ReflectionMethod;
 use zpt\anno\Annotations;
 
 /**
@@ -43,6 +45,9 @@ $autoloader = require COMPOSER_INSTALL;
 $config = 'Gentry.json';
 $verbose = false;
 foreach ($argv as $i => $arg) {
+    if (!$i) {
+        continue; // ignore self
+    }
     if ($arg == '-v') {
         $verbose = true;
     } else {
@@ -55,93 +60,88 @@ if (!file_exists($config)) {
     );
     die(1);
 }
-    
-$autoloader->setUseIncludePath(true);
+$config = json_decode(file_get_contents($config));
+if (isset($config->includePath)) {
+    if (is_string($config->includePath)) {
+        $config->includePath = explode(PATH_SEPARATOR, $config->includePath);
+    }
+    set_include_path(implode(PATH_SEPARATOR, $config->includePath)
+        .PATH_SEPARATOR.get_include_path()
+    );
+}
+if (isset($config->useIncludePath) && $config->useIncludePath) {
+    $autoloader->setUseIncludePath(true);
+}
+if (!isset($config->base)) {
+    $config->base = 'PHPUnit_Framework_Testcase';
+}
+
+// Grab all source files in specified directory:
+$sources = [];
 foreach (new RecursiveIteratorIterator(
-    new RecursiveDirectoryIterator($tplDir),
+    new RecursiveDirectoryIterator($config->src),
     RecursiveIteratorIterator::LEAVES_ONLY
 ) as $file) {
     // force compilation
-    if ($file->isFile() && substr($file->getFilename(), -10) == '.html.twig') {
-        $twig->loadTemplate(str_replace($tplDir.'/', '', $file));
-    }
-}
-require 'src/parseArgs.php';
-$arguments = parseArgs($argv);
-
-$usage = str_replace("\n", PHP_EOL, <<<EOT
-
-PHP Unit test generation tool
-
-Usage:
-./gentry command --code path/to/code --tests path/to/tests
-
-Commands:
-- test: Test coverage and output analysis results.
-- dryrun: Generate tests for all missing classes/methods but dump to STDOUT.
-- add: Generate tests for all missing classes/methods and write to file.
-
-Options:
---code|-c Path to code files, relative to cwd [required]
---tests|-t Path to test classes, relative to cwd [required]
---base|-b Optional base class [defaults to PHPUnit_Framework_TestCase]
---include_path|-i Optional include path to use
---prepend|-p Optional PHP file to prepend (e.g. custom autoloader)
---strip|-s Optional regular expression to strip from the beginning of paths.
-           This is useful if you rely on include_path to override classes.
---verbose|-v Be verbose. Useful to catch errors.
-
-EOT
-);
-
-// Map short to long arguments for consistency:
-$args = [];
-if (isset($arguments[0])) {
-    $args[0] = $arguments[0];
-}
-foreach ([
-    'c' => 'code',
-    't' => 'tests',
-    'b' => 'base',
-    'i' => 'include_path',
-    'p' => 'prepend',
-    's' => 'strip',
-    'v' => 'verbose',
-] as $key => $value) {
-    if (isset($arguments[$key])) {
-        $args[$value] = $arguments[$key];
-    } elseif (isset($arguments[$value])) {
-        $args[$value] = $arguments[$value];
-    }
-}
-if (!isset($args[0], $args['code'], $args['tests'])
-    || !in_array($args[0], ['test', 'add', 'dryrun'])
-) {
-    fwrite(STDERR, $usage);
-    die(1);
-}
-$cwd = getcwd();
-foreach (['code', 'tests'] as $param) {
-    if ($args[$param]{0} != '.') {
-        if ($args[$param]{0} == '/') {
-            $args[$param] = substr($args[$param], 1);
+    if ($file->isFile() && substr($file->getFilename(), -4) == '.php') {
+        $filename = "$file";
+        $code = file_get_contents($filename);
+        if (preg_match("@(function|class)\s+\w+\s+@msi", $code)) {
+            $sources[$filename] = [];
         }
-        $args[$param] = "$cwd/{$args[$param]}";
+        $ns = '';
+        if (preg_match("@namespace ((\w|\\\\)+)@", $code, $match)) {
+            $ns = $match[1].'\\';
+        }
+        $class = '';
+        if (preg_match("@(class|trait)\s+(\w+)\s@", $code, $match)) {
+            $class = $match[2].'::';
+        }
+        preg_match_all(
+            "@function (\w+)\s*\(@",
+            $code,
+            $matches,
+            PREG_SET_ORDER
+        );
+        foreach ($matches as $match) {
+            if (substr($match[1], 0, 1) == '_') {
+                // Assume we never want to test these "private" or magic
+                // methods.
+                continue;
+            }
+            $sources[$filename][] = "$ns$class{$match[1]}";
+        }
     }
 }
-if (isset($args['include_path'])) {
-    set_include_path($args['include_path']);
-}
-set_include_path(get_include_path().PATH_SEPARATOR.$args['tests']);
-if (isset($args['prepend'])) {
-    include $args['prepend'];
-}
+fwrite(STDOUT, sprintf(
+    "Found %d files with possibly valid source code.".PHP_EOL,
+    count($sources)
+));
 
-fwrite(STDOUT, "Analysing existing unit tests...".PHP_EOL);
+// Grab existing unit tests in specified directory:
+$tests = [];
+foreach (new RecursiveIteratorIterator(
+    new RecursiveDirectoryIterator($config->tests),
+    RecursiveIteratorIterator::LEAVES_ONLY
+) as $file) {
+    if ($file->isFile() && substr($file->getFilename(), -4) == '.php') {
+        $filename = "$file";
+        $code = file_get_contents($filename);
+        if (preg_match("@class\s+(\w+Test)\s+extends@msi", $code, $match)) {
+            $tests[$match[1]] = $filename;
+        }
+    }
+}
+fwrite(STDOUT, sprintf(
+    "Found %d previously defined tests. Checking to see what's missing...".PHP_EOL,
+    count($tests)
+));
+
 $coveredMethods = [];
-$covered = 0;
-$notcovered = [];
-$testfiles = Walker::walk($args['tests'], function ($reflection) use (&$coveredMethods, &$covered, &$notcovered) {
+$notcovered = 0;
+foreach ($tests as $class => $file) {
+    require_once $file;
+    $reflection = new ReflectionClass($class);
     foreach ($reflection->getMethods() as $method) {
         if (substr($method->name, 0, 4) != 'test') {
             continue;
@@ -153,119 +153,87 @@ $testfiles = Walker::walk($args['tests'], function ($reflection) use (&$coveredM
                 if (!is_array($covers)) {
                     $covers = [$covers];
                 }
-                foreach ($covers as $cover) {
-                    $parts = explode('::', $cover);
-                    if (!isset($coveredMethods[$parts[0]])) {
-                        $coveredMethods[$parts[0]] = [];
-                    }
-                    if (!isset($coveredMethods[$parts[0]][$parts[1]])) {
-                        $coveredMethods[$parts[0]][$parts[1]] = true;
-                        $covered++;
-                    }
-                }
+                $coveredMethods = array_merge($coveredMethods, $covers);
             } else {
-                $notcovered[] = "{$method->class}::{$method->name}";
+                fwrite(STDERR, sprintf(
+                    "WARNING: Test %s has method %s without @covers annotation.".PHP_EOL.
+                    "You should first add that so we can analyze your existing tests.".PHP_EOL,
+                    $method->class,
+                    $method->name
+                ));
+                $notcovered++;
             }
         }
-    }
-}, isset($args['strip']) ? $args['strip'] : null, isset($args['verbose']));
-fwrite(STDOUT, "Ok, ".$covered." class methods currently covered.".PHP_EOL);
-if (count($notcovered)) {
-    fwrite(STDOUT, "Additionally, ".count($notcovered)." method tests were found w/o @covers annotation. Fix those first.".PHP_EOL);
-    fwrite(STDOUT, "    Annotate these test methods:".PHP_EOL);
-    foreach ($notcovered as $method) {
-        fwrite(STDOUT, "    - $method".PHP_EOL);
     }
 }
-fwrite(STDOUT, "Analysing existing code base...".PHP_EOL);
-$suppliedMethods = [];
-$missing = 0;
-Walker::walk($args['code'], function ($reflection) use (&$suppliedMethods, $coveredMethods, $args, &$missing) {
-    if (strpos($reflection->getFileName(), $args['code']) !== 0) {
-        return;
-    }
-    foreach ($reflection->getMethods() as $method) {
-        if (substr($method->name, 0, 1) == '_') {
-            // Assume we never want to test these "private" or magic methods.
-            continue;
-        }
-        if ($method->getFileName() != $reflection->getFileName()) {
-            // Assume we only want to test for "base level" methods.
-            // If you really need to test methods inherited from some abstract
-            // base class or a trait, add tests manually. Sorry. :)
-            continue;
-        }
-        if ($method->isPublic()) {
-            if (!isset($coveredMethods[$method->class][$method->name])) {
-                if (!isset($suppliedMethods[$method->class])) {
-                    $suppliedMethods[$method->class] = [];
-                }
-                $missing++;
-                $suppliedMethods[$method->class][$method->name] = true;
-            }
-        }
-    }
-}, isset($args['strip']) ? $args['strip'] : null, isset($args['verbose']));
-fwrite(STDOUT, "Currently missing tests for ".$missing." class methods in ".count($suppliedMethods)." classes.".PHP_EOL);
-if (count($notcovered)) {
-    fwrite(STDOUT, "Aborting due to unannotated existing tests.".PHP_EOL);
+$coveredMethods = array_unique($coveredMethods);
+if ($notcovered) {
     die(1);
 }
-if ($missing) {
-    if ($args[0] == 'test') {
-        fwrite(STDOUT, "Run gentry dryrun -c=... -t=... [-b|s|v|i=...] to review what we'll try to generate.".PHP_EOL);
-        fwrite(STDOUT, "Run gentry add -c=... -t=... [-b|s|v|i=...] to generate skeletons.".PHP_EOL);
-        die(0);
-    } else {
-        $tpl = <<<EOT
-<?php
 
-class %1\$s
-{%2\$s}
+function normalizeMethod($method)
+{
+    return ucfirst(preg_replace('@.*?::@', '', $method));
+}
 
+$addMethodTo = function ($file, $method) use ($config) {
+    static $tmpl = <<<EOT
 
-EOT;
-        $base = isset($args['base']) ? $args['base'] : 'PHPUnit_Framework_TestCase';
-        foreach ($suppliedMethods as $class => $methods) {
-            $parts = explode('\\', $class);
-            $testclass = array_pop($parts).'Test';
-            $code = [];
-            foreach ($methods as $method => $dummy) {
-                if (isset($coveredMethods[$class])) {
-                    if (!isset($coveredMethods[$class][$method])) {
-                        fwrite(STDOUT, "Warning: {$testclass} exists, but does not yet cover {$method}.".PHP_EOL);
-                    }
-                }
-                $fname = ucfirst($method);
-                $code[] = <<<EOT
     /**
-     * @covers $class::$method
+     * @covers %1\$s
      */
-    public function test{$fname}()
+    public function test%2\$s()
     {
         \$this->assertTrue(true);
-        \$this->markTestIncomplete("Note: $class::$method has an empty test.");
+        \$this->markTestIncomplete("Note: %1\$s has an empty test.");
     }
+
+
 EOT;
-            }
-            $gen = sprintf(
-                $tpl,
-                implode('', $parts).$testclass.' extends '.$base,
-                $code ? "\n".implode("\n\n", $code)."\n" : ''
-            );
-            if ($args[0] == 'add') {
-                if (isset($coveredMethods[$class])) {
-                    fwrite(STDOUT, "Warning: {$testclass} exists, so not overwriting. Use gentry dryrun to see generated code.".PHP_EOL);
-                    continue;
-                }
-                @mkdir($args['tests'].'/'.implode('/', $parts), 0755, true);
-                file_put_contents(
-                    $args['tests'].'/'.implode('/', $parts).'/'.$testclass.'.php',
-                    $gen
-                );
-            } elseif ($args[0] == 'dryrun') {
-                fwrite(STDOUT, PHP_EOL."File: ".implode('/', $parts).'/'.$testclass.'.php'.PHP_EOL.$gen.PHP_EOL);
-            }
+    $class = str_replace("{$config->tests}/", '', $file);
+    $class = str_replace('/', '', $class);
+    $class = preg_replace('@\.php$@', '', $class);
+    if (!file_exists($file)) {
+        @mkdir(substr($file, 0, strrpos($file, '/')), 0755, true);
+        file_put_contents($file, sprintf(
+            <<<EOT
+<?php
+
+class %1\$s extends %2\$s
+{
+}
+
+EOT
+            ,
+            $class,
+            $config->base
+        ));
+    }
+    $code = file_get_contents($file);
+    $code = preg_replace(
+        '@^}(\s*|\?>)?$@ms',
+        sprintf(
+            $tmpl,
+            $method,
+            normalizeMethod($method)
+        ),
+        $code
+    );
+    $code = trim($code)."\n}\n\n";
+    $code = preg_replace("@^{\n\n    /\*@m", "{\n    /*", $code);
+    file_put_contents($file, $code);
+};
+
+$getTestName = function ($file) use ($config) {
+    $file = str_replace($config->src, $config->tests, $file);
+    $file = preg_replace('@\.php$@', '', $file);
+    return "{$file}Test.php";
+};
+
+foreach ($sources as $file => $methods) {
+    foreach ($methods as $method) {
+        if (!in_array($method, $coveredMethods)) {
+            $addMethodTo($getTestName($file), $method);
         }
     }
 }
