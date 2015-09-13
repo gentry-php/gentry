@@ -3,6 +3,8 @@
 
 namespace Gentry;
 
+use RecursiveIteratorIterator;
+use RecursiveDirectoryIterator;
 use zpt\anno\Annotations;
 
 /**
@@ -37,8 +39,33 @@ if (!defined('Gentry\COMPOSER_INSTALL')) {
 }
 
 $autoloader = require COMPOSER_INSTALL;
-$autoloader->setUseIncludePath(true);
 
+$config = 'Gentry.json';
+$verbose = false;
+foreach ($argv as $i => $arg) {
+    if ($arg == '-v') {
+        $verbose = true;
+    } else {
+        $config = $arg;
+    }
+}
+if (!file_exists($config)) {
+    fwrite(STDERR,
+        "Config file $config not found.".PHP_EOL
+    );
+    die(1);
+}
+    
+$autoloader->setUseIncludePath(true);
+foreach (new RecursiveIteratorIterator(
+    new RecursiveDirectoryIterator($tplDir),
+    RecursiveIteratorIterator::LEAVES_ONLY
+) as $file) {
+    // force compilation
+    if ($file->isFile() && substr($file->getFilename(), -10) == '.html.twig') {
+        $twig->loadTemplate(str_replace($tplDir.'/', '', $file));
+    }
+}
 require 'src/parseArgs.php';
 $arguments = parseArgs($argv);
 
