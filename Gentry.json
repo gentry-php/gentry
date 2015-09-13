@@ -1,6 +1,6 @@
 {
     "src": "./src",
-    "tests:": "./tests",
+    "tests": "./tests",
     "includePath": [],
     "useIncludePath": false,
     "base": "PHPUnit_Framework_TestCase",
