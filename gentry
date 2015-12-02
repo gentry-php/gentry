@@ -8,6 +8,8 @@ use RecursiveDirectoryIterator;
 use ReflectionClass;
 use ReflectionMethod;
 use zpt\anno\Annotations;
+use Kingconf\Config;
+use Kingconf\Exception;
 
 /**
  * "Borrowed" from the PHPUnit executable.
@@ -54,13 +56,14 @@ foreach ($argv as $i => $arg) {
         $config = $arg;
     }
 }
-if (!file_exists($config)) {
+try {
+    $config = (object)(array)(new Config($config));
+} catch (Exception $e) {
     fwrite(STDERR,
-        "Config file $config not found.".PHP_EOL
+        "Config file $config not found or invalid.".PHP_EOL
     );
     die(1);
 }
-$config = json_decode(file_get_contents($config));
 if (isset($config->includePath)) {
     if (is_string($config->includePath)) {
         $config->includePath = explode(PATH_SEPARATOR, $config->includePath);
