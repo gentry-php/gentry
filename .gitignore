@@ -16,3 +16,5 @@
 .sass-cache
 
 vendor
+
+composer.lock
