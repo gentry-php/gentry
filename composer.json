@@ -14,17 +14,20 @@
         "monomelodies/kingconf": "^1.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "^4.8"
+        "phpunit/phpunit": "5.*"
     },
     "bin": [
         "gentry"
     ],
-    "config": {
-        "bin-dir": "bin"
-    },
     "autoload": {
         "psr-4": {
             "Gentry\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Gentry\\": "src",
+            "Gentry\\Tests\\": "tests"
         }
     }
 }
