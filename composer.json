@@ -11,7 +11,8 @@
     ],
     "require": {
         "zeptech/annotations": "^1.0.0",
-        "monomelodies/kingconf": "^1.0"
+        "monomelodies/kingconf": "^1.0",
+        "simoneast/simple-ansi-colors": "^1.0"
     },
     "require-dev": {
         "phpunit/phpunit": "5.*"
@@ -27,7 +28,8 @@
     "autoload-dev": {
         "psr-4": {
             "Gentry\\": "src",
-            "Gentry\\Tests\\": "tests"
+            "Gentry\\Tests\\": "tests",
+            "Gentry\\Demo\\": "demo"
         }
     }
 }
