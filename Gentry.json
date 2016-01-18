@@ -1,9 +1,8 @@
 {
-    "src": "./src",
+    "src": "./demo",
     "tests": "./tests",
     "includePath": [],
     "useIncludePath": false,
-    "base": "PHPUnit_Framework_TestCase",
     "prepend": false,
     "strip": false
 }
