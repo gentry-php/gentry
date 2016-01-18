@@ -13,6 +13,7 @@ use zpt\anno\Annotations;
 use Kingconf;
 use Exception;
 
+$start = microtime(true);
 /**
  * "Borrowed" from the PHPUnit executable.
  */
@@ -181,6 +182,7 @@ if ($verbose && $tests) {
 $coveredMethods = [];
 $notcovered = 0;
 $tested = 0;
+$passed = 0;
 $failed = 0;
 $incomplete = 0;
 foreach ($tests as $class => $file) {
@@ -198,15 +200,20 @@ foreach ($tests as $class => $file) {
             continue;
         }
         $tested++;
+        $annotations = new Annotations($method);
+        if (isset($annotations['Description'])) {
+            out("  * <blue>{$annotations['Description']}");
+        }
+        if (isset($annotations['Incomplete'])) {
+            out(" <cyan>[INCOMPLETE]\n");
+            $incomplete++;
+            continue;
+        }
         if (method_exists($class, '__wakeup')) {
             if (isset($wakeup['Description'])) {
                 out("    <gray>{$wakeup['Description']}\n");
             }
             $class->__wakeup();
-        }
-        $annotations = new Annotations($method);
-        if (isset($annotations['Description'])) {
-            out("    <blue>{$annotations['Description']}");
         }
         $params = $method->getParameters();
         $args = [];
@@ -226,6 +233,8 @@ foreach ($tests as $class => $file) {
                 $remote[] = $args[] = $class->{$param->name};
             } elseif ($type = $param->getClass()) {
                 $remote[] = $args[] = $type->newInstance();
+            } else {
+                $remote[] = $args[] = null;
             }
         }
         $testclass = get_class($args[0]);
@@ -256,10 +265,8 @@ foreach ($tests as $class => $file) {
             $actual['result'] = call_user_func($annotations['Pipe'], $actual['result']);
         }
         if ($expected === $actual) {
+            $passed++;
             out(" <green>[OK]\n");
-        } elseif ($expected['thrown'] == 'Gentry\Incomplete') {
-            out(" <cyan>[INCOMPLETE]\n");
-            $incomplete++;
         } else {
             out(" <red>[FAILED]<reset> ");
             $failed++;
@@ -282,23 +289,23 @@ foreach ($tests as $class => $file) {
     }
     unset($class);
 }
-if (!$failed) {
+if ($passed) {
     out(sprintf(
         "<green>%d test%s passed.\n",
-        $tested,
-        $tested == 1 ? '' : 's'
+        $passed,
+        $passed == 1 ? '' : 's'
     ));
-} else {
+}
+if ($failed) {
     out(sprintf(
-        "<red>%d of %d test%s failed!\n",
+        "<red>%d test%s failed!\n",
         $failed,
-        $tested,
-        $tested == 1 ? '' : 's'
+        $failed == 1 ? '' : 's'
     ), STDERR);
 }
 if ($incomplete) {
     out(sprintf(
-        "<magenta>%d test%s marked as \"incomplete\".\n",
+        "<magenta>%d test%s marked as incomplete.\n",
         $incomplete,
         $incomplete == 1 ? '' : 's'
     ), STDERR);
@@ -360,13 +367,21 @@ if ($methods) {
         $methods == 1 ? '' : 's'
     ));
 }
+
+$endit = function ($code) use ($start) {
+    out(sprintf(
+        "Took %0.2f seconds.\n\n",
+        microtime(true) - $start
+    ));
+    die($code);
+};
 if ($classes || $methods) {
     if (!$generate && $verbose) {
         out("<gray>Run with <magenta>-g<gray> flag to generate skeletons.\n");
-        die($failed ? 1 : 0);
+        $endit($failed ? 1 : 0);
     }
 } else {
-    die($failed ? 1 : 0);
+    $endit($failed ? 1 : 0);
 }
 
 if ($verbose) {
