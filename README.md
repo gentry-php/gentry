@@ -233,8 +233,29 @@ The order of resolution for arguments is as follows:
 > So in the above example, we could have used _either_ type hinting _or_ setting
 > instances on the test class.
 
+If a known variable (of any name) is placed on your class's public scope, you
+may also simply pass it _by reference_ and update its value before returning:
+
+```php
+<?php
+
+class MyTest
+{
+    public $baz;
+
+    public function bar(Foo $foo, &$baz)
+    {
+        $baz = 1;
+        // Foo::bar should return 2 when called with 1
+        return 2;
+    }
+}
+```
+
 ## Testing a method in multiple scenarios
 Often you'll need to test a method with multiple calls passing different values.
+Use the `@Method methodName` annotation on your test to hardcode the name of the
+method under test, and simply give your test method a descriptive, unique name.
 
 ## Testing if a certain exception is thrown
 Simply throw that same exception from your test method!
@@ -327,4 +348,7 @@ Tests annotated with `@Incomplete` are skipped and will only issue a warning.
 Run Gentry with the `-g` flag to generate skeletons for missing tests for you.
 Generated tests will be placed in the directory specified by `tests` under a
 guesstimated name, and marked as `@Incomplete` by default.
+
+Note that you'll probably want to re-group generated tests into classes that
+make sense for your application.
 
