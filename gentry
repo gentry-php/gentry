@@ -243,7 +243,8 @@ foreach ($tests as $class => $file) {
             } elseif ($param->isDefaultValueAvailable()) {
                 $remote[] = $args[] = $param->getDefaultValue();
             } elseif (isset($class->{$param->name})) {
-                $remote[] = $args[] =& $class->{$param->name};
+                $remote[] =& $class->{$param->name};
+                $args[] =& $class->{$param->name};
             } elseif ($type = $param->getClass()) {
                 $remote[] = $args[] = $type->newInstance();
             } else {
@@ -396,14 +397,15 @@ $endit = function ($code) use ($start) {
         "Took %0.2f seconds.\n\n",
         microtime(true) - $start
     ));
-    die($code);
+    exit($code);
 };
 if ($classes || $methods) {
     if (!$generate && $verbose) {
         out("<gray>Run with <magenta>-g<gray> flag to generate skeletons.\n");
         $endit($failed ? 1 : 0);
     }
-} else {
+}
+if (!($classes || $methods) || !$generate) {
     $endit($failed ? 1 : 0);
 }
 
