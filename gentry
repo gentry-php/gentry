@@ -29,6 +29,14 @@ function out($text, $out = STDOUT)
     echo Ansi::tagsToColors('<reset>');
 }
 
+function isEqual($a, $b)
+{
+    if (is_numeric($a) && is_numeric($b)) {
+        return $a == $b;
+    }
+    return $a === $b;
+}
+
 foreach ([
     __DIR__.'/../../autoload.php',
     __DIR__.'/../../vendor/autoload.php',
@@ -100,7 +108,6 @@ foreach (new RecursiveIteratorIterator(
     new RecursiveDirectoryIterator($config->src),
     RecursiveIteratorIterator::LEAVES_ONLY
 ) as $file) {
-    // force compilation
     if ($file->isFile() && substr($file->getFilename(), -4) == '.php') {
         $filename = realpath($file);
         $code = file_get_contents($filename);
@@ -122,17 +129,40 @@ foreach (new RecursiveIteratorIterator(
         ))) {
             continue;
         }
-        $sources[$filename] = ["$ns$class", []];
-        foreach ($matches as $match) {
-            if (substr($match[1], 0, 1) == '_') {
+        if (isset($config->ignore)
+            && preg_match("@{$config->ignore}@", "$ns$class")
+        ) {
+            continue;
+        }
+        $reflection = new ReflectionClass("$ns$class");
+        $annotations = new Annotations($reflection);
+        if (isset($annotations['Untestable'])) {
+            continue;
+        }
+        $methods = [];
+        foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+            if ($method->isInternal()) {
+                continue;
+            }
+            if ($method->getDeclaringClass()->name != "$ns$class") {
+                continue;
+            }
+            if ($method->name{0} == '_') {
                 // Assume we never want to test these "private" or magic
                 // methods.
                 continue;
             }
-            $sources[$filename][1][] = $match[1];
+            $doccomments = $method->getDocComment();
+            if ($doccomments
+                && preg_match('/@return ([\w|]*?)\s/ms', $doccomments, $returns)
+            ) {
+                $methods[] = $method;
+            } elseif ($verbose) {
+                out("<gray>$ns$class::{$method->name} should annotate its @return value.\n");
+            }
         }
-        if (!$sources[$filename][1]) {
-            unset($sources[$filename]);
+        if ($methods) {
+            $sources[$filename] = ["$ns$class", $methods];
         }
     }
 }
@@ -159,9 +189,12 @@ foreach (new RecursiveIteratorIterator(
         }
         if (preg_match("@(?<!abstract)\s*class\s+(\w+)\s+@msi", $code, $match)) {
             $class = "$ns{$match[1]}";
-            $tests[$class] = $filename;
             require_once $filename;
-    
+            $reflection = new ReflectionClass($class);
+            $annotations = new Annotations($class);
+            if (!$reflection->isAbstract()) {
+                $tests[$class] = $filename;
+            }
         }
     }
 }
@@ -189,6 +222,18 @@ foreach ($tests as $class => $file) {
     $class = new $class;
     $reflection = new ReflectionClass($class);
     $annotations = new Annotations($reflection);
+    $ok = false;
+    foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+        $anns = new Annotations($method);
+        if (!isset($anns['Incomplete'])) {
+            $ok = true;
+        } else {
+            $incomplete++;
+        }
+    }
+    if (!$ok && !$verbose) {
+        continue;
+    }
     if (isset($annotations['Description'])) {
         out("<darkBlue>{$annotations['Description']}\n");
     }
@@ -201,22 +246,25 @@ foreach ($tests as $class => $file) {
         }
         $tested++;
         $annotations = new Annotations($method);
-        if (method_exists($class, '__wakeup')) {
-            if (!isset($annotations['Chain'])) {
-                if (isset($wakeup['Description'])) {
-                    out("    <gray>({$wakeup['Description']})\n");
+        if (!isset($annotations['Incomplete'])) {
+            if (method_exists($class, '__wakeup')) {
+                if (!isset($annotations['Chain'])) {
+                    if (isset($wakeup['Description'])) {
+                        out("    <gray>({$wakeup['Description']})\n");
+                    }
+                    $class->__wakeup();
+                } elseif ($verbose) {
+                    out("    <gray>(Skipping __wakeup as requested by @Chain)\n");
                 }
-                $class->__wakeup();
-            } elseif ($verbose) {
-                out("    <gray>(Skipping __wakeup as requested by @Chain)\n");
             }
         }
-        if (isset($annotations['Description'])) {
+        if (isset($annotations['Description']) && !isset($annotations['Incomplete']) or $verbose) {
             out("  * <blue>{$annotations['Description']}");
         }
         if (isset($annotations['Incomplete'])) {
-            out(" <magenta>[INCOMPLETE]\n");
-            $incomplete++;
+            if ($verbose) {
+                out(" <magenta>[INCOMPLETE]\n");
+            }
             continue;
         }
         $params = $method->getParameters();
@@ -255,7 +303,7 @@ foreach ($tests as $class => $file) {
         if (!isset($coveredMethods[$testclass])) {
             $coveredMethods[$testclass] = [];
         }
-        $coveredMethods[$testclass][] = $method->name;
+        $coveredMethods[$testclass][] = $methodname;
 
         $expected = $actual = ['result' => null, 'thrown' => null];
         try {
@@ -286,13 +334,13 @@ foreach ($tests as $class => $file) {
         if (isset($annotations['Pipe'])) {
             $actual['result'] = call_user_func($annotations['Pipe'], $actual['result']);
         }
-        if ($expected === $actual) {
+        if (isEqual($expected['result'], $actual['result']) && $expected['thrown'] == $actual['thrown']) {
             $passed++;
             out(" <green>[OK]\n");
         } else {
             out(" <red>[FAILED]<reset> ");
             $failed++;
-            if ($expected['result'] !== $actual['result']) {
+            if (!isEqual($expected['result'], $actual['result'])) {
                 out(sprintf(
                     "(expected <magenta>%s<reset>, got <magenta>%s<reset>)\n",
                     tostring($expected['result']),
@@ -423,6 +471,11 @@ foreach ($sources as $file => $code) {
         continue;
     }
     $target = $sourceToTestName($file);
+    if (strpos($code[0], '\\')) {
+        $targetname = substr($code[0], strrpos($code[0], '\\') + 1);
+    } else {
+        $targetname = $code[0];
+    }
     if (file_exists($target)) {
         $base = file_get_contents($target);
     } else {
@@ -430,6 +483,10 @@ foreach ($sources as $file => $code) {
         if (isset($config->namespace)) {
             $base .= "namespace {$config->namespace};\n\n";
         }
+        if (strpos($code[0], '\\')) {
+            $base .= "use {$code[0]};\n\n";
+        }
+        $targetvar = strtolower($targetname);
         $base .= <<<EOT
 /**
  * @Description [GENERATED] Test {$code[0]}
@@ -443,7 +500,40 @@ EOT;
 
 EOT;
     }
-    var_dump($base);
+    $generatedMethods = [];
+    foreach ($code[1] as $methodname) {
+        if ($verbose) {
+            out("<gray>Adding skeleton for $targetname::$methodname.\n");
+        }
+        if (strpos($base, "function $methodname(") === false) {
+            $arguments = '';
+            $generatedMethods[] = <<<EOT
+    /**
+     * @Description [GENERATED] Test {$code[0]}::$methodname
+     * @Incomplete
+     */
+    public function $methodname($targetname $$targetvar$arguments)
+    {
+    }
+EOT;
+        }
+    }
+    $output = preg_replace(
+        '@^}\s*$@m',
+        implode("\n\n", $generatedMethods)."\n}\n",
+        $base
+    );
+    $output = preg_replace(
+        '@^{\n\n@m',
+        "{\n",
+        $output
+    );
+    if ($verbose) {
+        out("<gray>Writing $target.\n");
+    }
+    $dir = dirname($target);
+    @mkdir($dir, 0755, true);
+    file_put_contents($target, $output);
 }
 /*
 if ($notcovered) {
