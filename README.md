@@ -279,7 +279,7 @@ class MyTest extends Scenario
     /**
      * Description Assuming Foo::bar would throw an exception...
      */
-    public function itShouldThrowAnException(Foo $foo, $bar)
+    public function bar(Foo $foo)
     {
         throw new Exception;
     }
