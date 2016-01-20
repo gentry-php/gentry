@@ -363,6 +363,7 @@ foreach ($tests as $class => $file) {
     }
     unset($class);
 }
+out("\n");
 if ($passed) {
     out(sprintf(
         "<green>%d test%s passed.\n",
