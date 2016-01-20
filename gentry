@@ -444,7 +444,7 @@ if ($methods) {
 
 $endit = function ($code) use ($start) {
     out(sprintf(
-        "Took %0.2f seconds, memory usage %4.2fMb.\n\n",
+        "\n<magenta>Took %0.2f seconds, memory usage %4.2fMb.\n\n",
         microtime(true) - $start,
         memory_get_peak_usage(true) / 1048576
     ));
