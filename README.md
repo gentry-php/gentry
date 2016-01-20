@@ -184,7 +184,7 @@ you'll want to use a base class or a trait for that. Any class declared as
 ## Using test objects
 Often you'll want a set of classes to use as mocks in your test. Just place them
 in a different directory than your tests, e.g. define `tests/specs` as the
-"tests"` directory and place your mocks in `tests/mocks` and have your
+`"tests"` directory and place your mocks in `tests/mocks` and have your
 autoloader handle them.
 
 ## Injecting parameters containing a non-simple value
