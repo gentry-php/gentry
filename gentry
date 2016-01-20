@@ -67,6 +67,8 @@ EOT
 
 $autoloader = require COMPOSER_INSTALL;
 
+out("\n<magenta>Gentry 0.3.1 by Marijn Ophorst\n\n");
+
 $config = 'Gentry.json';
 $verbose = false;
 $generate = false;
