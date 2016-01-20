@@ -5,10 +5,12 @@ Good programmers are lazy, but unfortunately that means that stuff like writing
 unit tests (boooooring) is often skipped. Please don't; it's important and oh
 so handy once you have them in place.
 
-Gentry was designed with two goals in mind:
+Gentry was designed with three goals in mind:
 
 1. To make writing unit tests _so_ easy even the worst slacker will bother;
 2. To alleviate writing boilerplate code by generating skeletons for you.
+3. Speed. You want to run tests before you push, so if they're slow that's
+   _annoying_.
 
 ## Installation
 
@@ -121,8 +123,10 @@ class Foo
 }
 ```
 
-Add a _public_ method to your test class. It can have any name. Gentry assumes
-all a test class's public methods run tests.
+Add a _public_ method to your test class of the same name as the method you want
+to test, with the type-hinted object as the first parameter. Gentry assumes all
+a test class's public methods run tests, and you only need to test public
+methods on your classes.
 
 > Obviously, to write helper methods, simply declare them `protected` or
 > `private`.
@@ -133,23 +137,22 @@ all a test class's public methods run tests.
 /**
  * @Description This is going to explain how this should work.
  */
-class MyFirstTest extends Scenario
+class MyFirstTest
 {
     /**
      * @Description This will test the bar method
      */
-    public function thisTestsFooBar(Foo $foo, $bar)
+    public function bar(Foo $foo)
     {
         return true;
     }
 }
 ```
 
-The first argument is the type-hinted object you want to check. The second
-argument is a variable with the name of the method under test (so for `Foo::bar`
-we pass `$bar`). Subsequent arguments are variables that should be injected into
-the method under test, in the correct order. Their names don't matter, their
-default values _do_ ;)
+The first argument is the type-hinted object you want to check. Subsequent
+arguments are variables that should be injected into the method under test, in
+the correct order. The default values are the values we are going to test the
+method with in this particular story.
 
 The return value of the test method is simply what calling the designated method
 would be expected to return. _Is it that simple?_ Yes, it's that simple to write
@@ -196,7 +199,7 @@ The corresponding test could look like this:
 ```php
 <?php
 
-class MyTest extends Scenario
+class MyTest
 {
     public function __construct()
     {
@@ -207,7 +210,7 @@ class MyTest extends Scenario
     /**
      * @Description Assuming $one->fizz is true but $two->buzz is false
      */
-    public function twoIsFalse(Foo $foo, $bar, Bar $one, Baz $two)
+    public function bar(Foo $foo, Bar $one, Baz $two)
     {
         return false;
     }
@@ -229,6 +232,30 @@ The order of resolution for arguments is as follows:
 
 > So in the above example, we could have used _either_ type hinting _or_ setting
 > instances on the test class.
+
+If a known variable (of any name) is placed on your class's public scope, you
+may also simply pass it _by reference_ and update its value before returning:
+
+```php
+<?php
+
+class MyTest
+{
+    public $baz;
+
+    public function bar(Foo $foo, &$baz)
+    {
+        $baz = 1;
+        // Foo::bar should return 2 when called with 1
+        return 2;
+    }
+}
+```
+
+## Testing a method in multiple scenarios
+Often you'll need to test a method with multiple calls passing different values.
+Use the `@Method methodName` annotation on your test to hardcode the name of the
+method under test, and simply give your test method a descriptive, unique name.
 
 ## Testing if a certain exception is thrown
 Simply throw that same exception from your test method!
@@ -321,4 +348,7 @@ Tests annotated with `@Incomplete` are skipped and will only issue a warning.
 Run Gentry with the `-g` flag to generate skeletons for missing tests for you.
 Generated tests will be placed in the directory specified by `tests` under a
 guesstimated name, and marked as `@Incomplete` by default.
+
+Note that you'll probably want to re-group generated tests into classes that
+make sense for your application.
 
