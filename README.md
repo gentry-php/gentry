@@ -31,7 +31,9 @@ options:
     "src": "/path/to/src",
     "tests": "/path/to/tests",
     "includePath": "/my/include/path",
-    "bootstrap": "/path/to/bootstrap.php"
+    "bootstrap": "/path/to/bootstrap.php",
+    "namespace": "Foo",
+    "ignore": "some.*?regex"
 }
 ```
 
@@ -68,6 +70,14 @@ in order.
 you could use relative paths here. Otherwise, they will be relative to
 `get_cwd()`.
 
+### string `namespace` ###
+Namespace to use for generated tests. Useful if you specifically add that
+namespace to `autoload-dev` in your `composer.json`.
+
+### string `ignore` ###
+A regular expression of classnames to ignore. Useful for automatically ignoring
+classtypes that are hard to test, e.g. controllers.
+
 ## Usage
 Now run Gentry from the command line and see what happens:
 
@@ -86,7 +96,8 @@ vendor/bin/gentry -v
 ```
 
 In the default mode, only important messages are displayed. But verbose mode
-might be handy is something's going wrong for you.
+might be handy when something's going wrong for you, or if you simply want
+feedback about stuff like incomplete tests.
 
 ## Writing tests
 Each scenario should be placed in your `"tests"` directory or one of its
