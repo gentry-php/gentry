@@ -146,9 +146,10 @@ class Test
         foreach ($this->params as $i => $param) {
             if ($i == 0) {
                 $type = $param->getClass();
+                $classtype = $type->getName();
                 if (!$param->isDefaultValueAvailable()
                     && isset($this->target->{$param->name})
-                    && get_class($this->target->{$param->name}) == $type->getName()
+                    && $this->target->{$param->name} instanceof $classtype
                 ) { 
                     $args[] =& $this->target->{$param->name};
                 } else {
