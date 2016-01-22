@@ -2,13 +2,12 @@
 
 namespace Gentry\Tests;
 
-use Gentry\Scenario;
 use Gentry\Demo;
 
 /**
  * @Description The demo should pass all tests.
  */
-class DemoTest extends Scenario
+class DemoTest
 {
     /**
      * @Description "something" should always return true
