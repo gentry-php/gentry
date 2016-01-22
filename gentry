@@ -116,6 +116,7 @@ foreach (new RecursiveIteratorIterator(
     if ($file->isFile() && substr($file->getFilename(), -4) == '.php') {
         $filename = realpath($file);
         $code = file_get_contents($filename);
+        $code = preg_replace("@/\*\*.*?\*/@ms", '', $code);
         $ns = '';
         if (preg_match("@namespace ((\w|\\\\)+)@", $code, $match)) {
             $ns = $match[1].'\\';
@@ -140,6 +141,9 @@ foreach (new RecursiveIteratorIterator(
             continue;
         }
         $reflection = new ReflectionClass("$ns$class");
+        if ($reflection->isAbstract()) {
+            continue;
+        }
         $annotations = new Annotations($reflection);
         if (isset($annotations['Untestable'])) {
             continue;
@@ -192,13 +196,13 @@ foreach (new RecursiveIteratorIterator(
     if ($file->isFile() && substr($file->getFilename(), -4) == '.php') {
         $filename = realpath($file);
         $code = file_get_contents($filename);
+        $code = preg_replace("@/\*\*.*?\*/@ms", '', $code);
         $ns = '';
         if (preg_match("@namespace ((\w|\\\\)+)@", $code, $match)) {
             $ns = $match[1].'\\';
         }
-        if (preg_match("@(?<!abstract)\s*class\s+(\w+)\s+@msi", $code, $match)) {
+        if (preg_match("@class\s+(\w+)\s+@msi", $code, $match)) {
             $class = "$ns{$match[1]}";
-            require_once $filename;
             $reflection = new ReflectionClass($class);
             $annotations = new Annotations($class);
             if (!$reflection->isAbstract()) {
@@ -270,6 +274,11 @@ foreach ($tests as $class => $file) {
         }
         $args = $test->getArguments();
         $methodname = $test->getMethodName();
+        if (!isset($args[0]) || !is_object($args[0])) {
+            throw new NoTestableObjectProvidedException(
+                get_class($class)."::$methodname"
+            );
+        }
         $testclass = get_class($args[0]);
         if (!isset($coveredMethods[$testclass])) {
             $coveredMethods[$testclass] = [];
