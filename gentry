@@ -34,6 +34,9 @@ function isEqual($a, $b)
     if (is_numeric($a) && is_numeric($b)) {
         return $a == $b;
     }
+    if (is_object($a) && is_object($b)) {
+        return get_class($a) == get_class($b);
+    }
     return $a === $b;
 }
 
@@ -143,6 +146,10 @@ foreach (new RecursiveIteratorIterator(
         }
         $methods = [];
         foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+            $annotations = new Annotations($method);
+            if (isset($annotations['Untestable'])) {
+                continue;
+            }
             if ($method->isInternal()) {
                 continue;
             }
@@ -247,6 +254,7 @@ foreach ($tests as $class => $file) {
             continue;
         }
         $tested++;
+        $test = new Test($class, $method);
         $annotations = new Annotations($method);
         if (!isset($annotations['Incomplete'])) {
             if (method_exists($class, '__wakeup')) {
@@ -260,101 +268,15 @@ foreach ($tests as $class => $file) {
                 }
             }
         }
-        if (isset($annotations['Description']) && !isset($annotations['Incomplete']) or $verbose) {
-            out("  * <blue>{$annotations['Description']}");
-        }
-        if (isset($annotations['Incomplete'])) {
-            if ($verbose) {
-                out(" <magenta>[INCOMPLETE]\n");
-            }
-            continue;
-        }
-        $params = $method->getParameters();
-        $args = [];
-        $remote = [];
-        $methodname = isset($annotations['Method']) ?
-            $annotations['Method'] :
-            $method->name;
-        $iterations = 1;
-        if (isset($annotations['Repeat'])) {
-            $iterations = $annotations['Repeat'];
-        }
-        foreach ($params as $i => $param) {
-            if ($i == 0) {
-                $type = $param->getClass();
-                if (!$param->isDefaultValueAvailable()
-                    && isset($class->{$param->name})
-                    && get_class($class->{$param->name}) == $type->getName()
-                ) {
-                    $args[] =& $class->{$param->name};
-                } else {
-                    $args[] = $type->newInstance();
-                }
-            } elseif ($param->isDefaultValueAvailable()) {
-                $remote[] = $args[] = $param->getDefaultValue();
-            } elseif (isset($class->{$param->name})) {
-                $remote[] =& $class->{$param->name};
-                $args[] =& $class->{$param->name};
-            } elseif ($type = $param->getClass()) {
-                $remote[] = $args[] = $type->newInstance();
-            } else {
-                $remote[] = $args[] = null;
-            }
-        }
+        $args = $test->getArguments();
+        $methodname = $test->getMethodName();
         $testclass = get_class($args[0]);
         if (!isset($coveredMethods[$testclass])) {
             $coveredMethods[$testclass] = [];
         }
         $coveredMethods[$testclass][] = $methodname;
+        $test->run($passed, $failed);
 
-        $expected = $actual = ['result' => null, 'thrown' => null];
-        try {
-            $expected['result'] = $method->invokeArgs($class, $args);
-        } catch (Exception $e) {
-            $expected['thrown'] = get_class($e);
-        }
-        for ($i = 0; $i < $iterations; $i++) {
-            try {
-                $actual['result'] = call_user_func_array(
-                    [$args[0], $methodname],
-                    $remote
-                );
-            } catch (Exception $e) {
-                $actual['thrown'] = get_class($e);
-            }
-            if ($iterations > 1) {
-                out('<blue>.');
-            }
-        }
-        if (is_object($expected['result'])
-            && $expected['result'] instanceof Closure
-        ) {
-            $fn = $expected['result'];
-            $expected['result'] = true;
-            $actual['result'] = call_user_func($fn, $actual['result']);
-        }
-        if (isset($annotations['Pipe'])) {
-            $actual['result'] = call_user_func($annotations['Pipe'], $actual['result']);
-        }
-        if (isEqual($expected['result'], $actual['result']) && $expected['thrown'] == $actual['thrown']) {
-            $passed++;
-            out(" <green>[OK]\n");
-        } else {
-            out(" <red>[FAILED]<reset> ");
-            $failed++;
-            if (!isEqual($expected['result'], $actual['result'])) {
-                out(sprintf(
-                    "(expected <magenta>%s<reset>, got <magenta>%s<reset>)\n",
-                    tostring($expected['result']),
-                    tostring($actual['result'])
-                ));
-            } else {
-                out(sprintf(
-                    "(wanted to catch {$expected['thrown']}, got %s)\n",
-                    isset($expected['result']) ? tostring($expected['result']) : $actual['thrown']
-                ));
-            }
-        }
         if (method_exists($class, '__sleep')
             && !isset($annotations['Chain'])
         ) {
