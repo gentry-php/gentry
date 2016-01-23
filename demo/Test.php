@@ -2,10 +2,11 @@
 
 namespace Gentry\Demo;
 
-class DemoClass
+class Test
 {
-    public function something()
+    public function test()
     {
+        echo '    ';
         return true;
     }
 }

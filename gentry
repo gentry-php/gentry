@@ -8,34 +8,19 @@ use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
 use ReflectionClass;
 use ReflectionMethod;
+use ReflectionException;
 use Closure;
 use zpt\anno\Annotations;
 use Kingconf;
 use Exception;
 
 $start = microtime(true);
-/**
- * "Borrowed" from the PHPUnit executable.
- */
 
 if (!ini_get('date.timezone')) {
     ini_set('date.timezone', 'UTC');
 }
 
-function out($text, $out = STDOUT)
-{
-    $text = str_replace("\n", PHP_EOL, $text);
-    echo Ansi::tagsToColors($text);
-    echo Ansi::tagsToColors('<reset>');
-}
-
-function isEqual($a, $b)
-{
-    if (is_numeric($a) && is_numeric($b)) {
-        return $a == $b;
-    }
-    return $a === $b;
-}
+require __DIR__.'/src/helpers.php';
 
 foreach ([
     __DIR__.'/../../autoload.php',
@@ -67,7 +52,7 @@ EOT
 
 $autoloader = require COMPOSER_INSTALL;
 
-out("\n<magenta>Gentry 0.3.1 by Marijn Ophorst\n\n");
+out("\n<magenta>Gentry 0.3.3 by Marijn Ophorst\n\n");
 
 $config = 'Gentry.json';
 $verbose = false;
@@ -113,6 +98,7 @@ foreach (new RecursiveIteratorIterator(
     if ($file->isFile() && substr($file->getFilename(), -4) == '.php') {
         $filename = realpath($file);
         $code = file_get_contents($filename);
+        $code = preg_replace("@/\*\*.*?\*/@ms", '', $code);
         $ns = '';
         if (preg_match("@namespace ((\w|\\\\)+)@", $code, $match)) {
             $ns = $match[1].'\\';
@@ -137,12 +123,19 @@ foreach (new RecursiveIteratorIterator(
             continue;
         }
         $reflection = new ReflectionClass("$ns$class");
+        if ($reflection->isAbstract()) {
+            continue;
+        }
         $annotations = new Annotations($reflection);
         if (isset($annotations['Untestable'])) {
             continue;
         }
         $methods = [];
         foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+            $annotations = new Annotations($method);
+            if (isset($annotations['Untestable'])) {
+                continue;
+            }
             if ($method->isInternal()) {
                 continue;
             }
@@ -185,17 +178,21 @@ foreach (new RecursiveIteratorIterator(
     if ($file->isFile() && substr($file->getFilename(), -4) == '.php') {
         $filename = realpath($file);
         $code = file_get_contents($filename);
+        $code = preg_replace("@/\*\*.*?\*/@ms", '', $code);
         $ns = '';
         if (preg_match("@namespace ((\w|\\\\)+)@", $code, $match)) {
             $ns = $match[1].'\\';
         }
-        if (preg_match("@(?<!abstract)\s*class\s+(\w+)\s+@msi", $code, $match)) {
+        if (preg_match("@class\s+(\w+)\s+@msi", $code, $match)) {
             $class = "$ns{$match[1]}";
-            require_once $filename;
-            $reflection = new ReflectionClass($class);
-            $annotations = new Annotations($class);
-            if (!$reflection->isAbstract()) {
-                $tests[$class] = $filename;
+            try {
+                $reflection = new ReflectionClass($class);
+                $annotations = new Annotations($class);
+                if (!$reflection->isAbstract()) {
+                    $tests[$class] = $filename;
+                }
+            } catch (ReflectionException $e) {
+                out("<magenta>Warning: <gray>".$e->getMessage()."\n");
             }
         }
     }
@@ -236,8 +233,8 @@ foreach ($tests as $class => $file) {
     if (!$ok && !$verbose) {
         continue;
     }
-    if (isset($annotations['Description'])) {
-        out("<darkBlue>{$annotations['Description']}\n");
+    if (isset($annotations['Feature'])) {
+        out("<darkBlue>{$annotations['Feature']}\n");
     }
     $wakeup = method_exists($class, '__wakeup') && $verbose ?
         new Annotations(new ReflectionMethod($class, '__wakeup')) :
@@ -247,114 +244,30 @@ foreach ($tests as $class => $file) {
             continue;
         }
         $tested++;
+        $test = new Test($class, $method);
         $annotations = new Annotations($method);
         if (!isset($annotations['Incomplete'])) {
             if (method_exists($class, '__wakeup')) {
-                if (!isset($annotations['Chain'])) {
-                    if (isset($wakeup['Description'])) {
-                        out("    <gray>({$wakeup['Description']})\n");
-                    }
-                    $class->__wakeup();
-                } elseif ($verbose) {
-                    out("    <gray>(Skipping __wakeup as requested by @Chain)\n");
+                if (isset($wakeup['Description']) && $verbose) {
+                    out("    <gray>({$wakeup['Description']})\n");
                 }
+                $class->__wakeup();
             }
         }
-        if (isset($annotations['Description']) && !isset($annotations['Incomplete']) or $verbose) {
-            out("  * <blue>{$annotations['Description']}");
-        }
-        if (isset($annotations['Incomplete'])) {
-            if ($verbose) {
-                out(" <magenta>[INCOMPLETE]\n");
-            }
+        $args = $test->run($passed, $failed);
+        $feature = $test->getFeature();
+        if (!isset($args[0]) || !is_object($args[0])) {
+            out("<magenta>".get_class($class)."::$feature <gray>provides no testable object!\n", STDERR);
             continue;
-        }
-        $params = $method->getParameters();
-        $args = [];
-        $remote = [];
-        $methodname = isset($annotations['Method']) ?
-            $annotations['Method'] :
-            $method->name;
-        $iterations = 1;
-        if (isset($annotations['Repeat'])) {
-            $iterations = $annotations['Repeat'];
-        }
-        foreach ($params as $i => $param) {
-            if ($i == 0) {
-                $type = $param->getClass();
-                if (!$param->isDefaultValueAvailable()
-                    && isset($class->{$param->name})
-                    && get_class($class->{$param->name}) == $type->getName()
-                ) {
-                    $args[] =& $class->{$param->name};
-                } else {
-                    $args[] = $type->newInstance();
-                }
-            } elseif ($param->isDefaultValueAvailable()) {
-                $remote[] = $args[] = $param->getDefaultValue();
-            } elseif (isset($class->{$param->name})) {
-                $remote[] =& $class->{$param->name};
-                $args[] =& $class->{$param->name};
-            } elseif ($type = $param->getClass()) {
-                $remote[] = $args[] = $type->newInstance();
-            } else {
-                $remote[] = $args[] = null;
-            }
         }
         $testclass = get_class($args[0]);
         if (!isset($coveredMethods[$testclass])) {
             $coveredMethods[$testclass] = [];
         }
-        $coveredMethods[$testclass][] = $methodname;
+        if (method_exists($args[0], $feature)) {
+            $coveredMethods[$testclass][] = $feature;
+        }
 
-        $expected = $actual = ['result' => null, 'thrown' => null];
-        try {
-            $expected['result'] = $method->invokeArgs($class, $args);
-        } catch (Exception $e) {
-            $expected['thrown'] = get_class($e);
-        }
-        for ($i = 0; $i < $iterations; $i++) {
-            try {
-                $actual['result'] = call_user_func_array(
-                    [$args[0], $methodname],
-                    $remote
-                );
-            } catch (Exception $e) {
-                $actual['thrown'] = get_class($e);
-            }
-            if ($iterations > 1) {
-                out('<blue>.');
-            }
-        }
-        if (is_object($expected['result'])
-            && $expected['result'] instanceof Closure
-        ) {
-            $fn = $expected['result'];
-            $expected['result'] = true;
-            $actual['result'] = call_user_func($fn, $actual['result']);
-        }
-        if (isset($annotations['Pipe'])) {
-            $actual['result'] = call_user_func($annotations['Pipe'], $actual['result']);
-        }
-        if (isEqual($expected['result'], $actual['result']) && $expected['thrown'] == $actual['thrown']) {
-            $passed++;
-            out(" <green>[OK]\n");
-        } else {
-            out(" <red>[FAILED]<reset> ");
-            $failed++;
-            if (!isEqual($expected['result'], $actual['result'])) {
-                out(sprintf(
-                    "(expected <magenta>%s<reset>, got <magenta>%s<reset>)\n",
-                    tostring($expected['result']),
-                    tostring($actual['result'])
-                ));
-            } else {
-                out(sprintf(
-                    "(wanted to catch {$expected['thrown']}, got %s)\n",
-                    isset($expected['result']) ? tostring($expected['result']) : $actual['thrown']
-                ));
-            }
-        }
         if (method_exists($class, '__sleep')
             && !isset($annotations['Chain'])
         ) {
@@ -384,28 +297,6 @@ if ($incomplete) {
         $incomplete,
         $incomplete == 1 ? '' : 's'
     ), STDERR);
-}
-
-function tostring($value)
-{
-    if (!isset($value)) {
-        return 'NULL';
-    }
-    if ($value === true) {
-        return 'true';
-    }
-    if ($value === false) {
-        return 'false';
-    }
-    if (is_scalar($value)) {
-        return $value;
-    }
-    if (is_array($value)) {
-        return 'array';
-    }
-    if (is_object($value)) {
-        return get_class($value);
-    }
 }
 
 $classes = 0;
@@ -492,7 +383,7 @@ foreach ($sources as $file => $code) {
         $targetvar = strtolower($targetname);
         $base .= <<<EOT
 /**
- * @Description [GENERATED] Test {$code[0]}
+ * @Feature [GENERATED] Test {$code[0]}
  */
 
 EOT;
@@ -512,7 +403,7 @@ EOT;
             $arguments = '';
             $generatedMethods[] = <<<EOT
     /**
-     * @Description [GENERATED] Test {$code[0]}::$methodname
+     * @Scenario [GENERATED] Test {$code[0]}::$methodname
      * @Incomplete
      */
     public function $methodname($targetname $$targetvar$arguments)
