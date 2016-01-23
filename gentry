@@ -8,6 +8,7 @@ use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
 use ReflectionClass;
 use ReflectionMethod;
+use ReflectionException;
 use Closure;
 use zpt\anno\Annotations;
 use Kingconf;
@@ -38,6 +39,32 @@ function isEqual($a, $b)
         return get_class($a) == get_class($b);
     }
     return $a === $b;
+}
+
+/**
+ * @see https://coderwall.com/p/3j2hxq/find-and-format-difference-between-two-strings-in-php
+ */
+function strdiff($old, $new)
+{
+    $old = str_replace("\033[", "\\033[", $old);
+    $new = str_replace("\033[", "\\033[", $new);
+    $from_start = strspn($old ^ $new, "\0");
+    $from_end = strspn(strrev($old) ^ strrev($new), "\0");
+
+    $old_end = strlen($old) - $from_end;
+    $new_end = strlen($new) - $from_end;
+
+    $start = substr($new, 0, $from_start);
+    $end = substr($new, $new_end);
+    $new_diff = substr($new, $from_start, $new_end - $from_start);
+    $old_diff = substr($old, $from_start, $old_end - $from_start);
+
+    $new = "$start<red>$new_diff<reset>$end";
+    $old = "$start<green>$old_diff<reset>$end";
+    return [
+        'old' => preg_replace("@(\s)@ms", "<bgYellow>\\1<reset>", $old),
+        'new' => preg_replace("@(\s)@ms", "<bgYellow>\\1<reset>", $new),
+    ];
 }
 
 foreach ([
@@ -203,10 +230,14 @@ foreach (new RecursiveIteratorIterator(
         }
         if (preg_match("@class\s+(\w+)\s+@msi", $code, $match)) {
             $class = "$ns{$match[1]}";
-            $reflection = new ReflectionClass($class);
-            $annotations = new Annotations($class);
-            if (!$reflection->isAbstract()) {
-                $tests[$class] = $filename;
+            try {
+                $reflection = new ReflectionClass($class);
+                $annotations = new Annotations($class);
+                if (!$reflection->isAbstract()) {
+                    $tests[$class] = $filename;
+                }
+            } catch (ReflectionException $e) {
+                out("<magenta>Warning: <gray>".$e->getMessage()."\n");
             }
         }
     }
@@ -272,19 +303,19 @@ foreach ($tests as $class => $file) {
                 }
             }
         }
-        $args = $test->getArguments();
-        $methodname = $test->getMethodName();
+        $args = $test->run($passed, $failed);
+        $feature = $test->getFeature();
         if (!isset($args[0]) || !is_object($args[0])) {
-            throw new NoTestableObjectProvidedException(
-                get_class($class)."::$methodname"
-            );
+            out("<magenta>".get_class($class)."::$feature <gray>provides no testable object!\n", STDERR);
+            continue;
         }
         $testclass = get_class($args[0]);
         if (!isset($coveredMethods[$testclass])) {
             $coveredMethods[$testclass] = [];
         }
-        $coveredMethods[$testclass][] = $methodname;
-        $test->run($passed, $failed);
+        if (method_exists($args[0], $feature)) {
+            $coveredMethods[$testclass][] = $feature;
+        }
 
         if (method_exists($class, '__sleep')
             && !isset($annotations['Chain'])
