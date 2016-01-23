@@ -247,8 +247,8 @@ foreach ($tests as $class => $file) {
     if (!$ok && !$verbose) {
         continue;
     }
-    if (isset($annotations['Description'])) {
-        out("<darkBlue>{$annotations['Description']}\n");
+    if (isset($annotations['Feature'])) {
+        out("<darkBlue>{$annotations['Feature']}\n");
     }
     $wakeup = method_exists($class, '__wakeup') && $verbose ?
         new Annotations(new ReflectionMethod($class, '__wakeup')) :
@@ -423,7 +423,7 @@ foreach ($sources as $file => $code) {
         $targetvar = strtolower($targetname);
         $base .= <<<EOT
 /**
- * @Description [GENERATED] Test {$code[0]}
+ * @Feature [GENERATED] Test {$code[0]}
  */
 
 EOT;
@@ -443,7 +443,7 @@ EOT;
             $arguments = '';
             $generatedMethods[] = <<<EOT
     /**
-     * @Description [GENERATED] Test {$code[0]}::$methodname
+     * @Scenario [GENERATED] Test {$code[0]}::$methodname
      * @Incomplete
      */
     public function $methodname($targetname $$targetvar$arguments)
