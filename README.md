@@ -77,8 +77,10 @@ Namespace to use for generated tests. Useful if you specifically add that
 namespace to `autoload-dev` in your `composer.json`.
 
 ### string `ignore` ###
-A regular expression of classnames to ignore. Useful for automatically ignoring
-classtypes that are hard to test, e.g. controllers.
+A regular expression of classnames to ignore in the `"src"` path. Useful for
+automatically ignoring classtypes that are hard to test, e.g. controllers. You
+could also utilise this if your tests and sourcecode are mixed (but seriously,
+don't do that).
 
 ## Usage
 Now run Gentry from the command line and see what happens:
@@ -102,15 +104,15 @@ might be handy when something's going wrong for you, or if you simply want
 feedback about stuff like incomplete tests.
 
 ## Writing tests
-Each scenario should be placed in your `"tests"` directory or one of its
+Each testable feature should be placed in your `"tests"` directory or one of its
 subdirectories (Gentry recurses for you) You can (optionally) describe the
-scenario by annotating the class with an `@Description` docblock:
+feature by annotating the class with an `@Feature` docblock:
 
 ```php
 <?php
 
 /**
- * @Description This is going to explain how this should work.
+ * @Feature This is going to explain how this should work
  */
 class MyFirstTest
 {
@@ -134,9 +136,9 @@ class Foo
 }
 ```
 
-Add a _public_ method to your test class of the same name as the method you want
-to test, with the type-hinted object as the first parameter. Gentry assumes all
-a test class's public methods run tests, and you only need to test public
+Add a _public_ method to your test class. It can have any name, but the first
+parameter *must* be the type-hinted object we are going to test. Gentry assumes
+all a test class's public methods run tests, and you only need to test public
 methods on your classes.
 
 > Obviously, to write helper methods, simply declare them `protected` or
@@ -146,12 +148,12 @@ methods on your classes.
 <?php
 
 /**
- * @Description This is going to explain how this should work.
+ * @Feature This is going to explain how this should work
  */
 class MyFirstTest
 {
     /**
-     * @Description This will test the bar method
+     * @Scenario {0}::bar should return true
      */
     public function bar(Foo $foo)
     {
@@ -165,9 +167,127 @@ arguments are variables that should be injected into the method under test, in
 the correct order. The default values are the values we are going to test the
 method with in this particular story.
 
+Note the `@Scenario` annotation. This should describe what we are going to test
+exactly (just human readable). The special `{0}::bar` syntax tells Gentry
+exactly what we are testing programmatically. `{0}` is simply the first argument
+to the method, and `::bar` says we want to test the `bar` method on that object.
+
+You can also test _properties_ of the object by annotating with `{0}::$property`
+instead:
+
+```php
+<?php
+
+class Foo
+{
+    public $baz = false;
+}
+```
+
+```php
+<?php
+
+class MyFirstTest
+{
+    /**
+     * @Scenario {0}::$baz should be false
+     */
+    public function baz(Foo $foo)
+    {
+        return false;
+    }
+}
+```
+
 The return value of the test method is simply what calling the designated method
 would be expected to return. _Is it that simple?_ Yes, it's that simple to write
 a test in Gentry :)
+
+## Assertion logic
+Gentry uses some simple assertion logic to compare return values:
+
+- If both the expected and actual result are numeric, the test passes if simple
+  equality (`==`) returns true;
+- If both the expected and actual result are objects, the test passes if simple
+  equality (`==`) returns true;
+- Otherwise, the test passes if strict equality (`===`) returns true.
+
+In practice, this means that `1.0` and `1` are considered a match, as well as
+objects with the same class _and_ the same properties.
+
+## Passing parameters
+If your method under test needs arguments, pass them as default parameters to
+your test method:
+
+```php
+<?php
+
+class Foo
+{
+    public function bar($param1, $param2)
+    {
+        return $param1 && $param2;
+    }
+}
+```
+
+```php
+<?php
+
+class MyFirstTest
+{
+    /**
+     * @Scenario {0}::bar should return true if both parameters are true
+     */
+    public function bothTrue(Foo $foo, $param1 = true, $param2 = true)
+    {
+        return true;
+    }
+
+    /**
+     * @Scenario {0}::bar should return false if either parameter is not true
+     */
+    public function firstFalse(Foo $foo, $param1 = false, $param2 = true)
+    {
+        return false;
+    }
+
+    /**
+     * @Scenario {0}::bar should return false if either parameter is not true
+     */
+    public function secondFalse(Foo $foo, $param1 = true, $param2 = false)
+    {
+        return false;
+    }
+}
+```
+
+If a parameter is a type-hinted object, Gentry will instantiate that object for
+you. This is true of both the object-under-test as well as any other parameters.
+
+## Injecting parameters containing a non-simple value
+If an injected parameter needs a bit more work (e.g. an object with construction
+parameters) give it a default value of `null`, pass it as a reference and
+construct it in your test method:
+
+```php
+<?php
+
+class MyFirstTest
+{
+    /**
+     * @Scenario {0}::bar called with complex object returns true.
+     */
+    public function complex(Foo $foo, Bar &$bar = null)
+    {
+        $bar = new Bar(1, 2, 3);
+        return true;
+    }
+}
+```
+
+Again, this is true for both the object-under-test as well as any subsequent
+parameters.
 
 ## Setup/teardown
 Setup (like injecting mocks) should be done in the _constructor_ of your
@@ -175,6 +295,9 @@ testclass. Likewise, teardown in the `__destroy` magic method.
 
 For per-test setup and teardown (like loading a database fixture), use
 `__wakeup` and `__sleep` respectively.
+
+Each of these methods may be annotated with an `@Description`. Note this will
+only be outputted when running in verbose mode.
 
 ## Using a base class
 If multiple tests share the same `__sleep` and `__wakeup` methods for instance,
@@ -187,99 +310,18 @@ in a different directory than your tests, e.g. define `tests/specs` as the
 `"tests"` directory and place your mocks in `tests/mocks` and have your
 autoloader handle them.
 
-## Injecting parameters containing a non-simple value
-If your method under test should be called with a non-simple value (usually an
-object), the parameter name _will_ matter.
-
-Assume our `Foo` class looks as follows:
-
-```php
-<?php
-
-class Foo
-{
-    function bar(Bar $one, Baz $two)
-    {
-        return $one->fizz && $two->buzz;
-    }
-}
-```
-
-The corresponding test could look like this:
-
-```php
-<?php
-
-class MyTest
-{
-    public function __construct()
-    {
-        $this->one = new Bar;
-        $this->two = new Baz;
-    }
-
-    /**
-     * @Description Assuming $one->fizz is true but $two->buzz is false
-     */
-    public function bar(Foo $foo, Bar $one, Baz $two)
-    {
-        return false;
-    }
-}
-```
-
-> Obviously the `fizz` and `buzz` properties could be either `true` or not
-> depending on conditions, presumably during construction or what they get from
-> the database.
-
-The order of resolution for arguments is as follows:
-
-1. If a default value is given, Gentry uses that;
-2. If a public property of the same name exists on the test class, Gentry uses
-   that;
-3. If the argument is type hinted, Gentry constructs a new instance of that type
-   for you;
-4. If all these fail, Gentry will pass `null`.
-
-> So in the above example, we could have used _either_ type hinting _or_ setting
-> instances on the test class.
-
-If a known variable (of any name) is placed on your class's public scope, you
-may also simply pass it _by reference_ and update its value before returning:
-
-```php
-<?php
-
-class MyTest
-{
-    public $baz;
-
-    public function bar(Foo $foo, &$baz)
-    {
-        $baz = 1;
-        // Foo::bar should return 2 when called with 1
-        return 2;
-    }
-}
-```
-
-## Testing a method in multiple scenarios
-Often you'll need to test a method with multiple calls passing different values.
-Use the `@Method methodName` annotation on your test to hardcode the name of the
-method under test, and simply give your test method a descriptive, unique name.
-
 ## Testing if a certain exception is thrown
 Simply throw that same exception from your test method!
 
 ```php
 <?php
 
-class MyTest extends Scenario
+class MyTest
 {
     /**
-     * Description Assuming Foo::bar would throw an exception...
+     * Scenario Assuming {0}::bar would throw an exception...
      */
-    public function itShouldThrowAnException(Foo $foo, $bar)
+    public function itShouldThrowAnException(Foo $foo)
     {
         throw new Exception;
     }
@@ -288,6 +330,31 @@ class MyTest extends Scenario
 
 This test passes if the exception thrown by the test is of the same class as the
 exception the actual method call throws.
+
+## Testing if something has output
+Echo the expected output in your test method:
+
+```php
+<?php
+
+class MyTest
+{
+    /**
+     * Scenario {0}::helloWorld has the correct output
+     */
+    public function checkOutput(Foo $foo)
+    {
+        echo 'Hello world!';
+    }
+}
+```
+
+This test will fail if `Foo::helloWorld()` produces a different output.
+
+### Raw output
+By default, Gentry will compare the `trim`med output of both the test as well as
+the method under test. To suppress this behaviour (e.g. if a method outputs an
+important number of whitespace, like `str_pad`) annotate the test with `@Raw`.
 
 ## Piping return values
 Often you'll want to test something more complex than a simple scalar value.
@@ -304,10 +371,10 @@ should be a single callable method to run the result through:
 class MyArrayTest extends Scenario
 {
     /**
-     * @Description It should contain 3 items
+     * @Scenario count({0}::$bar) should equal three.
      * @Pipe count
      */
-    public function threeItems(Foo $foo, $bar)
+    public function threeItems(Foo $foo)
     {
         return 3;
     }
@@ -351,6 +418,57 @@ check - as opposed to simple comparison - should be done in your callable.
 
 > If a callable is actually what's expected of the method under test, return a
 > callable that returns `$result instanceof Closure`.
+
+## Grouping tests
+To run a group of related tests, return an instance of `Gentry\Group` instead.
+The grouped tests work on the object injected in the test method, but can
+specify their own parameters, annotations and return checks. An example:
+
+```php
+<?php
+
+use Gentry\Group;
+
+class GroupedTesting
+{
+    /**
+     * @Scenario An optional scenario for the grouped tests. Note we don't need to use the {0}::method syntax now.
+     */
+    public function testAGroup(Foo $foo)
+    {
+        return new Group($this, $foo, [
+            /**
+             * @Scenario {0}::foo should return true.
+             */
+            function () { return true; },
+            /**
+             * @Scenario {0}::bar should return false.
+             */
+            function () { return false; },
+        ]);
+    }
+}
+```
+
+Note that there is no need to pass `$foo` to each callable. Otherwise, all
+"regular" rules apply as for single tests.
+
+> A group of tests only calls the optional `__wakeup` and `__sleep` before and
+> after the _entire_ group is run. So if you need to run subsequent tests
+> against e.g. a database grouped tests are the way to go.
+
+## Repeating tests
+Sometimes you want the exact same test to be repeated a number of times, e.g. to
+assure it returns the same result for each consecutive run. Annotate the test
+with `@Repeat [number]` to accomplish this.
+
+> Like with grouped tests, `__wakeup` and `__sleep` are only called once for
+> all iterations. If you specifically need to retest a method including setup
+> and teardown, declare it as non-public and add some facade methods that
+> forward their calls.
+
+Note that repeated tests producing output will need to match the entire output
+for all iterations, concatenated.
 
 ## Marking incomplete tests
 Tests annotated with `@Incomplete` are skipped and will only issue a warning.
