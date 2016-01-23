@@ -293,14 +293,10 @@ foreach ($tests as $class => $file) {
         $annotations = new Annotations($method);
         if (!isset($annotations['Incomplete'])) {
             if (method_exists($class, '__wakeup')) {
-                if (!isset($annotations['Chain'])) {
-                    if (isset($wakeup['Description'])) {
-                        out("    <gray>({$wakeup['Description']})\n");
-                    }
-                    $class->__wakeup();
-                } elseif ($verbose) {
-                    out("    <gray>(Skipping __wakeup as requested by @Chain)\n");
+                if (isset($wakeup['Description']) && $verbose) {
+                    out("    <gray>({$wakeup['Description']})\n");
                 }
+                $class->__wakeup();
             }
         }
         $args = $test->run($passed, $failed);
