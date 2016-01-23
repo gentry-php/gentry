@@ -17,7 +17,7 @@ function isEqual($a, $b)
         return $a == $b;
     }
     if (is_object($a) && is_object($b)) {
-        return get_class($a) == get_class($b);
+        return $a == $b;
     }
     return $a === $b;
 }
