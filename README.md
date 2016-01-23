@@ -203,6 +203,18 @@ The return value of the test method is simply what calling the designated method
 would be expected to return. _Is it that simple?_ Yes, it's that simple to write
 a test in Gentry :)
 
+## Assertion logic
+Gentry uses some simple assertion logic to compare return values:
+
+- If both the expected and actual result are numeric, the test passes if simple
+  equality (`==`) returns true;
+- If both the expected and actual result are objects, the test passes if simple
+  equality (`==`) returns true;
+- Otherwise, the test passes if strict equality (`===`) returns true.
+
+In practice, this means that `1.0` and `1` are considered a match, as well as
+objects with the same class _and_ the same properties.
+
 ## Passing parameters
 If your method under test needs arguments, pass them as default parameters to
 your test method:
@@ -454,6 +466,9 @@ with `@Repeat [number]` to accomplish this.
 > all iterations. If you specifically need to retest a method including setup
 > and teardown, declare it as non-public and add some facade methods that
 > forward their calls.
+
+Note that repeated tests producing output will need to match the entire output
+for all iterations, concatenated.
 
 ## Marking incomplete tests
 Tests annotated with `@Incomplete` are skipped and will only issue a warning.
