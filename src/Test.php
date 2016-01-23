@@ -6,6 +6,7 @@ use Reflector;
 use ReflectionMethod;
 use zpt\anno\Annotations;
 use Closure;
+use Exception;
 
 class Test
 {
@@ -27,8 +28,8 @@ class Test
         $this->methodname = isset($this->annotations['Test']) ?
             $this->annotations['Test'] :
             $this->test->name;
-        if (isset($this->annotations['Description'])) {
-            $description = $this->annotations['Description'];
+        if (isset($this->annotations['Scenario'])) {
+            $description = $this->annotations['Scenario'];
             if (preg_match('@\{0\}(::\$?\w+)?@', $description, $matches)) {
                 $prop = substr($matches[1], 2);
                 if ($prop{0} == '$') {
