@@ -15,8 +15,9 @@ class Test
     private $params;
     private $annotations;
     private $description;
-    private $methodname;
+    private $feature;
     private $inject;
+    private $testtype = 'method';
 
     public function __construct($target, Reflector $function, $inject = null)
     {
@@ -25,17 +26,14 @@ class Test
         $this->params = $this->test->getParameters();
         $this->inject = $inject;
         $this->annotations = new Annotations($this->test);
-        $this->methodname = isset($this->annotations['Test']) ?
-            $this->annotations['Test'] :
-            $this->test->name;
         if (isset($this->annotations['Scenario'])) {
             $description = $this->annotations['Scenario'];
             if (preg_match('@\{0\}(::\$?\w+)?@', $description, $matches)) {
                 $prop = substr($matches[1], 2);
                 if ($prop{0} == '$') {
-                    $prop = substr($prop, 1);
+                    $this->testtype = 'property';
                 }
-                $this->methodname = $prop;
+                $this->feature = $prop;
                 $description = str_replace(
                     '{0}',
                     isset($inject) ?
@@ -52,7 +50,16 @@ class Test
 
     public function run(&$passed, &$failed)
     {
-        $expected = $actual = ['result' => null, 'thrown' => null];
+        if (!isset($this->feature)) {
+            out("<magenta>Warning: <gray>missing <magenta>@Scenario <gray>annotation with {0}::something declaration. Not sure what to do...\n", STDERR);
+            $failed++;
+            return;
+        }
+        $expected = $actual = [
+            'result' => null,
+            'thrown' => null,
+            'out' => '',
+        ];
         if (!isset($this->annotations['Incomplete']) || $verbose
             and isset($this->description)
         ) {
@@ -68,6 +75,7 @@ class Test
         if (isset($this->annotations['Repeat'])) {
             $iterations = $this->annotations['Repeat'];
         }
+        ob_start();
         try {
             $args = $this->getArguments();
             if ($this->test instanceof ReflectionMethod) {
@@ -82,27 +90,35 @@ class Test
         } catch (Exception $e) {
             $expected['thrown'] = get_class($e);
         }
+        $expected['out'] = ob_get_clean();
         if (isset($this->inject)) {
             array_unshift($args, $this->inject);
         }
         for ($i = 0; $i < $iterations; $i++) {
-            if (method_exists($args[0], $this->methodname)) {
+            ob_start();
+            if (method_exists($args[0], $this->feature)) {
                 try {
                     $actual['result'] = call_user_func_array(
-                        [$args[0], $this->methodname],
-                        $this->getRemoteArguments()
+                        [$args[0], $this->feature],
+                        array_slice($args, 1)
                     );
                 } catch (Exception $e) {
                     $actual['thrown'] = get_class($e);
                 }
             } else {
-                if (property_exists($args[0], $this->methodname)) {
-                    $actual['result'] = $args[0]->{$this->methodname};
+                $property = substr($this->feature, 1);
+                if (property_exists($args[0], $property)) {
+                    $actual['result'] = $args[0]->$property;
                 }
             }
+            $actual['out'] .= ob_get_clean();
             if ($iterations > 1) {
                 out('<blue>.');  
             }
+        }
+        if (!isset($this->annotations['Raw'])) {
+            $expected['out'] = trim($expected['out']);
+            $actual['out'] = trim($actual['out']);
         }
         if (is_object($expected['result'])) {
             if ($expected['result'] instanceof Closure) {
@@ -112,12 +128,17 @@ class Test
             }
         }
         if (isset($this->annotations['Pipe'])) {
-            $actual['result'] = call_user_func($this->annotations['Pipe'], $actual['result']);
+            $pipes = preg_split("@,\s+@", $this->annotations['Pipe']);
+            while ($pipe = array_shift($pipes)) {
+                $actual['result'] = $pipe($actual['result']);
+            }
         }
-        if (isEqual($expected['result'], $actual['result']) && $expected['thrown'] == $actual['thrown']) {
+        if (isEqual($expected['result'], $actual['result'])
+            && $expected['thrown'] == $actual['thrown']
+            && $expected['out'] == $actual['out']
+        ) {
             $passed++;
             out(" <green>[OK]\n");
-            return true;
         } else {
             out(" <red>[FAILED]<reset> ");
             $failed++;
@@ -127,65 +148,40 @@ class Test
                     tostring($expected['result']),
                     tostring($actual['result'])
                 ));
-            } else {
+            } elseif ($expected['thrown'] != $actual['thrown']) {
                 out(sprintf(
                     "(wanted to catch {$expected['thrown']}, got %s)\n",
                     isset($expected['result']) ? tostring($expected['result']) : $actual['thrown']
                 ));
+            } elseif ($expected['out'] != $actual['out']) {
+                $diff = strdiff($expected['out'], $actual['out']);
+                out("\n  <gray>Expected:\n  \"".$diff['old']."<reset><gray>\"\n  Actual:\n  \"".$diff['new']."<reset><gray>\"\n");
             }
         }
+        return $args;
     }
 
-    public function getMethodName()
+    public function getFeature()
     {
-        return $this->methodname;
+        return $this->feature;
     }
 
     public function getArguments()
     {
         $args = [];
         foreach ($this->params as $i => $param) {
-            if ($i == 0) {
-                $type = $param->getClass();
-                $classtype = $type->getName();
-                if (!$param->isDefaultValueAvailable()
-                    && isset($this->target->{$param->name})
-                    && $this->target->{$param->name} instanceof $classtype
-                ) { 
-                    $args[] =& $this->target->{$param->name};
+            call_user_func(function () use ($param, &$args) {
+                if ($param->isDefaultValueAvailable()) {
+                    $work = $param->getDefaultValue();
+                } elseif ($type = $param->getClass()) {
+                    $work = $type->newInstance();
                 } else {
-                    $args[] = $type->newInstance();
+                    $work = null;
                 }
-            } elseif ($param->isDefaultValueAvailable()) {
-                $args[] = $param->getDefaultValue();
-            } elseif (isset($class->{$param->name})) {
-                $args[] =& $class->{$param->name};
-            } elseif ($type = $param->getClass()) {
-                $args[] = $type->newInstance();
-            } else {
-                $args[] = null;
-            }
+                $args[] =& $work;
+            });
         }
         return $args;
-    }
-
-    public function getRemoteArguments()
-    {
-        $remote = [];
-        foreach ($this->params as $i => $param) {
-            if ($i == 0) {
-                continue;
-            } elseif ($param->isDefaultValueAvailable()) {
-                $remote[] = $param->getDefaultValue();
-            } elseif (isset($class->{$param->name})) {
-                $remote[] =& $class->{$param->name};
-            } elseif ($type = $param->getClass()) {
-                $remote[] = $type->newInstance();
-            } else {
-                $remote[] = null;
-            }
-        }
-        return $remote;
     }
 }
 
