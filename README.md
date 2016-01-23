@@ -445,6 +445,16 @@ Note that there is no need to pass `$foo` to each callable. Otherwise, all
 > after the _entire_ group is run. So if you need to run subsequent tests
 > against e.g. a database grouped tests are the way to go.
 
+## Repeating tests
+Sometimes you want the exact same test to be repeated a number of times, e.g. to
+assure it returns the same result for each consecutive run. Annotate the test
+with `@Repeat [number]` to accomplish this.
+
+> Like with grouped tests, `__wakeup` and `__sleep` are only called once for
+> all iterations. If you specifically need to retest a method including setup
+> and teardown, declare it as non-public and add some facade methods that
+> forward their calls.
+
 ## Marking incomplete tests
 Tests annotated with `@Incomplete` are skipped and will only issue a warning.
 
