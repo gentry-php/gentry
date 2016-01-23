@@ -8,7 +8,7 @@ use StdClass;
 use ReflectionFunction;
 
 /**
- * @Feature The `Test` object
+ * @Feature Basic test running
  */
 class Test
 {
