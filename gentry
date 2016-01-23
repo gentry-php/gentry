@@ -34,28 +34,6 @@ foreach ([
     }
 }
 
-function tostring($value)
-{
-    if (!isset($value)) {
-        return 'NULL';
-    }
-    if ($value === true) {
-        return 'true';
-    }
-    if ($value === false) {
-        return 'false';
-    }
-    if (is_scalar($value)) {
-        return $value;
-    }
-    if (is_array($value)) {
-        return 'array('.count($value).')';
-    }
-    if (is_object($value)) {
-        return get_class($value);
-    }
-}
-
 unset($file);
 
 if (!defined('Gentry\COMPOSER_INSTALL')) {
@@ -74,7 +52,7 @@ EOT
 
 $autoloader = require COMPOSER_INSTALL;
 
-out("\n<magenta>Gentry 0.3.1 by Marijn Ophorst\n\n");
+out("\n<magenta>Gentry 0.3.3 by Marijn Ophorst\n\n");
 
 $config = 'Gentry.json';
 $verbose = false;
