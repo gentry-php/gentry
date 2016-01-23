@@ -25,8 +25,7 @@
     "autoload-dev": {
         "psr-4": {
             "Gentry\\": "src",
-            "Gentry\\Tests\\": "tests",
-            "Gentry\\Demo\\": "demo"
+            "Gentry\\Tests\\": "tests"
         }
     }
 }
