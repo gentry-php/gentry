@@ -48,3 +48,25 @@ function strdiff($old, $new)
     ];
 }
 
+function tostring($value)
+{
+    if (!isset($value)) {
+        return 'NULL';
+    }
+    if ($value === true) {
+        return 'true';
+    }
+    if ($value === false) {
+        return 'false';
+    }
+    if (is_scalar($value)) {
+        return $value;
+    }
+    if (is_array($value)) {
+        return 'array('.count($value).')';
+    }
+    if (is_object($value)) {
+        return get_class($value);
+    }
+}
+
