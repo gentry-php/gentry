@@ -1,5 +1,5 @@
 {
-    "src": "./demo",
+    "src": "./src",
     "tests": "./tests",
     "includePath": [],
     "useIncludePath": false,
