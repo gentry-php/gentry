@@ -6,6 +6,7 @@ use Gentry\Test;
 use Gentry\Group;
 use StdClass;
 use ReflectionFunction;
+use Gentry\Demo;
 
 /**
  * @Feature Basic test running
@@ -59,6 +60,16 @@ class Test
         \Gentry\out(" <green>[OK]\n");
         \Gentry\out("  * <blue>stdClass::\$bar should contain bar");
         \Gentry\out(" <green>[OK]\n");
+    }
+
+    /**
+     * @Scenario {0}::test should output 4 spaces and return true
+     * @Raw
+     */
+    public function raw(Demo\Test $test)
+    {
+        echo '    ';
+        return true;
     }
 }
 
