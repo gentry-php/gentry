@@ -71,6 +71,7 @@ class Test
         if (isset($this->annotations['Repeat'])) {
             $iterations = $this->annotations['Repeat'];
         }
+        $args = [];
         ob_start();
         try {
             $args = $this->getArguments();
