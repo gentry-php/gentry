@@ -107,7 +107,7 @@ class Test
                 ob_start();
                 $class = isset($args[0]) ?
                     $args[0] :
-                    $this->params[0]->getClass();
+                    $this->params[0]->getClass()->name;
                 if ($this->testtype == 'method') {
                     try {
                         $feature = new ReflectionMethod($class, $this->feature);
