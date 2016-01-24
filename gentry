@@ -215,7 +215,7 @@ $coveredMethods = [];
 $notcovered = 0;
 $tested = 0;
 $passed = 0;
-$failed = 0;
+$failed = [];
 $incomplete = 0;
 foreach ($tests as $class => $file) {
     $class = new $class;
@@ -284,19 +284,22 @@ if ($passed) {
         $passed == 1 ? '' : 's'
     ));
 }
-if ($failed) {
-    out(sprintf(
-        "<red>%d test%s failed!\n",
-        $failed,
-        $failed == 1 ? '' : 's'
-    ), STDERR);
-}
 if ($incomplete) {
     out(sprintf(
         "<magenta>%d test%s marked as incomplete.\n",
         $incomplete,
         $incomplete == 1 ? '' : 's'
     ), STDERR);
+}
+if ($failed) {
+    out(sprintf(
+        "<red>%d test%s failed!\n",
+        count($failed),
+        count($failed) == 1 ? '' : 's'
+    ), STDERR);
+    foreach ($failed as $msg) {
+        out("$msg\n");
+    }
 }
 
 $classes = 0;
