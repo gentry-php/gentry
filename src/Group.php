@@ -8,6 +8,7 @@ use zpt\anno\Annotations;
 class Group
 {
     private $tests = [];
+    private $testedFeatures = [];
 
     public function __construct($target, $inject, array $tests)
     {
@@ -21,7 +22,19 @@ class Group
     {
         foreach ($this->tests as $test) {
             $test->run($passed, $failed);
+            $this->testedFeatures = array_merge_recursive(
+                $this->testedFeatures,
+                $test->getTestedFeatures()
+            );
         }
+    }
+
+    public function getTestedFeatures()
+    {
+        foreach ($this->testedFeatures as &$features) {
+            $features = array_unique($features);
+        }
+        return $this->testedFeatures;
     }
 }
 
