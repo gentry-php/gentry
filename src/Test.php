@@ -102,18 +102,29 @@ class Test
         $this->testedFeatures[get_class($this->target)] = [$this->feature];
         for ($i = 0; $i < $iterations; $i++) {
             ob_start();
-            if (method_exists($args[0], $this->feature)) {
+            $class = isset($args[0]) ?
+                $args[0] :
+                $this->params[0]->getType()->__toString();
+            if ($this->testtype == 'method') {
                 try {
-                    $actual['result'] = call_user_func_array(
-                        [$args[0], $this->feature],
-                        array_slice($args, 1)
+                    $feature = new ReflectionMethod($class, $this->feature);
+                } catch (ReflectionException $e) {
+                    $failed[] = sprintf(
+                        "<red>ERROR: <gray>No such method <magenta>%s::%s",
+                        is_string($class) ? $class : get_class($class),
+                        $this->feature
                     );
+                    out(" <red>[FAILED]\n");
+                    return;
+                }
+                try {
+                    $actual['result'] = $feature->invokeArgs($args[0], array_slice($args, 1));
                 } catch (Exception $e) {
                     $actual['thrown'] = $e;
                 }
             } else {
                 $property = substr($this->feature, 1);
-                if (property_exists($args[0], $property)) {
+                if (property_exists($class, $property)) {
                     $actual['result'] = $args[0]->$property;
                 }
             }
