@@ -140,7 +140,7 @@ class Test
             }
         }
         if (isEqual($expected['result'], $actual['result'])
-            && $expected['thrown'] == $actual['thrown']
+            && $expected['thrown'] === $actual['thrown']
             && $expected['out'] == $actual['out']
         ) {
             $passed++;
@@ -162,11 +162,16 @@ class Test
                     tostring($actual['result'])
                 );
             }
-            if ($expected['thrown'] != $actual['thrown']) {
+            if ($expected['thrown'] !== $actual['thrown']) {
                 $failed[] = sprintf(
-                    "<gray>Expected %s to throw <magenta>{$expected['thrown']}<gray>, caught <magenta>%s",
+                    "<gray>Expected %s to throw %s, caught %s",
                     $testedfeature,
-                    $actual['thrown']
+                    isset($expected['thrown']) ?
+                        "<magenta>{$expected['thrown']}<gray>" :
+                        'nothing',
+                    isset($actual['thrown']) ?
+                        "<magenta>{$actual['thrown']}" :
+                        'nothing'
                 );
             }
             if ($expected['out'] != $actual['out']) {
