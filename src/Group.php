@@ -17,7 +17,7 @@ class Group
         }
     }
 
-    public function run(&$passed, &$failed)
+    public function run(&$passed, array &$failed)
     {
         foreach ($this->tests as $test) {
             $test->run($passed, $failed);
