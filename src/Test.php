@@ -18,6 +18,7 @@ class Test
     private $feature;
     private $inject;
     private $testtype = 'method';
+    private $testedFeatures = [];
 
     public function __construct($target, Reflector $function, $inject = null)
     {
@@ -50,14 +51,6 @@ class Test
 
     public function run(&$passed, array &$failed)
     {
-        if (!isset($this->feature)) {
-            out("<magenta>Warning: <gray>missing <magenta>@Scenario <gray>annotation with {0}::something declaration. Not sure what to do...\n", STDERR);
-            $failed[] = sprintf(
-                "<gray>Couldn't determine <magenta>feature<gray> for <magenta>%s<gray>, missing or invalid <magenta>@Scenario",
-                get_class($this->target)
-            );
-            return;
-        }
         $expected = $actual = [
             'result' => null,
             'thrown' => null,
@@ -88,6 +81,7 @@ class Test
             }
             if ($expected['result'] instanceof Group) {
                 $expected['result']->run($passed, $failed);
+                $this->testedFeatures = $expected['result']->getTestedFeatures();
                 return;
             }
         } catch (Exception $e) {
@@ -97,6 +91,15 @@ class Test
         if (isset($this->inject)) {
             array_unshift($args, $this->inject);
         }
+        if (!isset($this->feature)) {
+            out("<magenta>Warning: <gray>missing <magenta>@Scenario <gray>annotation with {0}::something declaration. Not sure what to do...\n", STDERR);
+            $failed[] = sprintf(
+                "<gray>Couldn't determine <magenta>feature<gray> for <magenta>%s<gray>, missing or invalid <magenta>@Scenario",
+                get_class($this->target)
+            );
+            return;
+        }
+        $this->testedFeatures[get_class($this->target)] = [$this->feature];
         for ($i = 0; $i < $iterations; $i++) {
             ob_start();
             if (method_exists($args[0], $this->feature)) {
@@ -179,9 +182,9 @@ class Test
         return $args;
     }
 
-    public function getFeature()
+    public function getTestedFeatures()
     {
-        return $this->feature;
+        return array_unique($this->testedFeatures);
     }
 
     public function getArguments()
