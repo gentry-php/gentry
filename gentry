@@ -255,17 +255,14 @@ foreach ($tests as $class => $file) {
             }
         }
         $args = $test->run($passed, $failed);
-        $feature = $test->getFeature();
-        if (!isset($args[0]) || !is_object($args[0])) {
-            out("<magenta>".get_class($class)."::$feature <gray>provides no testable object!\n", STDERR);
-            continue;
-        }
-        $testclass = get_class($args[0]);
-        if (!isset($coveredMethods[$testclass])) {
-            $coveredMethods[$testclass] = [];
-        }
-        if (method_exists($args[0], $feature)) {
-            $coveredMethods[$testclass][] = $feature;
+        $features = $test->getTestedFeatures();
+        foreach ($features as $target => $feature) {
+            if (!isset($coveredMethods[$target])) {
+                $coveredMethods[$target] = [];
+            }
+            if (!in_array($feature, $coveredMethods[$target])) {
+                $coveredMethods[$target][] = $feature;
+            }
         }
 
         if (method_exists($class, '__sleep')
