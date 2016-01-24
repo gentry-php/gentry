@@ -48,11 +48,14 @@ class Test
         $this->description = $description;
     }
 
-    public function run(&$passed, &$failed)
+    public function run(&$passed, array &$failed)
     {
         if (!isset($this->feature)) {
             out("<magenta>Warning: <gray>missing <magenta>@Scenario <gray>annotation with {0}::something declaration. Not sure what to do...\n", STDERR);
-            $failed++;
+            $failed[] = sprintf(
+                "<gray>Couldn't determine <magenta>feature<gray> for <magenta>%s<gray>, missing or invalid <magenta>@Scenario",
+                get_class($this->target)
+            );
             return;
         }
         $expected = $actual = [
@@ -141,21 +144,36 @@ class Test
             out(" <green>[OK]\n");
         } else {
             out(" <red>[FAILED]<reset> ");
-            $failed++;
+            $testedfeature = sprintf(
+                "<magenta>%s::%s:%s<gray>",
+                get_class($this->target),
+                $this->testtype == 'property' ? '$' : '',
+                $this->feature
+            );
             if (!isEqual($expected['result'], $actual['result'])) {
-                out(sprintf(
-                    "(expected <magenta>%s<reset>, got <magenta>%s<reset>)\n",
+                $failed[] = sprintf(
+                    "<gray>Expected %s to %s <magenta>%s<gray>, got <magenta>%s",
+                    $testedfeature,
+                    $this->testtype == 'property' ? 'contain' : 'return',
                     tostring($expected['result']),
                     tostring($actual['result'])
-                ));
-            } elseif ($expected['thrown'] != $actual['thrown']) {
-                out(sprintf(
-                    "(wanted to catch {$expected['thrown']}, got %s)\n",
-                    isset($expected['result']) ? tostring($expected['result']) : $actual['thrown']
-                ));
-            } elseif ($expected['out'] != $actual['out']) {
+                );
+            }
+            if ($expected['thrown'] != $actual['thrown']) {
+                $failed[] = sprintf(
+                    "<gray>Expected %s to throw <magenta>{$expected['thrown']}<gray>, caught <meganta>%s",
+                    $testedfeature,
+                    $actual['thrown']
+                );
+            }
+            if ($expected['out'] != $actual['out']) {
                 $diff = strdiff($expected['out'], $actual['out']);
-                out("\n  <gray>Expected:\n  \"".$diff['old']."<reset><gray>\"\n  Actual:\n  \"".$diff['new']."<reset><gray>\"\n");
+                $failed[] = sprintf(
+                    "<gray>Expected %s to output:\n\"%\"<reset><gray>Actual output:\n\"%s\"<gray>",
+                    $testedfeature,
+                    $diff['old'],
+                    $diff['new']
+                );
             }
         }
         return $args;
