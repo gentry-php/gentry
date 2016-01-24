@@ -146,7 +146,7 @@ class Test
             $passed++;
             out(" <green>[OK]\n");
         } else {
-            out(" <red>[FAILED]<reset> ");
+            out(" <red>[FAILED]\n");
             $testedfeature = sprintf(
                 "<magenta>%s::%s:%s<gray>",
                 get_class($this->target),
