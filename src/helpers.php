@@ -14,10 +14,13 @@ function out($text, $out = STDOUT)
 function isEqual($a, $b)
 {
     if (is_numeric($a) && is_numeric($b)) {
-        return $a == $b;
+        return 0 + $a == 0 + $b;
     }
     if (is_object($a) && is_object($b)) {
         return $a == $b;
+    }
+    if (is_array($a) && is_array($b)) {
+        return tostring($a) === tostring($b);
     }
     return $a === $b;
 }
@@ -63,10 +66,31 @@ function tostring($value)
         return $value;
     }
     if (is_array($value)) {
-        return 'array('.count($value).')';
+        $out = 'array(';
+        $i = 0;
+        foreach ($value as $key => $entry) {
+            if ($i) {
+                $out .= ', ';
+            }
+            $out .= $key.' => '.tostring($entry);
+            $i++;
+        }
+        $out .= ')';
+        return $out;
     }
     if (is_object($value)) {
-        return get_class($value);
+        return "$value";
     }
+}
+
+function throwCompare($expected, $actual)
+{
+    if (isset($expected)) {
+        $expected = get_class($expected);
+    }
+    if (isset($actual)) {
+        $actual = get_class($actual);
+    }
+    return $expected === $actual;
 }
 
