@@ -17,7 +17,7 @@ class Test
      * @Scenario {0}::run should successfully run a test, pipe the result and catch trimmed output
      * @Pipe is_array
      */
-    public function testClass(Test &$test = null, $passed = 0, $failed = 0)
+    public function testClass(Test &$test = null, $passed = 0, $failed = [])
     {
         $target = new StdClass;
         $target->test = true;
@@ -40,7 +40,7 @@ class Test
     /**
      * @Scenario {0}::run should successfully run a group of tests, pipe the result and catch trimmed output
      */
-    public function grouping(Group &$group = null, $passed = 0, $failed = 0)
+    public function grouping(Group &$group = null, $passed = 0, $failed = [])
     {
         $target = new StdClass;
         $inject = new StdClass;
