@@ -9,5 +9,10 @@ class Test
         echo '    ';
         return true;
     }
+
+    public static function aStaticMethod()
+    {
+        return true;
+    }
 }
 
