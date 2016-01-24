@@ -148,9 +148,8 @@ class Test
         } else {
             out(" <red>[FAILED]\n");
             $testedfeature = sprintf(
-                "<magenta>%s::%s%s<gray>",
+                "<magenta>%s::%s<gray>",
                 get_class($this->target),
-                $this->testtype == 'property' ? '$' : '',
                 $this->feature
             );
             if (!isEqual($expected['result'], $actual['result'])) {
