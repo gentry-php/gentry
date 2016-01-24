@@ -85,7 +85,7 @@ class Test
                 return;
             }
         } catch (Exception $e) {
-            $expected['thrown'] = get_class($e);
+            $expected['thrown'] = $e;
         }
         $expected['out'] = ob_get_clean();
         if (isset($this->inject)) {
@@ -109,7 +109,7 @@ class Test
                         array_slice($args, 1)
                     );
                 } catch (Exception $e) {
-                    $actual['thrown'] = get_class($e);
+                    $actual['thrown'] = $e;
                 }
             } else {
                 $property = substr($this->feature, 1);
@@ -140,7 +140,7 @@ class Test
             }
         }
         if (isEqual($expected['result'], $actual['result'])
-            && $expected['thrown'] === $actual['thrown']
+            && throwCompare($expected['thrown'], $actual['thrown'])
             && $expected['out'] == $actual['out']
         ) {
             $passed++;
@@ -148,7 +148,7 @@ class Test
         } else {
             out(" <red>[FAILED]\n");
             $testedfeature = sprintf(
-                "<magenta>%s::%s:%s<gray>",
+                "<magenta>%s::%s%s<gray>",
                 get_class($this->target),
                 $this->testtype == 'property' ? '$' : '',
                 $this->feature
@@ -162,15 +162,23 @@ class Test
                     tostring($actual['result'])
                 );
             }
-            if ($expected['thrown'] !== $actual['thrown']) {
+            if (get_class($expected['thrown']) != get_class($actual['thrown'])) {
                 $failed[] = sprintf(
                     "<gray>Expected %s to throw %s, caught %s",
                     $testedfeature,
                     isset($expected['thrown']) ?
-                        "<magenta>{$expected['thrown']}<gray>" :
+                        sprintf(
+                            "<magenta>%s <gray>(\"%s\")",
+                            get_class($expected['thrown']),
+                            $expected['thrown']->getMessage()
+                        ) :
                         'nothing',
                     isset($actual['thrown']) ?
-                        "<magenta>{$actual['thrown']}" :
+                        sprintf(
+                            "<magenta>%s <gray>(\"%s\")",
+                            get_class($actual['thrown']),
+                            $actual['thrown']->getMessage()
+                        ) :
                         'nothing'
                 );
             }
