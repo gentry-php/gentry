@@ -92,45 +92,48 @@ class Test
             array_unshift($args, $this->inject);
         }
         if (!isset($this->feature)) {
-            out("<magenta>Warning: <gray>missing <magenta>@Scenario <gray>annotation with {0}::something declaration. Not sure what to do...\n", STDERR);
-            $failed[] = sprintf(
-                "<gray>Couldn't determine <magenta>feature<gray> for <magenta>%s<gray>, missing or invalid <magenta>@Scenario",
-                get_class($this->target)
+            out(
+                sprintf(
+                    "<magenta>Warning: <gray>missing <magenta>@Scenario <gray>annotation with {0}::something declaration on <magenta>%s::%s\n",
+                    get_class($this->target),
+                    $this->test->name
+                ),
+                STDERR
             );
-            return;
-        }
-        $this->testedFeatures[get_class($this->target)] = [$this->feature];
-        for ($i = 0; $i < $iterations; $i++) {
-            ob_start();
-            $class = isset($args[0]) ?
-                $args[0] :
-                $this->params[0]->getType()->__toString();
-            if ($this->testtype == 'method') {
-                try {
-                    $feature = new ReflectionMethod($class, $this->feature);
-                } catch (ReflectionException $e) {
-                    $failed[] = sprintf(
-                        "<red>ERROR: <gray>No such method <magenta>%s::%s",
-                        is_string($class) ? $class : get_class($class),
-                        $this->feature
-                    );
-                    out(" <red>[FAILED]\n");
-                    return;
+        } else {
+            $this->testedFeatures[get_class($this->target)] = [$this->feature];
+            for ($i = 0; $i < $iterations; $i++) {
+                ob_start();
+                $class = isset($args[0]) ?
+                    $args[0] :
+                    $this->params[0]->getType()->__toString();
+                if ($this->testtype == 'method') {
+                    try {
+                        $feature = new ReflectionMethod($class, $this->feature);
+                    } catch (ReflectionException $e) {
+                        $failed[] = sprintf(
+                            "<red>ERROR: <gray>No such method <magenta>%s::%s",
+                            is_string($class) ? $class : get_class($class),
+                            $this->feature
+                        );
+                        out(" <red>[FAILED]\n");
+                        return;
+                    }
+                    try {
+                        $actual['result'] = $feature->invokeArgs($args[0], array_slice($args, 1));
+                    } catch (Exception $e) {
+                        $actual['thrown'] = $e;
+                    }
+                } else {
+                    $property = substr($this->feature, 1);
+                    if (property_exists($class, $property)) {
+                        $actual['result'] = $args[0]->$property;
+                    }
                 }
-                try {
-                    $actual['result'] = $feature->invokeArgs($args[0], array_slice($args, 1));
-                } catch (Exception $e) {
-                    $actual['thrown'] = $e;
+                $actual['out'] .= ob_get_clean();
+                if ($iterations > 1) {
+                    out('<blue>.');  
                 }
-            } else {
-                $property = substr($this->feature, 1);
-                if (property_exists($class, $property)) {
-                    $actual['result'] = $args[0]->$property;
-                }
-            }
-            $actual['out'] .= ob_get_clean();
-            if ($iterations > 1) {
-                out('<blue>.');  
             }
         }
         if (!isset($this->annotations['Raw'])) {
