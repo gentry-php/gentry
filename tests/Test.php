@@ -71,5 +71,13 @@ class Test
         echo '    ';
         return true;
     }
+    
+    /**
+     * @Scenario {0}::aStaticMethod should be tested statically
+     */
+    public function statically(Demo\Test $test = null)
+    {
+        return true;
+    }
 }
 
