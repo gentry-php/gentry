@@ -164,7 +164,7 @@ class Test
             }
             if ($expected['thrown'] != $actual['thrown']) {
                 $failed[] = sprintf(
-                    "<gray>Expected %s to throw <magenta>{$expected['thrown']}<gray>, caught <meganta>%s",
+                    "<gray>Expected %s to throw <magenta>{$expected['thrown']}<gray>, caught <magenta>%s",
                     $testedfeature,
                     $actual['thrown']
                 );
