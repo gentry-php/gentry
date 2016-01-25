@@ -128,7 +128,9 @@ class Test
                 } else {
                     $property = substr($this->feature, 1);
                     if (property_exists($class, $property)) {
-                        $actual['result'] = $args[0]->$property;
+                        $actual['result'] = is_object($class) ?
+                            $class->$property :
+                            $class::$property;
                     }
                 }
                 $actual['out'] .= ob_get_clean();
