@@ -13,6 +13,7 @@ use Closure;
 use zpt\anno\Annotations;
 use Kingconf;
 use Exception;
+use ErrorException;
 
 $start = microtime(true);
 
@@ -20,6 +21,10 @@ if (!ini_get('date.timezone')) {
     ini_set('date.timezone', 'UTC');
 }
 
+error_reporting(E_ALL);
+set_error_handler(function($errno, $errstr, $errfile, $errline, $errcontext) {
+    throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
+});
 require __DIR__.'/src/helpers.php';
 
 foreach ([
