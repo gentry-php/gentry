@@ -150,10 +150,17 @@ class Test
             $actual['out'] = trim($actual['out']);
         }
         if (is_object($expected['result'])) {
-            if ($expected['result'] instanceof Closure) {
+            if ($expected['result'] instanceof Closure
+                && !isset($actual['thrown'])
+            ) {
                 $fn = $expected['result'];
                 $expected['result'] = true;
-                $actual['result'] = call_user_func($fn, $actual['result']);
+                try {
+                    $actual['result'] = call_user_func($fn, $actual['result']);
+                } catch (Exception $e) {
+                    $actual['result'] = false;
+                    $actual['thrown'] = $e;
+                }
             }
         }
         if (isset($this->annotations['Pipe'])) {
@@ -175,15 +182,6 @@ class Test
                 get_class($this->target),
                 $this->feature
             );
-            if (!isEqual($expected['result'], $actual['result'])) {
-                $failed[] = sprintf(
-                    "<gray>Expected %s to %s <magenta>%s<gray>, got <magenta>%s",
-                    $testedfeature,
-                    $this->testtype == 'property' ? 'contain' : 'return',
-                    tostring($expected['result']),
-                    tostring($actual['result'])
-                );
-            }
             if (get_class($expected['thrown']) != get_class($actual['thrown'])) {
                 $failed[] = sprintf(
                     "<gray>Expected %s to throw %s, caught %s",
@@ -202,6 +200,14 @@ class Test
                             $actual['thrown']->getMessage()
                         ) :
                         'nothing'
+                );
+            } elseif (!isEqual($expected['result'], $actual['result'])) {
+                $failed[] = sprintf(
+                    "<gray>Expected %s to %s <magenta>%s<gray>, got <magenta>%s",
+                    $testedfeature,
+                    $this->testtype == 'property' ? 'contain' : 'return',
+                    tostring($expected['result']),
+                    tostring($actual['result'])
                 );
             }
             if ($expected['out'] != $actual['out']) {
