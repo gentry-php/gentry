@@ -72,9 +72,15 @@ class Test
             $iterations = $this->annotations['Repeat'];
         }
         $args = [];
-        ob_start();
         try {
             $args = $this->getArguments();
+        } catch (Exception $e) {
+            out(" <red>[FAILED]\n");
+            $failed[] = "Exception thrown during construction of argument: <magenta>".get_class($e)." (".$e->getMessage().")";
+            return;
+        }
+        ob_start();
+        try {
             if ($this->test instanceof ReflectionMethod) {
                 $expected['result'] = $this->test->invokeArgs($this->target, $args);
             } else {
