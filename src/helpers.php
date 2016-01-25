@@ -79,7 +79,11 @@ function tostring($value)
         return $out;
     }
     if (is_object($value)) {
-        return "$value";
+        if (method_exists($value, '__toString')) {
+            return "$value";
+        } else {
+            return get_class($value);
+        }
     }
 }
 
