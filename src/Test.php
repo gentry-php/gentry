@@ -4,9 +4,11 @@ namespace Gentry;
 
 use Reflector;
 use ReflectionMethod;
+use ReflectionException;
 use zpt\anno\Annotations;
 use Closure;
 use Exception;
+use ErrorException;
 
 class Test
 {
@@ -133,10 +135,18 @@ class Test
                     }
                 } else {
                     $property = substr($this->feature, 1);
-                    if (property_exists($class, $property)) {
+                    try {
                         $actual['result'] = is_object($class) ?
                             $class->$property :
                             $class::$property;
+                    } catch (ErrorException $e) {
+                        $failed[] = sprintf(
+                            "<red>ERROR: <gray>No such property <magenta>%s::%s",
+                            is_string($class) ? $class : get_class($class),
+                            $this->feature
+                        );
+                        out(" <red>[FAILED]\n");
+                        return;
                     }
                 }
                 $actual['out'] .= ob_get_clean();
