@@ -220,7 +220,8 @@ $coveredMethods = [];
 $notcovered = 0;
 $tested = 0;
 $passed = 0;
-$failed = [];
+$failed = 0;
+$messages = [];
 $incomplete = 0;
 foreach ($tests as $class => $file) {
     $class = new $class;
@@ -259,7 +260,7 @@ foreach ($tests as $class => $file) {
                 $class->__wakeup();
             }
         }
-        $args = $test->run($passed, $failed);
+        $args = $test->run($passed, $failed, $messages);
         $features = $test->getTestedFeatures();
         foreach ($features as $target => $feature) {
             if (!isset($coveredMethods[$target])) {
@@ -296,10 +297,10 @@ if ($incomplete) {
 if ($failed) {
     out(sprintf(
         "<red>%d test%s failed!\n",
-        count($failed),
-        count($failed) == 1 ? '' : 's'
+        $failed,
+        $failed == 1 ? '' : 's'
     ), STDERR);
-    foreach ($failed as $msg) {
+    foreach ($messages as $msg) {
         out("$msg\n");
     }
 }
