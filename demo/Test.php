@@ -4,6 +4,8 @@ namespace Gentry\Demo;
 
 class Test
 {
+    public $foo = 'bar';
+
     public function test()
     {
         echo '    ';
