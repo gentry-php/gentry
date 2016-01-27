@@ -239,8 +239,8 @@ foreach ($tests as $class => $file) {
     if (!$ok && !$verbose) {
         continue;
     }
-    if (isset($annotations['Feature'])) {
-        out("<darkBlue>{$annotations['Feature']}\n");
+    if ($reflection->getDocComment()) {
+        out("<darkBlue>".cleanDocComment($reflection)."\n");
     }
     $wakeup = method_exists($class, '__wakeup') && $verbose ?
         new Annotations(new ReflectionMethod($class, '__wakeup')) :
