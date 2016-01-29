@@ -4,9 +4,12 @@ namespace Gentry;
 
 use Reflector;
 use ReflectionMethod;
+use ReflectionException;
 use zpt\anno\Annotations;
 use Closure;
 use Exception;
+use ErrorException;
+use Generator;
 
 class Test
 {
@@ -19,6 +22,7 @@ class Test
     private $inject;
     private $testtype = 'method';
     private $testedFeatures = [];
+    private $features = [];
 
     public function __construct($target, Reflector $function, $inject = null)
     {
@@ -27,177 +31,154 @@ class Test
         $this->params = $this->test->getParameters();
         $this->inject = $inject;
         $this->annotations = new Annotations($this->test);
-        if (isset($this->annotations['Scenario'])) {
-            $description = $this->annotations['Scenario'];
-            if (preg_match('@\{0\}(::\$?\w+)?@', $description, $matches)) {
-                $prop = substr($matches[1], 2);
+        $description = cleanDocComment($this->test);
+        if (preg_match_all(
+            '@\{(\d+)\}::(\$?\w+)?@',
+            $description,
+            $matches,
+            PREG_SET_ORDER
+        )) {
+            $arguments = $this->getArguments();
+            foreach ($matches as $match) {
+                $prop = $match[2];
                 if ($prop{0} == '$') {
-                    $this->testtype = 'property';
+                    $this->features[] = new Test\Property(
+                        $match[1],
+                        substr($prop, 1)
+                    );
+                } else {
+                    $this->features[] = new Test\Method(
+                        $match[1],
+                        $prop,
+                        $this->params[$match[1]]->getClass()->name
+                    );
                 }
                 $this->feature = $prop;
-                $description = str_replace(
-                    '{0}',
-                    isset($inject) ?
-                        get_class($inject) :
-                        $this->params[0]->getClass()->name,
-                    $description
-                );
             }
-        } else {
-            $description = null;
         }
         $this->description = $description;
     }
 
-    public function run(&$passed, array &$failed)
+    public function run(&$passed, &$failed, array &$messages)
     {
-        $expected = $actual = [
+        $args = [];
+        try {
+            $args = $this->getArguments();
+        } catch (Exception $e) {
+            out("  * <blue>{$this->description}");
+            out(" <red>[FAILED]\n");
+            $failed[] = "Exception thrown during construction of argument: <magenta>".get_class($e)." (".$e->getMessage().")";
+            return;
+        }
+        $this->description = preg_replace_callback(
+            '@{(\d+)}@m',
+            function ($match) use ($args) {
+                $work = $args[$match[1]];
+                if (is_null($work)
+                    and $class = $this->params[$match[1]]->getClass()
+                ) {
+                    $work = $class->name;
+                } else {
+                    $work = get_class($work);
+                }
+                return $work;
+            },
+            $this->description
+        );
+        if (isset($this->annotations['Incomplete']) && \Gentry\VERBOSE) {
+            out("  * <blue>{$this->description}");
+            out(" <magenta>[INCOMPLETE]\n");
+            return;
+        }
+        if (isset($this->annotations['Repeat'])) {
+            $iterations = $this->annotations['Repeat'];
+        }
+        $expected = [
             'result' => null,
             'thrown' => null,
             'out' => '',
         ];
-        if (!isset($this->annotations['Incomplete']) || $verbose
-            and isset($this->description)
-        ) {
-            out("  * <blue>{$this->description}");
-        }
-        if (isset($this->annotations['Incomplete'])) {
-            if (VERBOSE) {
-                out(" <magenta>[INCOMPLETE]\n");
-            }
-            return;
-        }
-        $iterations = 1;
-        if (isset($this->annotations['Repeat'])) {
-            $iterations = $this->annotations['Repeat'];
-        }
         ob_start();
         try {
-            $args = $this->getArguments();
             if ($this->test instanceof ReflectionMethod) {
-                $expected['result'] = $this->test->invokeArgs($this->target, $args);
+                $runs = $this->test->invokeArgs($this->target, $args);
             } else {
-                $expected['result'] = $this->test->invokeArgs($args);
+                $runs = $this->test->invokeArgs($args);
             }
-            if ($expected['result'] instanceof Group) {
-                $expected['result']->run($passed, $failed);
-                $this->testedFeatures = $expected['result']->getTestedFeatures();
-                return;
+            $runs = $runs instanceof Generator ? $runs : [$runs];
+            $i = 0;
+            $tests = [];
+            foreach ($runs as $pipe => $run) {
+                $expect = ['result' => $run] + $expected;
+                foreach ([
+                    'is_a',
+                    'is_subclass_of',
+                    'method_exists',
+                    'property_exists',
+                ] as $magic) {
+                    $this->target->$magic = function ($result) use ($run, $magic) {
+                        return $$magic($result, $run);
+                    };
+                    $expect['result'] = true;
+                }
+                if (!is_numeric($pipe)) {
+                    if (isset($this->target->$pipe)
+                        && is_callable($this->target->$pipe)
+                    ) {
+                        $pipe = $this->target->$pipe;
+                    } elseif (!is_callable($pipe)) {
+                        $pipe = null;
+                    }
+                } else {
+                    $pipe = null;
+                }
+                $tests[] = [$pipe, $run];
             }
         } catch (Exception $e) {
             $expected['thrown'] = $e;
         }
-        $expected['out'] = ob_get_clean();
-        if (isset($this->inject)) {
-            array_unshift($args, $this->inject);
-        }
-        if (!isset($this->feature)) {
-            out("<magenta>Warning: <gray>missing <magenta>@Scenario <gray>annotation with {0}::something declaration. Not sure what to do...\n", STDERR);
-            $failed[] = sprintf(
-                "<gray>Couldn't determine <magenta>feature<gray> for <magenta>%s<gray>, missing or invalid <magenta>@Scenario",
-                get_class($this->target)
-            );
-            return;
-        }
-        $this->testedFeatures[get_class($this->target)] = [$this->feature];
-        for ($i = 0; $i < $iterations; $i++) {
-            ob_start();
-            if (method_exists($args[0], $this->feature)) {
-                try {
-                    $actual['result'] = call_user_func_array(
-                        [$args[0], $this->feature],
-                        array_slice($args, 1)
-                    );
-                } catch (Exception $e) {
-                    $actual['thrown'] = $e;
+        $expected['out'] = cleanOutput(ob_get_clean());
+        out("  * <blue>{$this->description}");
+        foreach ($tests as $test) {
+            list($pipe, $run) = $test;
+            $expect = ['result' => $run] + $expected;
+            if (is_callable($run)) {
+                $pipe = $run;
+                $expect['result'] = true;
+            }
+            if ($feature = array_shift($this->features)) {
+                $assert = $feature->assert($args, $expect, $pipe);
+                $tested = $feature->tested;
+                if (!isset($this->testedFeatures[$tested])) {
+                    $this->testedFeatures[$tested] = [];
+                }
+                $name = $feature->name;
+                if ($feature instanceof Test\Property) {
+                    $name = "\$$name";
+                }
+                if (!in_array($name, $this->testedFeatures[$tested])) {
+                    $this->testedFeatures[$tested][] = $name;
+                }
+                if (!$assert) {
+                    out(" <red>[FAILED]\n");
+                    $messages = array_merge($messages, $feature->messages);
+                    $failed++;
+                    return;
+                } else {
+                    out(" <green>[OK]");
+                    $passed++;
                 }
             } else {
-                $property = substr($this->feature, 1);
-                if (property_exists($args[0], $property)) {
-                    $actual['result'] = $args[0]->$property;
-                }
-            }
-            $actual['out'] .= ob_get_clean();
-            if ($iterations > 1) {
-                out('<blue>.');  
+                out(" <magenta>[SKIPPED]");
             }
         }
-        if (!isset($this->annotations['Raw'])) {
-            $expected['out'] = trim($expected['out']);
-            $actual['out'] = trim($actual['out']);
-        }
-        if (is_object($expected['result'])) {
-            if ($expected['result'] instanceof Closure) {
-                $fn = $expected['result'];
-                $expected['result'] = true;
-                $actual['result'] = call_user_func($fn, $actual['result']);
-            }
-        }
-        if (isset($this->annotations['Pipe'])) {
-            $pipes = preg_split("@,\s+@", $this->annotations['Pipe']);
-            while ($pipe = array_shift($pipes)) {
-                $actual['result'] = $pipe($actual['result']);
-            }
-        }
-        if (isEqual($expected['result'], $actual['result'])
-            && throwCompare($expected['thrown'], $actual['thrown'])
-            && $expected['out'] == $actual['out']
-        ) {
-            $passed++;
-            out(" <green>[OK]\n");
-        } else {
-            out(" <red>[FAILED]\n");
-            $testedfeature = sprintf(
-                "<magenta>%s::%s%s<gray>",
-                get_class($this->target),
-                $this->testtype == 'property' ? '$' : '',
-                $this->feature
-            );
-            if (!isEqual($expected['result'], $actual['result'])) {
-                $failed[] = sprintf(
-                    "<gray>Expected %s to %s <magenta>%s<gray>, got <magenta>%s",
-                    $testedfeature,
-                    $this->testtype == 'property' ? 'contain' : 'return',
-                    tostring($expected['result']),
-                    tostring($actual['result'])
-                );
-            }
-            if (get_class($expected['thrown']) != get_class($actual['thrown'])) {
-                $failed[] = sprintf(
-                    "<gray>Expected %s to throw %s, caught %s",
-                    $testedfeature,
-                    isset($expected['thrown']) ?
-                        sprintf(
-                            "<magenta>%s <gray>(\"%s\")",
-                            get_class($expected['thrown']),
-                            $expected['thrown']->getMessage()
-                        ) :
-                        'nothing',
-                    isset($actual['thrown']) ?
-                        sprintf(
-                            "<magenta>%s <gray>(\"%s\")",
-                            get_class($actual['thrown']),
-                            $actual['thrown']->getMessage()
-                        ) :
-                        'nothing'
-                );
-            }
-            if ($expected['out'] != $actual['out']) {
-                $diff = strdiff($expected['out'], $actual['out']);
-                $failed[] = sprintf(
-                    "<gray>Expected %s to output:\n\"%\"<reset><gray>Actual output:\n\"%s\"<gray>",
-                    $testedfeature,
-                    $diff['old'],
-                    $diff['new']
-                );
-            }
-        }
+        out("\n");
         return $args;
     }
 
     public function getTestedFeatures()
     {
-        return array_unique($this->testedFeatures);
+        return $this->testedFeatures;
     }
 
     public function getArguments()
@@ -216,6 +197,22 @@ class Test
             });
         }
         return $args;
+    }
+
+    protected function resetArguments(&$args)
+    {
+        $testargs = $args;
+        foreach ($args as $i => $arg) {
+            if ($this->params[$i]->isDefaultValueAvailable()) {
+                $args[$i] = $this->params[$i]->getDefaultValue();
+            }
+        }
+        foreach ($testargs as $i => $arg) {
+            if (is_null($arg) and $class = $this->params[$i]->getClass()) {
+                $testargs[$i] = $class->name;
+            }
+        }
+        return $testargs;
     }
 }
 
