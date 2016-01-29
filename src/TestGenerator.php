@@ -30,6 +30,12 @@ class TestGenerator
         }
     }
 
+    /**
+     * Internal method to add a testable feature.
+     *
+     * @param string The class name to test a feature on.
+     * @param ReflectionMethod $method Reflection of the feature to test.
+     */
     private function addFeature($class, ReflectionMethod $method)
     {
         if (VERBOSE) {
