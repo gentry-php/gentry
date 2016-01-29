@@ -119,7 +119,7 @@ if (VERBOSE && $existing->tests) {
     ));
 }
 
-$coveredMethods = [];
+$coveredFeatures = [];
 $notcovered = 0;
 $tested = 0;
 $passed = 0;
@@ -166,12 +166,12 @@ foreach ($existing->tests as $class => $file) {
         $args = $test->run($passed, $failed, $messages);
         $features = $test->getTestedFeatures();
         foreach ($features as $target => $features) {
-            if (!isset($coveredMethods[$target])) {
-                $coveredMethods[$target] = [];
+            if (!isset($coveredFeatures[$target])) {
+                $coveredFeatures[$target] = [];
             }
             foreach ($features as $feature) {
-                if (!in_array($feature, $coveredMethods[$target])) {
-                    $coveredMethods[$target][] = $feature;
+                if (!in_array($feature, $coveredFeatures[$target])) {
+                    $coveredFeatures[$target][] = $feature;
                 }
             }
         }
@@ -214,13 +214,13 @@ $classes = 0;
 $methods = 0;
 $uncovered = [];
 foreach ($sourcecode->sources as $file => $code) {
-    if (!isset($coveredMethods[$code[0]])) {
+    if (!isset($coveredFeatures[$code[0]])) {
         $classes++;
         $methods += count($code[1]);
         $uncovered[$code[0]] = $code[1];
     } else {
         foreach ($code[1] as $method) {
-            if (!in_array($method, $coveredMethods[$code[0]])) {
+            if (!in_array($method->name, $coveredFeatures[$code[0]])) {
                 $methods++;
                 if (!isset($uncovered[$code[0]])) {
                     $uncovered[$code[0]] = [];
@@ -271,143 +271,12 @@ $sourceToTestName = function ($file) use ($config) {
     return str_replace($config->src, $config->tests, $file);
 };
 
-foreach ($sources as $file => $code) {
+$generator = new TestGenerator($config->tests);
+foreach ($sourcecode->sources as $file => $code) {
     if (!isset($uncovered[$code[0]])) {
         continue;
     }
-    $target = $sourceToTestName($file);
-    if (strpos($code[0], '\\')) {
-        $targetname = substr($code[0], strrpos($code[0], '\\') + 1);
-    } else {
-        $targetname = $code[0];
-    }
-    if (file_exists($target)) {
-        $base = file_get_contents($target);
-    } else {
-        $base = "<?php\n\n";
-        if (isset($config->namespace)) {
-            $base .= "namespace {$config->namespace};\n\n";
-        }
-        if (strpos($code[0], '\\')) {
-            $base .= "use {$code[0]};\n\n";
-        }
-        $targetvar = strtolower($targetname);
-        $base .= <<<EOT
-/**
- * @Feature [GENERATED] Test {$code[0]}
- */
-
-EOT;
-        $base .= 'class '.str_replace('\\', '', $code[0])."\n";
-        $base .= <<<EOT
-{
+    $generator->generate($code[0], $uncovered[$code[0]]);
 }
+$generator->write();
 
-EOT;
-    }
-    $generatedMethods = [];
-    foreach ($code[1] as $methodname) {
-        if (VERBOSE) {
-            out("<gray>Adding skeleton for $targetname::$methodname.\n");
-        }
-        if (strpos($base, "function $methodname(") === false) {
-            $arguments = '';
-            $generatedMethods[] = <<<EOT
-    /**
-     * @Scenario [GENERATED] Test {$code[0]}::$methodname
-     * @Incomplete
-     */
-    public function $methodname($targetname $$targetvar$arguments)
-    {
-    }
-EOT;
-        }
-    }
-    $output = preg_replace(
-        '@^}\s*$@m',
-        implode("\n\n", $generatedMethods)."\n}\n",
-        $base
-    );
-    $output = preg_replace(
-        '@^{\n\n@m',
-        "{\n",
-        $output
-    );
-    if (VERBOSE) {
-        out("<gray>Writing $target.\n");
-    }
-    $dir = dirname($target);
-    @mkdir($dir, 0755, true);
-    file_put_contents($target, $output);
-}
-/*
-if ($notcovered) {
-    die(1);
-}
-
-function normalizeMethod($method)
-{
-    return ucfirst(preg_replace('@.*?::@', '', $method));
-}
-
-$addMethodTo = function ($file, $method) use ($config) {
-    static $tmpl = <<<EOT
-
-    /**
-     * @covers %1\$s
-    public function test%2\$s()
-    {
-        \$this->assertTrue(true);
-        \$this->markTestIncomplete("Note: %1\$s has an empty test.");
-    }
-
-
-EOT;
-    $class = str_replace("{$config->tests}/", '', $file);
-    $class = str_replace('/', '', $class);
-    $class = preg_replace('@\.php$@', '', $class);
-    if (!file_exists($file)) {
-        @mkdir(substr($file, 0, strrpos($file, '/')), 0755, true);
-        file_put_contents($file, sprintf(
-            <<<EOT
-<?php
-
-class %1\$s extends %2\$s
-{
-}
-
-EOT
-            ,
-            $class,
-            $config->base
-        ));
-    }
-    $code = file_get_contents($file);
-    $code = preg_replace(
-        '@^}(\s*|\?>)?$@ms',
-        sprintf(
-            $tmpl,
-            $method,
-            normalizeMethod($method)
-        ),
-        $code
-    );
-    $code = trim($code)."\n}\n\n";
-    $code = preg_replace("@^{\n\n    /\*@m", "{\n    /*", $code);
-    file_put_contents($file, $code);
-};
-
-$getTestName = function ($file) use ($config) {
-    $file = str_replace($config->src, $config->tests, $file);
-    $file = preg_replace('@\.php$@', '', $file);
-    return "{$file}Test.php";
-};
-
-foreach ($sources as $file => $methods) {
-    foreach ($methods as $method) {
-        if (!in_array($method, $coveredMethods)) {
-            $addMethodTo($getTestName($file), $method);
-        }
-    }
-}
-*/
