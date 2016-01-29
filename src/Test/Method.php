@@ -9,11 +9,22 @@ use Exception;
 
 class Method extends Feature
 {
+    private $class;
+
+    public function __construct($target, $name, $class)
+    {
+        parent::__construct($target, $name);
+        $this->class = $class;
+    }
+
     public function actual(array $args)
     {
         $actual = ['thrown' => null, 'out' => null];
         try {
-            $feature = new ReflectionMethod($args[$this->target], $this->name);
+            $target = is_null($args[$this->target]) ?
+                $this->class :
+                $args[$this->target];
+            $feature = new ReflectionMethod($target, $this->name);
         } catch (ReflectionException $e) {
             $this->messages[] = sprintf(
                 "<red>ERROR: <gray>No such method <magenta>%s::%s",
@@ -25,9 +36,7 @@ class Method extends Feature
         ob_start();
         try {
             $actual['result'] = $feature->invokeArgs(
-                is_string($args[$this->target]) ?
-                    null :
-                    $args[$this->target],
+                $args[$this->target],
                 array_slice($args, 1)
             );
         } catch (Exception $e) {
