@@ -49,7 +49,8 @@ class Test
                 } else {
                     $this->features[] = new Test\Method(
                         $match[1],
-                        $prop
+                        $prop,
+                        $this->params[$match[1]]->getClass()->name
                     );
                 }
                 $this->feature = $prop;
@@ -96,7 +97,6 @@ class Test
             'result' => null,
             'thrown' => null,
             'out' => '',
-            'pipe' => [],
         ];
         ob_start();
         try {
@@ -105,32 +105,49 @@ class Test
             } else {
                 $runs = $this->test->invokeArgs($args);
             }
+            $runs = $runs instanceof Generator ? $runs : [$runs];
             $i = 0;
-            foreach ($args as $i => &$arg) {
-                if (is_null($arg) and $class = $this->params[$i]->getClass()) {
-                    $arg = $class->name;
+            $tests = [];
+            foreach ($runs as $pipe => $run) {
+                $expect = ['result' => $run] + $expected;
+                foreach ([
+                    'is_a',
+                    'is_subclass_of',
+                    'method_exists',
+                    'property_exists',
+                ] as $magic) {
+                    $this->target->$magic = function ($result) use ($run, $magic) {
+                        return $$magic($result, $run);
+                    };
+                    $expect['result'] = true;
                 }
+                if (!is_numeric($pipe)) {
+                    if (isset($this->target->$pipe)
+                        && is_callable($this->target->$pipe)
+                    ) {
+                        $pipe = $this->target->$pipe;
+                    } elseif (!is_callable($pipe)) {
+                        $pipe = null;
+                    }
+                } else {
+                    $pipe = null;
+                }
+                $tests[] = [$pipe, $run];
             }
         } catch (Exception $e) {
             $expected['thrown'] = $e;
         }
         $expected['out'] = cleanOutput(ob_get_clean());
-        $runs = $runs instanceof Generator ? $runs : [$runs];
         out("  * <blue>{$this->description}");
-        if (is_callable(end($runs))) {
-            $runs[] = true;
-        }
-        foreach ($runs as $i => $run) {
-            if (!isset($expect)) {
-                $expect = $expected;
-            }
-            $expect = ['result' => $run] + $expect;
+        foreach ($tests as $test) {
+            list($pipe, $run) = $test;
+            $expect = ['result' => $run] + $expected;
             if (is_callable($run)) {
-                $expect['pipe'][] = $run;
-                continue;
+                $pipe = $run;
+                $expect['result'] = true;
             }
             if ($feature = array_shift($this->features)) {
-                $assert = $feature->assert($args, $expect);
+                $assert = $feature->assert($args, $expect, $pipe);
                 $tested = $feature->tested;
                 if (!isset($this->testedFeatures[$tested])) {
                     $this->testedFeatures[$tested] = [];
@@ -142,7 +159,6 @@ class Test
                 if (!in_array($name, $this->testedFeatures[$tested])) {
                     $this->testedFeatures[$tested][] = $name;
                 }
-                unset($expect);
                 if (!$assert) {
                     out(" <red>[FAILED]\n");
                     $messages = array_merge($messages, $feature->messages);
@@ -152,6 +168,8 @@ class Test
                     out(" <green>[OK]");
                     $passed++;
                 }
+            } else {
+                out(" <magenta>[SKIPPED]");
             }
         }
         out("\n");
@@ -179,6 +197,22 @@ class Test
             });
         }
         return $args;
+    }
+
+    protected function resetArguments(&$args)
+    {
+        $testargs = $args;
+        foreach ($args as $i => $arg) {
+            if ($this->params[$i]->isDefaultValueAvailable()) {
+                $args[$i] = $this->params[$i]->getDefaultValue();
+            }
+        }
+        foreach ($testargs as $i => $arg) {
+            if (is_null($arg) and $class = $this->params[$i]->getClass()) {
+                $testargs[$i] = $class->name;
+            }
+        }
+        return $testargs;
     }
 }
 
