@@ -5,4 +5,9 @@ repo_url: https://github.com/monomelodies/gentry
 pages:
 - Home:
     - 'Quickstart': 'index.md'
+- Writing tests:
+    - 'The basics': 'writing/basics.md'
+    - 'Complexer tests': 'writing/complex.md'
+- Generating tests:
+    - 'About generated tests': 'generating/about.md'
 
