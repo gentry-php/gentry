@@ -33,7 +33,7 @@ class Test
         \Gentry\out("  * <blue>stdClass::\$test should be true");
         \Gentry\out(" <green>[OK]\n");
         echo "       ";
-        return 'is_array';
+        yield 'is_array' => true;
     }
 
     /**
