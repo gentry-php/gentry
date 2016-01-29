@@ -23,10 +23,10 @@ abstract class Feature
         $this->name = $name;
     }
 
-    public function assert(array &$args, $expected)
+    public function assert(array &$args, $expected, callable $pipe = null)
     {
         $actual = $this->actual($args) + ['result' => null];
-        while ($pipe = array_shift($expected['pipe'])) {
+        if (isset($pipe)) {
             try {
                 $actual['result'] = $pipe($actual['result']);
             } catch (Exception $e) {
