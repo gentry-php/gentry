@@ -98,8 +98,8 @@ class Test
             'thrown' => null,
             'out' => '',
         ];
-        ob_start();
         out("  * <blue>{$this->description}");
+        ob_start();
         try {
             if ($this->test instanceof ReflectionMethod) {
                 $runs = $this->test->invokeArgs($this->target, $args);
@@ -108,6 +108,7 @@ class Test
             }
             $runs = $runs instanceof Generator ? $runs : [$runs];
             $i = 0;
+            $expected['out'] .= cleanOutput(ob_get_clean());
             ob_start();
             foreach ($runs as $pipe => $run) {
                 $expect = ['result' => $run] + $expected;
