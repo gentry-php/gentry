@@ -65,22 +65,20 @@ class TestGenerator
             $kw = count($types) > 1 ? 'yield' : 'return';
             $body = [];
             foreach ($types as $type) {
+                if ($type == 'boolean') {
+                    $type = 'bool';
+                }
+                if ($type == 'integer') {
+                    $type = 'int';
+                }
                 switch ($type) {
                     case 'int':
                     case 'float':
-                        $body[] = "$kw 0;";
-                        break;
                     case 'string':
-                        $body[] = "$kw '';";
-                        break;
                     case 'array':
-                        $body[] = "$kw [];";
-                        break;
                     case 'bool':
-                        $body[] = "$kw true";
-                        break;
                     case 'callable':
-                        $body[] = "yield 'is_callable' => true;";
+                        $body[] = "yield 'is_$type' => true;";
                         break;
                     default:
                         $body[] = "yield 'is_a' => '$type';";
