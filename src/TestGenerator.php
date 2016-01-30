@@ -30,11 +30,12 @@ class TestGenerator
     /**
      * Generates stub test methods for all found features.
      *
-     * @param string $class The class name of the object under test.
+     * @param ReflectionClass $class The reflection of the object or trait under
+     *  test.
      * @param array $methods Array of reflected methods to generate test
      *  skeletons for.
      */
-    public function generate($class, array $methods)
+    public function generate(ReflectionClass $class, array $methods)
     {
         foreach ($methods as $method) {
             $this->addFeature($class, $method);
@@ -44,17 +45,17 @@ class TestGenerator
     /**
      * Internal method to add a testable feature.
      *
-     * @param string The class name to test a feature on.
+     * @param string The reflection of the object or trait to test a feature on.
      * @param ReflectionMethod $method Reflection of the feature to test.
      */
-    private function addFeature($class, ReflectionMethod $method)
+    private function addFeature(ReflectionClass $class, ReflectionMethod $method)
     {
         if (VERBOSE) {
-            out("<gray> Adding feature <magenta>$class::{$method->name}\n");
+            out("<gray> Adding feature <magenta>{$class->name}::{$method->name}\n");
         }
         $md5 = md5(microtime());
         $tested = $method->name;
-        $arguments[] = "$class \$test";
+        $arguments[] = "{$class->name} \$test";
         $fallback = cleanDocComment($method, false);
         foreach ($method->getParameters() as $param) {
             $arguments[] = new Argument($param, $fallback);
@@ -89,6 +90,9 @@ class TestGenerator
                     case 'bool':
                     case 'callable':
                         $body[] = "yield 'is_$type' => true;";
+                        break;
+                    case 'mixed':
+                        $body[] = "yield 'isset' => true;";
                         break;
                     default:
                         $body[] = "yield 'is_a' => '$type';";
