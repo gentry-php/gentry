@@ -55,13 +55,37 @@ class TestGenerator
         }
         $md5 = md5(microtime());
         $tested = $method->name;
-        $arguments[] = "{$class->name} \$test";
+        $body = [];
+        if ($class->isTrait()) {
+            $arguments[] = "\stdClass &\$test = null";
+            if (version_compare(phpversion(), '7.0', '>=')) {
+                $body[] = <<<EOT
+\$test = new class() extends \stdClass
+        {
+            use {$class->name};
+        };
+EOT;
+            } else {
+                $body[] = <<<EOT
+if (!class_exists('tmp_$md5')) {
+            eval("class tmp_$md5
+            {
+                use {$class->name};
+            }");
+        }
+        \$test = new \tmp_$md5;
+EOT;
+            }
+        } elseif ($class->isAbstract()) {
+            $arguments[] = "{$class->name} &\$test = null";
+        } else {
+            $arguments[] = "{$class->name} \$test";
+        }
         $fallback = cleanDocComment($method, false);
         foreach ($method->getParameters() as $param) {
             $arguments[] = new Argument($param, $fallback);
         }
         $arguments = implode(', ', $arguments);
-        $body = "throw new \Exception(\"Incomplete test!\");";
         if (version_compare(phpversion(), '7.0', '>=')
             and $type = $method->getReturnType()
         ) {
@@ -74,7 +98,6 @@ class TestGenerator
             $types = explode('|', $matches[1]);
         }
         if (isset($types) && $types) {
-            $body = [];
             foreach ($types as $type) {
                 if ($type == 'boolean') {
                     $type = 'bool';
@@ -98,8 +121,10 @@ class TestGenerator
                         $body[] = "yield 'is_a' => '$type';";
                 }
             }
-            $body = trim(implode("\n        ", $body));
+        } else {
+            $body[] = "throw new \Exception(\"Incomplete test!\");";
         }
+        $body = trim(implode("\n        ", $body));
         $this->features[] = <<<EOT
     /**
      * [GENERATED] {0}::$tested
