@@ -56,6 +56,11 @@ class Argument
      */
     public function isPassedByReference()
     {
+        if ($class = $this->reflection->getClass()
+            and $class->isTrait()
+        ) {
+            return true;
+        }
         if ($class = $this->reflection->getClass()) {
             $reflection = (new ReflectionClass($class))->getConstructor();
             foreach ($reflection->getParameters() as $param) {
