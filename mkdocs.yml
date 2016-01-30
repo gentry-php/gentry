@@ -8,6 +8,7 @@ pages:
 - Writing tests:
     - 'The basics': 'writing/basics.md'
     - 'Complexer tests': 'writing/complex.md'
+    - 'Testing command line scripts': 'writing/cli.md'
 - Generating tests:
     - 'About generated tests': 'generating/about.md'
 
