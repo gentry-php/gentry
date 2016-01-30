@@ -61,5 +61,26 @@ class Test
     {
         yield true;
     }
+
+    /**
+     * {0}::foo returns true when auto-used
+     */
+    public function traittest(\stdClass &$test = null)
+    {
+        if (false && version_compare(phpversion(), '7.0', '>=')) {
+            $test = new class() extends \stdClass {
+                use Demo\TestTrait;
+            };
+        } else {
+            if (!class_exists('tmp_foobar')) {
+                eval("class tmp_foobar extends \stdClass
+                {
+                    use \Gentry\Demo\TestTrait;
+                }");
+            }
+        }
+        $test = new \tmp_foobar;
+        yield true;
+    }
 }
 
