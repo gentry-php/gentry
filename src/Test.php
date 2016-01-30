@@ -100,75 +100,73 @@ class Test
         ];
         out("  * <blue>{$this->description}");
         ob_start();
-        try {
-            if ($this->test instanceof ReflectionMethod) {
-                $runs = $this->test->invokeArgs($this->target, $args);
+        foreach (((($runs = $this->test instanceof ReflectionMethod ?
+                $this->test->invokeArgs($this->target, $args) :
+                $runs = $this->test->invokeArgs($args)
+            )
+            and $runs instanceof Generator) ? $runs : [$runs]
+        ) as $pipe => $result) {
+            $out = cleanOutput(ob_get_clean());
+            if ($result instanceof Exception) {
+                $thrown = $result;
+                $result = null;
             } else {
-                $runs = $this->test->invokeArgs($args);
+                $thrown = null;
             }
-            $runs = $runs instanceof Generator ? $runs : [$runs];
-            $i = 0;
-            $expected['out'] .= cleanOutput(ob_get_clean());
-            ob_start();
-            foreach ($runs as $pipe => $run) {
-                $expect = ['result' => $run] + $expected;
-                foreach ([
-                    'is_a',
-                    'is_subclass_of',
-                    'method_exists',
-                    'property_exists',
-                ] as $magic) {
-                    $this->target->$magic = function ($result) use ($run, $magic) {
-                        return $$magic($result, $run);
+            $expect = compact('result', 'thrown', 'out');
+            foreach ([
+                'is_a',
+                'is_subclass_of',
+                'method_exists',
+                'property_exists',
+            ] as $magic) {
+                $this->target->$magic = function ($result)
+                    use ($result, $magic, &$expect) {
+                        $expect['result'] = true;
+                        return $$magic($result, $result);
                     };
-                    $expect['result'] = true;
-                }
-                if (!is_numeric($pipe)) {
-                    if (isset($this->target->$pipe)
-                        && is_callable($this->target->$pipe)
-                    ) {
-                        $pipe = $this->target->$pipe;
-                    } elseif (!is_callable($pipe)) {
-                        $pipe = null;
-                    }
-                } else {
+            }
+            if (!is_numeric($pipe)) {
+                if (isset($this->target->$pipe)
+                    && is_callable($this->target->$pipe)
+                ) {
+                    $pipe = $this->target->$pipe;
+                } elseif (!is_callable($pipe)) {
                     $pipe = null;
                 }
-                $expected['out'] .= cleanOutput(ob_get_clean());
-                $expect = ['result' => $run] + $expected;
-                if (is_callable($run)) {
-                    $pipe = $run;
-                    $expect['result'] = true;
-                }
-                if ($feature = array_shift($this->features)) {
-                    $assert = $feature->assert($args, $expect, $pipe);
-                    $tested = $feature->tested;
-                    if (!isset($this->testedFeatures[$tested])) {
-                        $this->testedFeatures[$tested] = [];
-                    }
-                    $name = $feature->name;
-                    if ($feature instanceof Test\Property) {
-                        $name = "\$$name";
-                    }
-                    if (!in_array($name, $this->testedFeatures[$tested])) {
-                        $this->testedFeatures[$tested][] = $name;
-                    }
-                    if (!$assert) {
-                        out(" <red>[FAILED]\n");
-                        $messages = array_merge($messages, $feature->messages);
-                        $failed++;
-                        return;
-                    } else {
-                        out(" <green>[OK]");
-                        $passed++;
-                    }
-                } else {
-                    out(" <magenta>[SKIPPED]");
-                }
-                ob_start();
+            } else {
+                $pipe = null;
             }
-        } catch (Exception $e) {
-            $expected['thrown'] = $e;
+            if (is_callable($result)) {
+                $pipe = $result;
+                $expect['result'] = true;
+            }
+            if ($feature = array_shift($this->features)) {
+                $assert = $feature->assert($args, $expect, $pipe);
+                $tested = $feature->tested;
+                if (!isset($this->testedFeatures[$tested])) {
+                    $this->testedFeatures[$tested] = [];
+                }
+                $name = $feature->name;
+                if ($feature instanceof Test\Property) {
+                    $name = "\$$name";
+                }
+                if (!in_array($name, $this->testedFeatures[$tested])) {
+                    $this->testedFeatures[$tested][] = $name;
+                }
+                if (!$assert) {
+                    out(" <red>[FAILED]\n");
+                    $messages = array_merge($messages, $feature->messages);
+                    $failed++;
+                    return;
+                } else {
+                    out(" <green>[OK]");
+                    $passed++;
+                }
+            } else {
+                out(" <magenta>[SKIPPED]");
+            }
+            ob_start();
         }
         ob_end_clean();
         out("\n");
