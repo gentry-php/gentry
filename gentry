@@ -42,22 +42,20 @@ foreach ([
 unset($file);
 
 if (!defined('Gentry\COMPOSER_INSTALL')) {
-    out(<<<EOT
-<red>Error: <reset>You need to set up the project dependencies using the following commands:
+    fwrite(STDERR, <<<EOT
+\033[1;31mError: \033[0mYou need to set up the project dependencies using the following commands:
 
-<yellow>wget http://getcomposer.org/composer.phar
-php composer.phar install
+\033[1;33mwget http://getcomposer.org/composer.phar
+php composer.phar install\033[0m
 
 EOT
-        ,
-        STDERR
     );
     die(1);
 }
 
 $autoloader = require COMPOSER_INSTALL;
 
-out("\n<magenta>Gentry 0.5.2 by Marijn Ophorst\n\n");
+out("\n<magenta>Gentry 0.5.3 by Marijn Ophorst\n\n");
 
 $config = 'Gentry.json';
 $verbose = false;
