@@ -258,7 +258,7 @@ class Test
         $_GET = [];
         $_POST = [];
         $_SESSION = [];
-        $_COOKIES = [];
+        $_COOKIE = [];
     }
 }
 
