@@ -51,14 +51,6 @@ If these two are mixed, clean that up first. Seriously.
 Both `src` and `tests` can be either absolute, or relative to the root - hence
 `"/path/to/root/src"` could be simplified to just `"src"`.
 
-### string|array `includePath` ###
-The `"includePath"` option specifies optional `set_include_path` values to set
-before attempting to test anything. If omitted or empty, the defaults are used.
-
-You can pass either a single string or an array of values. Note that these
-values are passed verbatim to PHP's `set_include_path` function and should thus
-be resolvable from the current path.
-
 ### string|array `bootstrap` ###
 The path(s) to file(s) ("bootstrapper(s)") every piece of code in your
 application needs. This is usually something that would reside in an `index.php`
@@ -98,6 +90,15 @@ vendor/bin/gentry -v
 In the default mode, only important messages are displayed. But verbose mode
 might be handy when something's going wrong for you, or if you simply want
 feedback about stuff like incomplete tests.
+
+## Detecting the environment
+For a lot of testing, you'll need to detect whether or not to use a mock object
+(e.g. for database connections), or "the real thang". The simplest way is to
+call `defined('Gentry\COMPOSER_INSTALL') since that constant is defined before
+Gentry does _anything_ else.
+
+Usually you'll do this in a `"bootstrap"` file. This could also setup
+superglobals like `$_SERVER` if you're testing controllers or such.
 
 ## Generating missing tests
 Run Gentry with the `-g` flag to generate skeletons for missing tests for you:
