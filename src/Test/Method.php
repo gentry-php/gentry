@@ -29,7 +29,7 @@ class Method extends Feature
         } catch (ReflectionException $e) {
             $this->messages[] = sprintf(
                 "<red>ERROR: <gray>No such method <magenta>%s::%s",
-                $this->tostring($args[$this->target]),
+                $this->tostring($target),
                 $this->name
             );
             return $actual;
