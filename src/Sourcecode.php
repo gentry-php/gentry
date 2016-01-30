@@ -16,6 +16,8 @@ use SplFileInfo;
  */
 class Sourcecode
 {
+    private $namespaces = [];
+
     /**
      * Constructor.
      *
@@ -23,6 +25,7 @@ class Sourcecode
      */
     public function __construct(stdClass $config)
     {
+        $reflections = [];
         $sources = [];
         foreach (new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($config->src),
@@ -38,8 +41,19 @@ class Sourcecode
             if (isset($annotations['Untestable'])) {
                 continue;
             }
+            $reflections[] = $reflection;
+            if ($reflection->inNamespace()) {
+                $namespace = explode('\\', $reflection->getNamespaceName());
+                while ($namespace) {
+                    $this->namespaces[] = implode('\\', $namespace);
+                    array_pop($namespace);
+                }
+            }
+        }
+        $this->namespaces = array_unique($this->namespaces);
+        foreach ($reflections as $reflection) {
             if ($methods = $this->getTestableMethods($reflection)) {
-                $sources["$file"] = [$reflection->name, $methods];
+                $sources[$reflection->getFileName()] = [$reflection, $methods];
             }
         }
         $this->sources = $sources;
@@ -106,8 +120,18 @@ class Sourcecode
      * - It is public;
      * - It's not annotated with @Untestable;
      * - It's not an internal PHP method;
-     * - It's not inherited or imported from a trait;
      * - Its name doesn't start with `_`.
+     *
+     * For inherited methods, the method is considered testable addionally when:
+     * - The parent class itself is abstract;
+     * - The parent class is in a "known namespace".
+     *
+     * The first condition operates on the assumption that a non-abstract parent
+     * class should test the feature.
+     *
+     * The last condition prevents potentially testable methods from external
+     * sources (most likely the `vendor` directory) to be included (it should be
+     * assumet they have their own set of tests).
      *
      * @param ReflectionClass $reflection Reflected class to check methods on.
      * @return array|null An array of testable ReflectionMethods, or null if
@@ -116,6 +140,7 @@ class Sourcecode
     protected function getTestableMethods(ReflectionClass $reflection)
     {
         $methods = [];
+        $source = file_get_contents($reflection->getFileName());
         foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
             $annotations = new Annotations($method);
             if (isset($annotations['Untestable'])) {
@@ -124,7 +149,28 @@ class Sourcecode
             if ($method->isInternal()) {
                 continue;
             }
-            if ($method->getDeclaringClass()->name != $reflection->name) {
+            $declaring = $method->getDeclaringClass();
+            if ($declaring->name != $reflection->name) {
+                if (!$declaring->isAbstract()) {
+                    continue;
+                }
+                if ($declaring->inNamespace()
+                    && !in_array(
+                        $declaring->getNamespaceName(),
+                        $this->namespaces
+                    )
+                ) {
+                    continue;
+                }
+
+                if (!in_array(
+                    $method,
+                    $this->getTestableMethods($declaring) ?: []
+                )) {
+                    continue;
+                }
+            } elseif (strpos($source, "function {$method->name}(") === false) {
+                // Method comes from a trait; these we skip for now.
                 continue;
             }
             if ($method->name{0} == '_') {
