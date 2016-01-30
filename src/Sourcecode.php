@@ -11,10 +11,16 @@ use zpt\anno\Annotations;
 use SplFileInfo;
 
 /**
- * Repository gathering all source files in specified directory.
+ * Repository gathering all source files in specified directory. After
+ * construction you may access the public `sources` property.
  */
 class Sourcecode
 {
+    /**
+     * Constructor.
+     *
+     * @param stdClass $config Configuration as read from Gentry.json.
+     */
     public function __construct(stdClass $config)
     {
         $sources = [];
@@ -39,11 +45,25 @@ class Sourcecode
         $this->sources = $sources;
     }
 
+    /**
+     * Internal helper to check if the passed file looks like a PHP file.
+     *
+     * @param SplFileInfo $file The file to check.
+     * @return bool
+     */
     protected function isPhp(SplFileInfo $file)
     {
         return $file->isFile() && substr($file->getFilename(), -4) == '.php';
     }
 
+    /**
+     * Internal helper method to extract the name of the testable class in the
+     * file, if any.
+     *
+     * @param SplFileInfo $file The file from which to extract.
+     * @return ReflectionClass|null A reflection of the found class, or null on
+     *  failure.
+     */
     protected function extractTestableClass(SplFileInfo $file)
     {
         $filename = realpath($file);
@@ -79,6 +99,20 @@ class Sourcecode
         return $reflection;
     }
 
+    /**
+     * Internal helper method to get the testable methods from a class.
+     *
+     * A method is considered testable when:
+     * - It is public;
+     * - It's not annotated with @Untestable;
+     * - It's not an internal PHP method;
+     * - It's not inherited or imported from a trait;
+     * - Its name doesn't start with `_`.
+     *
+     * @param ReflectionClass $reflection Reflected class to check methods on.
+     * @return array|null An array of testable ReflectionMethods, or null if
+     *  nothing could be found.
+     */
     protected function getTestableMethods(ReflectionClass $reflection)
     {
         $methods = [];
@@ -99,13 +133,7 @@ class Sourcecode
                 continue;
             }
             $doccomments = $method->getDocComment();
-//            if ($doccomments
-//                && preg_match('/@return ([\w|]*?)\s/ms', $doccomments, $returns)
-//            ) {
             $methods[] = $method;
-//            } elseif ($verbose) {
-//                out("<gray>$ns$class::{$method->name} should annotate its @return value.\n");
-//            }
         }
         return $methods ?: null;
     }
