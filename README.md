@@ -32,24 +32,23 @@ options:
 {
     "src": "/path/to/src",
     "tests": "/path/to/tests",
-    "includePath": "/my/include/path",
     "bootstrap": "/path/to/bootstrap.php",
     "namespace": "Foo",
     "ignore": "some.*?regex"
 }
 ```
 
-### string `src` ###
+### string|array `src` ###
 ### string `tests` ###
-Gentry makes two assumptions:
-
-1. Your source files are in a directory (`"/path/to/src"`).
-2. Your tests are in another directory (`"path/to/tests"`).
-
-If these two are mixed, clean that up first. Seriously.
-
 Both `src` and `tests` can be either absolute, or relative to the root - hence
 `"/path/to/root/src"` could be simplified to just `"src"`.
+
+Directories are recursed. If Gentry detects that `tests` is inside `src`, it
+skips it for you (but seriously, don't do that).
+
+Gentry supports multiple `src` directories, but only one `tests` directory. The
+simple reasoning is that it's not uncommon to place scripts in a `bin` directory
+outside of `src`, but still have them tested.
 
 ### string|array `bootstrap` ###
 The path(s) to file(s) ("bootstrapper(s)") every piece of code in your
@@ -63,6 +62,13 @@ in order.
 `includePath` is parsed before `bootstrap`, so if you use them in conjunction
 you could use relative paths here. Otherwise, they will be relative to
 `get_cwd()`.
+
+> Caution: if `bootstrap`ped files reside inside `src`, they won't be ignored.
+> Gentry uses `require_once` of course, but if these files contain testable
+> features it will try and do something sensible with them.
+
+This isn't necessarily a bad thing; you could actually write tests that test the
+mock objects you use in other tests :)
 
 ### string `ignore` ###
 A regular expression of classnames to ignore in the `"src"` path. Useful for
