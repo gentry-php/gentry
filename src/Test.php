@@ -248,5 +248,17 @@ class Test
         }
         return $testargs;
     }
+
+    /**
+     * Resets all "superglobals" to empty arrays (except $GLOBAL itself). To be
+     * called when needed from your `__wakeup` method.
+     */
+    public static function resetAllSuperglobals()
+    {
+        $_GET = [];
+        $_POST = [];
+        $_SESSION = [];
+        $_COOKIES = [];
+    }
 }
 
