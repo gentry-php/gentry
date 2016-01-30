@@ -68,6 +68,9 @@ class MyFirstTest
 The first thing to note is that the test `yield`s the expected value and is thus
 a "generator". This allows you to specify multiple tests for one scenario.
 
+> Gentry test methods should _always_ be a generator. If the tested method has
+> no return value, just `yield null` instead.
+
 Gentry can test for both method calls and properties. Method calls are only
 allowed on the first passed parameter to a test (`"{0}"` or `$foo` in this
 example). The first argument should _always_ be a type hinted object.
@@ -80,8 +83,9 @@ You can use multiple `"{n}"` annotations in your scenario. They will be tested
 in order, and `"n"` is the argument number to test on.
 
 > For non-zero values of `"{n}"`, only property-testing makes sense (unless a
-> method happens to accept that exact same parameters...). This is by design: a
-> scenario should only test a single feature.
+> method happens to accept the exact same parameters...). This is by design: a
+> scenario should only test a single feature. Generally you'll mostly use
+> `"{0}"`
 
 The `yield`ed value(s) of the test method are simply what calling the designated
 method or whatever check on a property would be expected. _Is it that simple?_
@@ -127,7 +131,9 @@ Gentry uses some simple assertion logic to compare return values:
 - Otherwise, the test passes if strict equality (`===`) returns true.
 
 In practice, this means that `1.0` and `1` are considered a match, as well as
-objects with the same class _and_ the same properties.
+objects with the same class _and_ the same properties. If for some reason you
+need to test objects for strict equality, yield a custom function (see the
+section on complex tests for more information).
 
 ## Passing parameters
 If your method under test needs arguments, pass them as default parameters to
