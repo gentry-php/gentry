@@ -10,6 +10,9 @@ use Exception;
 use ErrorException;
 use Generator;
 
+/**
+ * Abstract base class for a feature test. Normally only used internally.
+ */
 abstract class Feature
 {
     protected $target;
@@ -17,12 +20,27 @@ abstract class Feature
     protected $messages = [];
     protected $tested;
 
+    /**
+     * Constructor.
+     *
+     * @param mixed $target The target to test against.
+     * @param string $name The name of the feature.
+     */
     public function __construct($target, $name)
     {
         $this->target = $target;
         $this->name = $name;
     }
 
+    /**
+     * Assert that for given arguments the expected result(s) are found,
+     * optionally piped through a callable.
+     *
+     * @param array &$args The arguments to use.
+     * @param array $expected Hash of expected result, output and/or exception.
+     * @param callable $pipe Optional callable to pipe actual result through.
+     * @return bool True if the assertion holds, else false.
+     */
     public function assert(array &$args, $expected, callable $pipe = null)
     {
         $actual = $this->actual($args) + ['result' => null];
@@ -79,6 +97,14 @@ EOT
             && trim($expected['out']) == trim($actual['out']);
     }
 
+    /**
+     * Internal helper method to check if two variables should be considered
+     * "equal".
+     *
+     * @param mixed $a
+     * @param mixed $b
+     * @return bool True or false depending on equality in a Gentry-context.
+     */
     protected function isEqual($a, $b)
     {
         if (is_numeric($a) && is_numeric($b)) {
@@ -93,6 +119,13 @@ EOT
         return $a === $b;
     }
 
+    /**
+     * Internal helper method to get an echo'able representation of a random
+     * value for reporting.
+     *
+     * @param mixed $value
+     * @return string
+     */
     protected function tostring($value)
     {
         if (!isset($value)) {
@@ -129,18 +162,34 @@ EOT
         }
     }
 
-    protected function throwCompare($expected, $actual)
+    /**
+     * Compares expected and thrown exceptions. To avoid having to mock exception
+     * messages, it simply compares classnames and exception codes.
+     *
+     * @param Exception|null $expected
+     * @param Exception|null $actual
+     * @return bool True if the exceptions are equal _or_ both are null, else
+     *  false.
+     */
+    protected function throwCompare(Exception $expected = null, Exception $actual = null)
     {
-        if (isset($expected)) {
-            $expected = get_class($expected);
+        if (!isset($expected, $actual)) {
+            return true;
         }
-        if (isset($actual)) {
-            $actual = get_class($actual);
+        if (isset($expected, $actual)) {
+            return get_class($expected) == get_class($actual)
+                && $expected->getCode() == $actual->getCode();
         }
-        return $expected === $actual;
+        return false;
     }
 
     /**
+     * Format expected and actual output a bit nicer.
+     *
+     * @param string $old Excepted output.
+     * @param string $new Actual output.
+     * @return array A hash with "old" and "new" keys, prettified using ANSI
+     *  colours.
      * @see https://coderwall.com/p/3j2hxq/find-and-format-difference-between-two-strings-in-php
      */
     protected function strdiff($old, $new)
