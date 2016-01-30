@@ -214,18 +214,18 @@ $classes = 0;
 $methods = 0;
 $uncovered = [];
 foreach ($sourcecode->sources as $file => $code) {
-    if (!isset($coveredFeatures[$code[0]])) {
+    if (!isset($coveredFeatures[$code[0]->name])) {
         $classes++;
         $methods += count($code[1]);
-        $uncovered[$code[0]] = $code[1];
+        $uncovered[$code[0]->name] = $code[1];
     } else {
         foreach ($code[1] as $method) {
-            if (!in_array($method->name, $coveredFeatures[$code[0]])) {
+            if (!in_array($method->name, $coveredFeatures[$code[0]->name])) {
                 $methods++;
-                if (!isset($uncovered[$code[0]])) {
-                    $uncovered[$code[0]] = [];
+                if (!isset($uncovered[$code[0]->name])) {
+                    $uncovered[$code[0]->name] = [];
                 }
-                $uncovered[$code[0]][] = $method;
+                $uncovered[$code[0]->name][] = $method;
             }
         }
     }
@@ -267,16 +267,12 @@ if (VERBOSE) {
     out("<gray>Generating test skeletons as requested...\n");
 }
 
-$sourceToTestName = function ($file) use ($config) {
-    return str_replace($config->src, $config->tests, $file);
-};
-
 $generator = new TestGenerator($config->tests);
 foreach ($sourcecode->sources as $file => $code) {
-    if (!isset($uncovered[$code[0]])) {
+    if (!isset($uncovered[$code[0]->name])) {
         continue;
     }
-    $generator->generate($code[0], $uncovered[$code[0]]);
+    $generator->generate($code[0], $uncovered[$code[0]->name]);
 }
 $generator->write();
 
