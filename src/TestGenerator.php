@@ -6,12 +6,21 @@ use ReflectionClass;
 use ReflectionMethod;
 use ReflectionParameter;
 
+/**
+ * A test generation object. Normally, this is automatically called when running
+ * the Gentry executable with the `-g`[enerate] flag.
+ */
 class TestGenerator
 {
     private $path;
     private $name;
     private $features = [];
 
+    /**
+     * Constructor. Pass the path to test files.
+     *
+     * @param string $path The full path to the test files.
+     */
     public function __construct($path)
     {
         $this->path = $path;
@@ -19,6 +28,8 @@ class TestGenerator
     }
 
     /**
+     * Generates stub test methods for all found features.
+     *
      * @param string $class The class name of the object under test.
      * @param array $methods Array of reflected methods to generate test
      *  skeletons for.
@@ -98,6 +109,9 @@ class TestGenerator
 EOT;
     }
 
+    /**
+     * Actually write the generated stubs to a randomized file.
+     */
     public function write()
     {
         $file = "{$this->path}/{$this->name}.php";
