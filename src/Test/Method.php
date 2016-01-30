@@ -7,16 +7,17 @@ use ReflectionMethod;
 use ReflectionException;
 use Exception;
 
+/**
+ * Test a method.
+ */
 class Method extends Feature
 {
-    private $class;
-
-    public function __construct($target, $name, $class)
-    {
-        parent::__construct($target, $name);
-        $this->class = $class;
-    }
-
+    /**
+     * Get a hash of actual property value results.
+     *
+     * @param array $args Arguments to test with.
+     * @return array A hash with value, exception and output results.
+     */
     public function actual(array $args)
     {
         $actual = ['thrown' => null, 'out' => null];
