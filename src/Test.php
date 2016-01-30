@@ -138,11 +138,10 @@ class Test
                 'method_exists',
                 'property_exists',
             ] as $magic) {
-                $this->target->$magic = function ($result)
-                    use ($result, $magic, &$expect) {
-                        $expect['result'] = true;
-                        return $$magic($result, $result);
-                    };
+                $check = $expect['result'];
+                $this->target->$magic = function ($res) use ($magic, $check) {
+                    return call_user_func($magic, $res, $check);
+                };
             }
             if (!is_numeric($pipe)) {
                 if (isset($this->target->$pipe)
@@ -152,6 +151,7 @@ class Test
                 } elseif (!is_callable($pipe)) {
                     $pipe = null;
                 }
+                $expect['result'] = true;
             } else {
                 $pipe = null;
             }
