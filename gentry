@@ -8,34 +8,24 @@ use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
 use ReflectionClass;
 use ReflectionMethod;
+use ReflectionException;
 use Closure;
 use zpt\anno\Annotations;
 use Kingconf;
 use Exception;
+use ErrorException;
 
 $start = microtime(true);
-/**
- * "Borrowed" from the PHPUnit executable.
- */
 
 if (!ini_get('date.timezone')) {
     ini_set('date.timezone', 'UTC');
 }
 
-function out($text, $out = STDOUT)
-{
-    $text = str_replace("\n", PHP_EOL, $text);
-    echo Ansi::tagsToColors($text);
-    echo Ansi::tagsToColors('<reset>');
-}
-
-function isEqual($a, $b)
-{
-    if (is_numeric($a) && is_numeric($b)) {
-        return $a == $b;
-    }
-    return $a === $b;
-}
+error_reporting(E_ALL);
+set_error_handler(function($errno, $errstr, $errfile, $errline, $errcontext) {
+    throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
+});
+require __DIR__.'/src/helpers.php';
 
 foreach ([
     __DIR__.'/../../autoload.php',
@@ -52,22 +42,20 @@ foreach ([
 unset($file);
 
 if (!defined('Gentry\COMPOSER_INSTALL')) {
-    out(<<<EOT
-<red>Error: <reset>You need to set up the project dependencies using the following commands:
+    fwrite(STDERR, <<<EOT
+\033[1;31mError: \033[0mYou need to set up the project dependencies using the following commands:
 
-<yellow>wget http://getcomposer.org/composer.phar
-php composer.phar install
+\033[1;33mwget http://getcomposer.org/composer.phar
+php composer.phar install\033[0m
 
 EOT
-        ,
-        STDERR
     );
     die(1);
 }
 
 $autoloader = require COMPOSER_INSTALL;
 
-out("\n<magenta>Gentry 0.3.1 by Marijn Ophorst\n\n");
+out("\n<magenta>Gentry 0.5.3 by Marijn Ophorst\n\n");
 
 $config = 'Gentry.json';
 $verbose = false;
@@ -84,18 +72,12 @@ foreach ($argv as $i => $arg) {
         $config = $arg;
     }
 }
+define('Gentry\VERBOSE', $verbose);
 try {
     $config = (object)(array)(new Kingconf\Config($config));
 } catch (Kingconf\Exception $e) {
     out("<red>Error: <reset> Config file $config not found or invalid.\n", STDERR);
     die(1);
-}
-if (isset($config->includePath)) {
-    if (is_string($config->includePath)) {
-        $config->includePath = explode(PATH_SEPARATOR, $config->includePath);
-    }
-    set_include_path(implode(PATH_SEPARATOR, $config->includePath));
-    $autoloader->setUseIncludePath(true);
 }
 if (isset($config->bootstrap)) {
     $bootstrap = is_array($config->bootstrap) ? $config->bootstrap : [$config->bootstrap];
@@ -104,123 +86,38 @@ if (isset($config->bootstrap)) {
     }
 }
 
-// Grab all source files in specified directory:
-$sources = [];
-foreach (new RecursiveIteratorIterator(
-    new RecursiveDirectoryIterator($config->src),
-    RecursiveIteratorIterator::LEAVES_ONLY
-) as $file) {
-    if ($file->isFile() && substr($file->getFilename(), -4) == '.php') {
-        $filename = realpath($file);
-        $code = file_get_contents($filename);
-        $ns = '';
-        if (preg_match("@namespace ((\w|\\\\)+)@", $code, $match)) {
-            $ns = $match[1].'\\';
-        }
-        $class = '';
-        if (preg_match("@(class|trait)\s+(\w+)\s@", $code, $match)) {
-            $class = $match[2];
-        } else {
-            continue;
-        }
-        if (!(preg_match_all(
-            "@(?<!private|protected)\s*function\s+(\w+)\s*\(@",
-            $code,
-            $matches,
-            PREG_SET_ORDER
-        ))) {
-            continue;
-        }
-        if (isset($config->ignore)
-            && preg_match("@{$config->ignore}@", "$ns$class")
-        ) {
-            continue;
-        }
-        $reflection = new ReflectionClass("$ns$class");
-        $annotations = new Annotations($reflection);
-        if (isset($annotations['Untestable'])) {
-            continue;
-        }
-        $methods = [];
-        foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-            if ($method->isInternal()) {
-                continue;
-            }
-            if ($method->getDeclaringClass()->name != "$ns$class") {
-                continue;
-            }
-            if ($method->name{0} == '_') {
-                // Assume we never want to test these "private" or magic
-                // methods.
-                continue;
-            }
-            $doccomments = $method->getDocComment();
-            if ($doccomments
-                && preg_match('/@return ([\w|]*?)\s/ms', $doccomments, $returns)
-            ) {
-                $methods[] = $method;
-            } elseif ($verbose) {
-                out("<gray>$ns$class::{$method->name} should annotate its @return value.\n");
-            }
-        }
-        if ($methods) {
-            $sources[$filename] = ["$ns$class", $methods];
-        }
-    }
-}
-if ($verbose) {
+$sourcecode = new Sourcecode($config);
+if (VERBOSE) {
     out(sprintf(
         "<gray>Found %d file%s with testable source code.\n",
-        count($sources),
-        count($sources) == 1 ? '' : 's'
+        count($sourcecode->sources),
+        count($sourcecode->sources) == 1 ? '' : 's'
     ));
 }
 
-// Grab existing tests in specified directory:
-$tests = [];
-foreach (new RecursiveIteratorIterator(
-    new RecursiveDirectoryIterator($config->tests),
-    RecursiveIteratorIterator::LEAVES_ONLY
-) as $file) {
-    if ($file->isFile() && substr($file->getFilename(), -4) == '.php') {
-        $filename = realpath($file);
-        $code = file_get_contents($filename);
-        $ns = '';
-        if (preg_match("@namespace ((\w|\\\\)+)@", $code, $match)) {
-            $ns = $match[1].'\\';
-        }
-        if (preg_match("@(?<!abstract)\s*class\s+(\w+)\s+@msi", $code, $match)) {
-            $class = "$ns{$match[1]}";
-            require_once $filename;
-            $reflection = new ReflectionClass($class);
-            $annotations = new Annotations($class);
-            if (!$reflection->isAbstract()) {
-                $tests[$class] = $filename;
-            }
-        }
-    }
-}
-if ($verbose) {
+$existing = new Existing($config);
+if (VERBOSE) {
     out(sprintf(
         "<gray>Found %d previously defined test%s.\n",
-        count($tests),
-        count($tests) == 1 ? '' : 's'
+        count($existing->tests),
+        count($existing->tests) == 1 ? '' : 's'
     ));
 }
-if ($verbose && $tests) {
+if (VERBOSE && $existing->tests) {
     out(sprintf(
         "<gray>Running existing unit test%...\n",
-        count($tests == 1) ? '' : 's'
+        count($existing->tests == 1) ? '' : 's'
     ));
 }
 
-$coveredMethods = [];
+$coveredFeatures = [];
 $notcovered = 0;
 $tested = 0;
 $passed = 0;
 $failed = 0;
+$messages = [];
 $incomplete = 0;
-foreach ($tests as $class => $file) {
+foreach ($existing->tests as $class => $file) {
     $class = new $class;
     $reflection = new ReflectionClass($class);
     $annotations = new Annotations($reflection);
@@ -233,13 +130,13 @@ foreach ($tests as $class => $file) {
             $incomplete++;
         }
     }
-    if (!$ok && !$verbose) {
+    if (!$ok && !VERBOSE) {
         continue;
     }
-    if (isset($annotations['Description'])) {
-        out("<darkBlue>{$annotations['Description']}\n");
+    if ($reflection->getDocComment()) {
+        out("<darkBlue>".cleanDocComment($reflection)."\n");
     }
-    $wakeup = method_exists($class, '__wakeup') && $verbose ?
+    $wakeup = method_exists($class, '__wakeup') && VERBOSE ?
         new Annotations(new ReflectionMethod($class, '__wakeup')) :
         [];
     foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
@@ -247,114 +144,29 @@ foreach ($tests as $class => $file) {
             continue;
         }
         $tested++;
+        $test = new Test($class, $method);
         $annotations = new Annotations($method);
         if (!isset($annotations['Incomplete'])) {
             if (method_exists($class, '__wakeup')) {
-                if (!isset($annotations['Chain'])) {
-                    if (isset($wakeup['Description'])) {
-                        out("    <gray>({$wakeup['Description']})\n");
-                    }
-                    $class->__wakeup();
-                } elseif ($verbose) {
-                    out("    <gray>(Skipping __wakeup as requested by @Chain)\n");
+                if (isset($wakeup['Description']) && VERBOSE) {
+                    out("    <gray>({$wakeup['Description']})\n");
+                }
+                $class->__wakeup();
+            }
+        }
+        $args = $test->run($passed, $failed, $messages);
+        $features = $test->getTestedFeatures();
+        foreach ($features as $target => $features) {
+            if (!isset($coveredFeatures[$target])) {
+                $coveredFeatures[$target] = [];
+            }
+            foreach ($features as $feature) {
+                if (!in_array($feature, $coveredFeatures[$target])) {
+                    $coveredFeatures[$target][] = $feature;
                 }
             }
         }
-        if (isset($annotations['Description']) && !isset($annotations['Incomplete']) or $verbose) {
-            out("  * <blue>{$annotations['Description']}");
-        }
-        if (isset($annotations['Incomplete'])) {
-            if ($verbose) {
-                out(" <magenta>[INCOMPLETE]\n");
-            }
-            continue;
-        }
-        $params = $method->getParameters();
-        $args = [];
-        $remote = [];
-        $methodname = isset($annotations['Method']) ?
-            $annotations['Method'] :
-            $method->name;
-        $iterations = 1;
-        if (isset($annotations['Repeat'])) {
-            $iterations = $annotations['Repeat'];
-        }
-        foreach ($params as $i => $param) {
-            if ($i == 0) {
-                $type = $param->getClass();
-                if (!$param->isDefaultValueAvailable()
-                    && isset($class->{$param->name})
-                    && get_class($class->{$param->name}) == $type->getName()
-                ) {
-                    $args[] =& $class->{$param->name};
-                } else {
-                    $args[] = $type->newInstance();
-                }
-            } elseif ($param->isDefaultValueAvailable()) {
-                $remote[] = $args[] = $param->getDefaultValue();
-            } elseif (isset($class->{$param->name})) {
-                $remote[] =& $class->{$param->name};
-                $args[] =& $class->{$param->name};
-            } elseif ($type = $param->getClass()) {
-                $remote[] = $args[] = $type->newInstance();
-            } else {
-                $remote[] = $args[] = null;
-            }
-        }
-        $testclass = get_class($args[0]);
-        if (!isset($coveredMethods[$testclass])) {
-            $coveredMethods[$testclass] = [];
-        }
-        $coveredMethods[$testclass][] = $methodname;
 
-        $expected = $actual = ['result' => null, 'thrown' => null];
-        try {
-            $expected['result'] = $method->invokeArgs($class, $args);
-        } catch (Exception $e) {
-            $expected['thrown'] = get_class($e);
-        }
-        for ($i = 0; $i < $iterations; $i++) {
-            try {
-                $actual['result'] = call_user_func_array(
-                    [$args[0], $methodname],
-                    $remote
-                );
-            } catch (Exception $e) {
-                $actual['thrown'] = get_class($e);
-            }
-            if ($iterations > 1) {
-                out('<blue>.');
-            }
-        }
-        if (is_object($expected['result'])
-            && $expected['result'] instanceof Closure
-        ) {
-            $fn = $expected['result'];
-            $expected['result'] = true;
-            $actual['result'] = call_user_func($fn, $actual['result']);
-        }
-        if (isset($annotations['Pipe'])) {
-            $actual['result'] = call_user_func($annotations['Pipe'], $actual['result']);
-        }
-        if (isEqual($expected['result'], $actual['result']) && $expected['thrown'] == $actual['thrown']) {
-            $passed++;
-            out(" <green>[OK]\n");
-        } else {
-            out(" <red>[FAILED]<reset> ");
-            $failed++;
-            if (!isEqual($expected['result'], $actual['result'])) {
-                out(sprintf(
-                    "(expected <magenta>%s<reset>, got <magenta>%s<reset>)\n",
-                    tostring($expected['result']),
-                    tostring($actual['result'])
-                ));
-            } else {
-                out(sprintf(
-                    "(wanted to catch {$expected['thrown']}, got %s)\n",
-                    isset($expected['result']) ? tostring($expected['result']) : $actual['thrown']
-                ));
-            }
-        }
         if (method_exists($class, '__sleep')
             && !isset($annotations['Chain'])
         ) {
@@ -371,13 +183,6 @@ if ($passed) {
         $passed == 1 ? '' : 's'
     ));
 }
-if ($failed) {
-    out(sprintf(
-        "<red>%d test%s failed!\n",
-        $failed,
-        $failed == 1 ? '' : 's'
-    ), STDERR);
-}
 if ($incomplete) {
     out(sprintf(
         "<magenta>%d test%s marked as incomplete.\n",
@@ -385,45 +190,33 @@ if ($incomplete) {
         $incomplete == 1 ? '' : 's'
     ), STDERR);
 }
-
-function tostring($value)
-{
-    if (!isset($value)) {
-        return 'NULL';
-    }
-    if ($value === true) {
-        return 'true';
-    }
-    if ($value === false) {
-        return 'false';
-    }
-    if (is_scalar($value)) {
-        return $value;
-    }
-    if (is_array($value)) {
-        return 'array';
-    }
-    if (is_object($value)) {
-        return get_class($value);
+if ($failed) {
+    out(sprintf(
+        "<red>%d test%s failed!\n",
+        $failed,
+        $failed == 1 ? '' : 's'
+    ), STDERR);
+    foreach ($messages as $msg) {
+        out("$msg\n");
     }
 }
 
 $classes = 0;
 $methods = 0;
 $uncovered = [];
-foreach ($sources as $file => $code) {
-    if (!isset($coveredMethods[$code[0]])) {
+foreach ($sourcecode->sources as $file => $code) {
+    if (!isset($coveredFeatures[$code[0]->name])) {
         $classes++;
         $methods += count($code[1]);
-        $uncovered[$code[0]] = $code[1];
+        $uncovered[$code[0]->name] = $code[1];
     } else {
         foreach ($code[1] as $method) {
-            if (!in_array($method, $coveredMethods[$code[0]])) {
+            if (!in_array($method->name, $coveredFeatures[$code[0]->name])) {
                 $methods++;
-                if (!isset($uncovered[$code[0]])) {
-                    $uncovered[$code[0]] = [];
+                if (!isset($uncovered[$code[0]->name])) {
+                    $uncovered[$code[0]->name] = [];
                 }
-                $uncovered[$code[0]][] = $method;
+                $uncovered[$code[0]->name][] = $method;
             }
         }
     }
@@ -452,7 +245,7 @@ $endit = function ($code) use ($start) {
     exit($code);
 };
 if ($classes || $methods) {
-    if (!$generate && $verbose) {
+    if (!$generate && VERBOSE) {
         out("<gray>Run with <magenta>-g<gray> flag to generate skeletons.\n");
         $endit($failed ? 1 : 0);
     }
@@ -461,151 +254,16 @@ if (!($classes || $methods) || !$generate) {
     $endit($failed ? 1 : 0);
 }
 
-if ($verbose) {
+if (VERBOSE) {
     out("<gray>Generating test skeletons as requested...\n");
 }
 
-$sourceToTestName = function ($file) use ($config) {
-    return str_replace($config->src, $config->tests, $file);
-};
-
-foreach ($sources as $file => $code) {
-    if (!isset($uncovered[$code[0]])) {
+$generator = new TestGenerator($config->tests);
+foreach ($sourcecode->sources as $file => $code) {
+    if (!isset($uncovered[$code[0]->name])) {
         continue;
     }
-    $target = $sourceToTestName($file);
-    if (strpos($code[0], '\\')) {
-        $targetname = substr($code[0], strrpos($code[0], '\\') + 1);
-    } else {
-        $targetname = $code[0];
-    }
-    if (file_exists($target)) {
-        $base = file_get_contents($target);
-    } else {
-        $base = "<?php\n\n";
-        if (isset($config->namespace)) {
-            $base .= "namespace {$config->namespace};\n\n";
-        }
-        if (strpos($code[0], '\\')) {
-            $base .= "use {$code[0]};\n\n";
-        }
-        $targetvar = strtolower($targetname);
-        $base .= <<<EOT
-/**
- * @Description [GENERATED] Test {$code[0]}
- */
-
-EOT;
-        $base .= 'class '.str_replace('\\', '', $code[0])."\n";
-        $base .= <<<EOT
-{
+    $generator->generate($code[0], $uncovered[$code[0]->name]);
 }
+$generator->write();
 
-EOT;
-    }
-    $generatedMethods = [];
-    foreach ($code[1] as $methodname) {
-        if ($verbose) {
-            out("<gray>Adding skeleton for $targetname::$methodname.\n");
-        }
-        if (strpos($base, "function $methodname(") === false) {
-            $arguments = '';
-            $generatedMethods[] = <<<EOT
-    /**
-     * @Description [GENERATED] Test {$code[0]}::$methodname
-     * @Incomplete
-     */
-    public function $methodname($targetname $$targetvar$arguments)
-    {
-    }
-EOT;
-        }
-    }
-    $output = preg_replace(
-        '@^}\s*$@m',
-        implode("\n\n", $generatedMethods)."\n}\n",
-        $base
-    );
-    $output = preg_replace(
-        '@^{\n\n@m',
-        "{\n",
-        $output
-    );
-    if ($verbose) {
-        out("<gray>Writing $target.\n");
-    }
-    $dir = dirname($target);
-    @mkdir($dir, 0755, true);
-    file_put_contents($target, $output);
-}
-/*
-if ($notcovered) {
-    die(1);
-}
-
-function normalizeMethod($method)
-{
-    return ucfirst(preg_replace('@.*?::@', '', $method));
-}
-
-$addMethodTo = function ($file, $method) use ($config) {
-    static $tmpl = <<<EOT
-
-    /**
-     * @covers %1\$s
-    public function test%2\$s()
-    {
-        \$this->assertTrue(true);
-        \$this->markTestIncomplete("Note: %1\$s has an empty test.");
-    }
-
-
-EOT;
-    $class = str_replace("{$config->tests}/", '', $file);
-    $class = str_replace('/', '', $class);
-    $class = preg_replace('@\.php$@', '', $class);
-    if (!file_exists($file)) {
-        @mkdir(substr($file, 0, strrpos($file, '/')), 0755, true);
-        file_put_contents($file, sprintf(
-            <<<EOT
-<?php
-
-class %1\$s extends %2\$s
-{
-}
-
-EOT
-            ,
-            $class,
-            $config->base
-        ));
-    }
-    $code = file_get_contents($file);
-    $code = preg_replace(
-        '@^}(\s*|\?>)?$@ms',
-        sprintf(
-            $tmpl,
-            $method,
-            normalizeMethod($method)
-        ),
-        $code
-    );
-    $code = trim($code)."\n}\n\n";
-    $code = preg_replace("@^{\n\n    /\*@m", "{\n    /*", $code);
-    file_put_contents($file, $code);
-};
-
-$getTestName = function ($file) use ($config) {
-    $file = str_replace($config->src, $config->tests, $file);
-    $file = preg_replace('@\.php$@', '', $file);
-    return "{$file}Test.php";
-};
-
-foreach ($sources as $file => $methods) {
-    foreach ($methods as $method) {
-        if (!in_array($method, $coveredMethods)) {
-            $addMethodTo($getTestName($file), $method);
-        }
-    }
-}
-*/

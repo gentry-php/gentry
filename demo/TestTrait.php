@@ -2,9 +2,9 @@
 
 namespace Gentry\Demo;
 
-class DemoClass
+trait TestTrait
 {
-    public function something()
+    public function foo()
     {
         return true;
     }

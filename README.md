@@ -32,32 +32,23 @@ options:
 {
     "src": "/path/to/src",
     "tests": "/path/to/tests",
-    "includePath": "/my/include/path",
     "bootstrap": "/path/to/bootstrap.php",
     "namespace": "Foo",
     "ignore": "some.*?regex"
 }
 ```
 
-### string `src` ###
+### string|array `src` ###
 ### string `tests` ###
-Gentry makes two assumptions:
-
-1. Your source files are in a directory (`"/path/to/src"`).
-2. Your tests are in another directory (`"path/to/tests"`).
-
-If these two are mixed, clean that up first. Seriously.
-
 Both `src` and `tests` can be either absolute, or relative to the root - hence
 `"/path/to/root/src"` could be simplified to just `"src"`.
 
-### string|array `includePath` ###
-The `"includePath"` option specifies optional `set_include_path` values to set
-before attempting to test anything. If omitted or empty, the defaults are used.
+Directories are recursed. If Gentry detects that `tests` is inside `src`, it
+skips it for you (but seriously, don't do that).
 
-You can pass either a single string or an array of values. Note that these
-values are passed verbatim to PHP's `set_include_path` function and should thus
-be resolvable from the current path.
+Gentry supports multiple `src` directories, but only one `tests` directory. The
+simple reasoning is that it's not uncommon to place scripts in a `bin` directory
+outside of `src`, but still have them tested.
 
 ### string|array `bootstrap` ###
 The path(s) to file(s) ("bootstrapper(s)") every piece of code in your
@@ -72,13 +63,18 @@ in order.
 you could use relative paths here. Otherwise, they will be relative to
 `get_cwd()`.
 
-### string `namespace` ###
-Namespace to use for generated tests. Useful if you specifically add that
-namespace to `autoload-dev` in your `composer.json`.
+> Caution: if `bootstrap`ped files reside inside `src`, they won't be ignored.
+> Gentry uses `require_once` of course, but if these files contain testable
+> features it will try and do something sensible with them.
+
+This isn't necessarily a bad thing; you could actually write tests that test the
+mock objects you use in other tests :)
 
 ### string `ignore` ###
-A regular expression of classnames to ignore. Useful for automatically ignoring
-classtypes that are hard to test, e.g. controllers.
+A regular expression of classnames to ignore in the `"src"` path. Useful for
+automatically ignoring classtypes that are hard to test, e.g. controllers. You
+could also utilise this if your tests and sourcecode are mixed (but seriously,
+don't do that).
 
 ## Usage
 Now run Gentry from the command line and see what happens:
@@ -101,265 +97,21 @@ In the default mode, only important messages are displayed. But verbose mode
 might be handy when something's going wrong for you, or if you simply want
 feedback about stuff like incomplete tests.
 
-## Writing tests
-Each scenario should be placed in your `"tests"` directory or one of its
-subdirectories (Gentry recurses for you) You can (optionally) describe the
-scenario by annotating the class with an `@Description` docblock:
+## Detecting the environment
+For a lot of testing, you'll need to detect whether or not to use a mock object
+(e.g. for database connections), or "the real thang". The simplest way is to
+call `defined('Gentry\COMPOSER_INSTALL') since that constant is defined before
+Gentry does _anything_ else.
 
-```php
-<?php
-
-/**
- * @Description This is going to explain how this should work.
- */
-class MyFirstTest
-{
-}
-```
-
-The description is just for clarity, it doesn't itself do anything.
-
-Let's assume we want to test a class `Foo` with a method `bar`. The method for
-now simply always returns `true`:
-
-```php
-<?php
-
-class Foo
-{
-    public function bar()
-    {
-        return true;
-    }
-}
-```
-
-Add a _public_ method to your test class of the same name as the method you want
-to test, with the type-hinted object as the first parameter. Gentry assumes all
-a test class's public methods run tests, and you only need to test public
-methods on your classes.
-
-> Obviously, to write helper methods, simply declare them `protected` or
-> `private`.
-
-```php
-<?php
-
-/**
- * @Description This is going to explain how this should work.
- */
-class MyFirstTest
-{
-    /**
-     * @Description This will test the bar method
-     */
-    public function bar(Foo $foo)
-    {
-        return true;
-    }
-}
-```
-
-The first argument is the type-hinted object you want to check. Subsequent
-arguments are variables that should be injected into the method under test, in
-the correct order. The default values are the values we are going to test the
-method with in this particular story.
-
-The return value of the test method is simply what calling the designated method
-would be expected to return. _Is it that simple?_ Yes, it's that simple to write
-a test in Gentry :)
-
-## Setup/teardown
-Setup (like injecting mocks) should be done in the _constructor_ of your
-testclass. Likewise, teardown in the `__destroy` magic method.
-
-For per-test setup and teardown (like loading a database fixture), use
-`__wakeup` and `__sleep` respectively.
-
-## Using a base class
-If multiple tests share the same `__sleep` and `__wakeup` methods for instance,
-you'll want to use a base class or a trait for that. Any class declared as
-`abstract` is ignored by Gentry when checking for tests.
-
-## Using test objects
-Often you'll want a set of classes to use as mocks in your test. Just place them
-in a different directory than your tests, e.g. define `tests/specs` as the
-`"tests"` directory and place your mocks in `tests/mocks` and have your
-autoloader handle them.
-
-## Injecting parameters containing a non-simple value
-If your method under test should be called with a non-simple value (usually an
-object), the parameter name _will_ matter.
-
-Assume our `Foo` class looks as follows:
-
-```php
-<?php
-
-class Foo
-{
-    function bar(Bar $one, Baz $two)
-    {
-        return $one->fizz && $two->buzz;
-    }
-}
-```
-
-The corresponding test could look like this:
-
-```php
-<?php
-
-class MyTest
-{
-    public function __construct()
-    {
-        $this->one = new Bar;
-        $this->two = new Baz;
-    }
-
-    /**
-     * @Description Assuming $one->fizz is true but $two->buzz is false
-     */
-    public function bar(Foo $foo, Bar $one, Baz $two)
-    {
-        return false;
-    }
-}
-```
-
-> Obviously the `fizz` and `buzz` properties could be either `true` or not
-> depending on conditions, presumably during construction or what they get from
-> the database.
-
-The order of resolution for arguments is as follows:
-
-1. If a default value is given, Gentry uses that;
-2. If a public property of the same name exists on the test class, Gentry uses
-   that;
-3. If the argument is type hinted, Gentry constructs a new instance of that type
-   for you;
-4. If all these fail, Gentry will pass `null`.
-
-> So in the above example, we could have used _either_ type hinting _or_ setting
-> instances on the test class.
-
-If a known variable (of any name) is placed on your class's public scope, you
-may also simply pass it _by reference_ and update its value before returning:
-
-```php
-<?php
-
-class MyTest
-{
-    public $baz;
-
-    public function bar(Foo $foo, &$baz)
-    {
-        $baz = 1;
-        // Foo::bar should return 2 when called with 1
-        return 2;
-    }
-}
-```
-
-## Testing a method in multiple scenarios
-Often you'll need to test a method with multiple calls passing different values.
-Use the `@Method methodName` annotation on your test to hardcode the name of the
-method under test, and simply give your test method a descriptive, unique name.
-
-## Testing if a certain exception is thrown
-Simply throw that same exception from your test method!
-
-```php
-<?php
-
-class MyTest extends Scenario
-{
-    /**
-     * Description Assuming Foo::bar would throw an exception...
-     */
-    public function bar(Foo $foo)
-    {
-        throw new Exception;
-    }
-}
-```
-
-This test passes if the exception thrown by the test is of the same class as the
-exception the actual method call throws.
-
-## Piping return values
-Often you'll want to test something more complex than a simple scalar value.
-E.g. whether or not a returned array has a `count` of 3. There are two ways to
-"pipe" the result through your test when checking:
-
-### The `@Pipe` annotation
-For simple checks, you can annotate the test method with `@Pipe`. Its argument
-should be a single callable method to run the result through:
-
-```php
-<?php
-
-class MyArrayTest extends Scenario
-{
-    /**
-     * @Description It should contain 3 items
-     * @Pipe count
-     */
-    public function threeItems(Foo $foo, $bar)
-    {
-        return 3;
-    }
-}
-```
-
-### Returning a callable
-For more complicated checks, your test method can return a callable. This will
-first be invoked with the result value of the tested method and should return
-`true` if the test passed, or otherwise `false`:
-
-```php
-<?php
-
-class MyMoreComplicatedArrayTest extends Scenario
-{
-    /**
-     * @Description It should contain three items, each of which is a
-     *  `StdClass`.
-     */
-    public function threeStdClassObjects(Foo $foo, $bar)
-    {
-        return function ($result) {
-            if (count($result) != 3) {
-                return false;
-            }
-            foreach ($result as $item) {
-                if (!($item instanceof StdClass)) {
-                    return false;
-                }
-            }
-            return true;
-        };
-    }
-}
-```
-
-When a callable is returned from a test (or, technically, an instance of
-`Closure`), the expected return value is _always_ casted to true. The actual
-check - as opposed to simple comparison - should be done in your callable.
-
-> If a callable is actually what's expected of the method under test, return a
-> callable that returns `$result instanceof Closure`.
-
-## Marking incomplete tests
-Tests annotated with `@Incomplete` are skipped and will only issue a warning.
+Usually you'll do this in a `"bootstrap"` file. This could also setup
+superglobals like `$_SERVER` if you're testing controllers or such.
 
 ## Generating missing tests
-Run Gentry with the `-g` flag to generate skeletons for missing tests for you.
-Generated tests will be placed in the directory specified by `tests` under a
-guesstimated name, and marked as `@Incomplete` by default.
+Run Gentry with the `-g` flag to generate skeletons for missing tests for you:
 
-Note that you'll probably want to re-group generated tests into classes that
-make sense for your application.
+```sh
+vendor/bin/gentry -g
+```
+
+More on generating tests in the corresponding section of the manual.
 
