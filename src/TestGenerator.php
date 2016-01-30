@@ -62,7 +62,6 @@ class TestGenerator
             $types = explode('|', $matches[1]);
         }
         if (isset($types) && $types) {
-            $kw = count($types) > 1 ? 'yield' : 'return';
             $body = [];
             foreach ($types as $type) {
                 if ($type == 'boolean') {
