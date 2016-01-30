@@ -11,6 +11,10 @@ use Exception;
 use ErrorException;
 use Generator;
 
+/**
+ * The main test class. Normally gets constructed internally, you don't have
+ * to make your tests extend anything.
+ */
 class Test
 {
     private $test;
@@ -19,17 +23,22 @@ class Test
     private $annotations;
     private $description;
     private $feature;
-    private $inject;
     private $testtype = 'method';
     private $testedFeatures = [];
     private $features = [];
 
-    public function __construct($target, Reflector $function, $inject = null)
+    /**
+     * Constructor.
+     *
+     * @param mixed $target The test class this scenario is targeting.
+     * @param Reflector $function Reflected function representing this
+     *  particular scenario.
+     */
+    public function __construct($target, Reflector $function)
     {
         $this->test = $function;
         $this->target = $target;
         $this->params = $this->test->getParameters();
-        $this->inject = $inject;
         $this->annotations = new Annotations($this->test);
         $description = cleanDocComment($this->test);
         if (preg_match_all(
@@ -59,6 +68,14 @@ class Test
         $this->description = $description;
     }
 
+    /**
+     * Runs this scenario. Normally called internally by the Gentry executable.
+     *
+     * @param int &$passed Global number of tests passed so far.
+     * @param int &$failed Global number of tests failed so far.
+     * @param array &$messages Array of messages so far (for verbose mode).
+     * @return array An array of the arguments used when testing.
+     */
     public function run(&$passed, &$failed, array &$messages)
     {
         $args = [];
@@ -173,11 +190,23 @@ class Test
         return $args;
     }
 
+    /**
+     * Return a hash of all features tested by this scenario. Keys are the
+     * classnames of the tested objects, values an array of tested features
+     * (in either `method` or `$property` format).
+     *
+     * @return array
+     */
     public function getTestedFeatures()
     {
         return $this->testedFeatures;
     }
 
+    /**
+     * Return a prepared array of arguments to use.
+     *
+     * @return array
+     */
     public function getArguments()
     {
         $args = [];
@@ -196,6 +225,13 @@ class Test
         return $args;
     }
 
+    /**
+     * Internal method to reset arguments to pristince state and get a testable
+     * version of them (with classnames instead of null for static tests).
+     *
+     * @param array &$args Array of original arguments.
+     * @return array Array of testable arguments.
+     */
     protected function resetArguments(&$args)
     {
         $testargs = $args;
