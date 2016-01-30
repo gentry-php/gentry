@@ -27,3 +27,66 @@ number of things to get your tests to work properly.
 The generated checks, if possible, yield `is_typename' => true;`. Of course,
 you'll probably want to check different things.
 
+## What does Gentry generate skeletons for?
+The generator goes through your entire source code as specified in `Gentry.json`
+and analyses every file. Only classes and traits are considered testable in the
+current version.
+
+Methods are considered testable if they are public and are defined on the class
+under test, _or_ on a parent class _but_ that parent class is abstract. To
+prevent code duplication, you can mark base methods as `@Untestable` but
+implement a single test on one of the extending classes anyway (`@Untestable` is
+only considered during test generation, not actual test execution.
+
+To test trait methods, one should pass a referenced existing class (we recommend
+simply `stdClass`) with a default `null` and set it to an anonymous class inside
+your test:
+
+```php
+<?php
+
+trait myTrait
+{
+    public function something()
+    {
+        return true;
+    }
+}
+
+class Test
+{
+    /** {0}::something returns true */
+    public function something(stdClass $test = null)
+    {
+        $test = new class() extends stdClass {
+            use MyTrait;
+        };
+        yield true;
+    }
+}
+```
+
+Anonymous classes are a PHP7 feature. To achieve the same in PHP5, you can use
+`eval` (one of the few valid uses for it...):
+
+```php
+<?php
+
+class Test
+{
+    /** {0}::something returns true */
+    public function something(stdClass $test = null)
+    {
+        if (!class_exists('a_dummy_name')) {
+            eval("class a_dummy_name extends stdClass {
+                use MyTrait;
+            }");
+        };
+        $test = new $test;
+        yield true;
+    }
+}
+```
+
+Gentry correctly generates this skeleton for you.
+
