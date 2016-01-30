@@ -26,7 +26,7 @@ class Test
              */
             function (StdClass &$test = null) use ($target) {
                 $test = $target;
-                return true;
+                yield true;
             }
         );
         $test = new Test($target, $reflection);
@@ -51,7 +51,7 @@ class Test
     public function raw(Demo\Test $test)
     {
         echo '    ';
-        return true;
+        yield true;
     }
     
     /**
@@ -59,7 +59,7 @@ class Test
      */
     public function statically(Demo\Test $test = null)
     {
-        return true;
+        yield true;
     }
 }
 
