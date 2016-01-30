@@ -53,7 +53,8 @@ class Test
                 if ($prop{0} == '$') {
                     $this->features[] = new Test\Property(
                         $match[1],
-                        substr($prop, 1)
+                        substr($prop, 1),
+                        $this->params[$match[1]]->getClass()->name
                     );
                 } else {
                     $this->features[] = new Test\Method(
