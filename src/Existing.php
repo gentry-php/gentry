@@ -10,10 +10,16 @@ use ReflectionException;
 use zpt\anno\Annotations;
 
 /**
- * Repository gathering all existing tests in specified directory.
+ * Repository gathering all existing tests in specified directory. You can
+ * access the public `tests` property after construction.
  */
 class Existing
 {
+    /**
+     * Constructor.
+     *
+     * @param stdClass $config Configuration as read from Gentry.json
+     */
     public function __construct(stdClass $config)
     {
         $tests = [];
