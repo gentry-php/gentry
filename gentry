@@ -79,13 +79,6 @@ try {
     out("<red>Error: <reset> Config file $config not found or invalid.\n", STDERR);
     die(1);
 }
-if (isset($config->includePath)) {
-    if (is_string($config->includePath)) {
-        $config->includePath = explode(PATH_SEPARATOR, $config->includePath);
-    }
-    set_include_path(implode(PATH_SEPARATOR, $config->includePath));
-    $autoloader->setUseIncludePath(true);
-}
 if (isset($config->bootstrap)) {
     $bootstrap = is_array($config->bootstrap) ? $config->bootstrap : [$config->bootstrap];
     foreach ($bootstrap as $file) {
