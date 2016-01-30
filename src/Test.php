@@ -99,13 +99,13 @@ class Test
             'out' => '',
         ];
         out("  * <blue>{$this->description}");
-        ob_start();
-        foreach (((($runs = $this->test instanceof ReflectionMethod ?
+        $invoke = function () use ($args) {
+            return $runs = $this->test instanceof ReflectionMethod ?
                 $this->test->invokeArgs($this->target, $args) :
-                $runs = $this->test->invokeArgs($args)
-            )
-            and $runs instanceof Generator) ? $runs : [$runs]
-        ) as $pipe => $result) {
+                $runs = $this->test->invokeArgs($args);
+        };
+        ob_start();
+        foreach ($invoke() as $pipe => $result) {
             $out = cleanOutput(ob_get_clean());
             if ($result instanceof Exception) {
                 $thrown = $result;
