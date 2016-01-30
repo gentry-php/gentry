@@ -72,10 +72,6 @@ in order.
 you could use relative paths here. Otherwise, they will be relative to
 `get_cwd()`.
 
-### string `namespace` ###
-Namespace to use for generated tests. Useful if you specifically add that
-namespace to `autoload-dev` in your `composer.json`.
-
 ### string `ignore` ###
 A regular expression of classnames to ignore in the `"src"` path. Useful for
 automatically ignoring classtypes that are hard to test, e.g. controllers. You
