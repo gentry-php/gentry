@@ -35,10 +35,12 @@ class MyTest
         // Note $foo is a reference in the method declaration; we can thus
         // assign the instantiated object to it to test on.
         $foo = $this->foo;
-        return true;
+        yield true;
     }
 }
 ```
+
+You could also define some functions for that, e.g. `getFoo`.
 
 ## Using an abstract base class
 If multiple tests share the same `__sleep` and `__wakeup` methods for instance,
@@ -52,8 +54,10 @@ in a different directory than your tests, e.g. define `tests/specs` as the
 autoloader handle them.
 
 ## Piping results before assertion
-Using the `yield` keyword, you may "return" an array where the key is a callable
-that must be satisfied, and the value is the value to expect:
+`yield` supports specifying a "key" to return along with the expected result.
+If you do so, and the key satisfies `is_callable`, the result from the tested
+method or property will be piped through that callable and the return value of
+_that_ will be compared instead:
 
 ```php
 <?php
@@ -143,9 +147,8 @@ class MyArrayTest extends Scenario
 }
 ```
 
-For convenience, you can also directly return or yield a callable. This is
-shorthand for `$this->randomName = function ($result) {};
-yield 'randomName' => true;`.
+For convenience, you can also directly yield a callable. This is shorthand for
+`$this->randomName = $theYieldedCallable; yield 'randomName' => true;`.
 
 ### Expecting a `Closure`
 If the method or property under test _expects_ a `Closure` (i.e. its return
@@ -166,6 +169,29 @@ class SomeTest
 }
 ```
 
+> If you yielded a callable, it would act as a pipe after all.
+
+Alternatively you can also wrap the callable in an anonymous function:
+
+```php
+<?php
+
+class SomeTest
+{
+    /**
+     * {0}::bar returns a callable
+     */
+    function mytest(Foo $foo)
+    {
+        yield function ($result) {
+            return function () {};
+        };
+    }
+}
+```
+
+Gentry's regular object comparison logic will kick in now.
+
 ### Special cases
 For convenience, the following callable keys are automatically overridden on the
 object under test: `is_a`, `is_subclass_of`, `method_exists`, `property_exists`.
@@ -179,12 +205,11 @@ assure it returns the same result for each consecutive run. Simply mention
 results.
 
 > Note:  `__wakeup` and `__sleep` are only called once for all iterations. If
-> you specifically need to retest a method including setup > and teardown,
-> declare it as non-public and add some facade methods that forward their calls.
-
-Note that repeated tests producing output will need to match the entire output
-for all iterations, concatenated.
+> you specifically need to retest a method including setup and teardown, you'll
+> need to call those yourself in the appropriate places.
 
 Repeated tests are mostly useful for ensuring that something happens the exact
-same way for a number of consecutive calls.
+same way for a number of consecutive calls, _or_ the converse: for a database
+insertion, for instance, the first call can succeed but subsequent ones might be
+expected to fail (duplicate primary key errors for instance).
 
