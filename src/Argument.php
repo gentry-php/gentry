@@ -5,17 +5,35 @@ namespace Gentry;
 use ReflectionClass;
 use ReflectionParameter;
 
+/**
+ * Internal helper class representing an argument to a generated test stub.
+ * Normally called automatically when running in generate mode.
+ */
 class Argument
 {
     private $reflection;
     private $fallback;
 
+    /**
+     * Constructor.
+     *
+     * @param ReflectionParameter $param Reflection of the parameter this
+     *  object will represent.
+     * @param string $fallback The doccomment (if any) specified for the method
+     *  the parameter belongs to, for fallback guesstimation.
+     */
     public function __construct(ReflectionParameter $param, $fallback)
     {
         $this->reflection = $param;
         $this->fallback = $fallback;
     }
 
+    /**
+     * Return the entire argument in a format that can be injected into the
+     * method declaration.
+     *
+     * @return string
+     */
     public function __toString()
     {
         $out = $this->getType().' ';
@@ -33,6 +51,8 @@ class Argument
      * Guesstimate if the argument should be passed by reference. This is true
      * for objects with constructor parameters without defaults, as well as
      * other non-guessable defaults.
+     *
+     * @return bool
      */
     public function isPassedByReference()
     {
@@ -104,6 +124,11 @@ class Argument
         return null;
     }
 
+    /**
+     * Internal helper method to guesstimate the argument's type hint.
+     *
+     * @return string
+     */
     private function getType()
     {
         if ($class = $this->reflection->getClass()) {
@@ -120,6 +145,12 @@ class Argument
         return '';
     }
 
+    /**
+     * Internal helper function to guesstimate the argument's type from the
+     * doccomment `$fallback`, as annotated by `@param [type]`.
+     *
+     * @return string|null The annotated type if found, else null.
+     */
     private function extractParameterData()
     {
         $name = $this->reflection->name;
@@ -133,7 +164,13 @@ class Argument
         $types = explode('|', $matches[1]);
         return $types[0];
     }
-    
+ 
+    /**
+     * Internal helper method to render a PHP variable as a string.
+     *
+     * @param mixed $value The value to render.
+     * @return string An echo'able representation.
+     */
     private function tostring($value)
     {
         if (!isset($value)) {
