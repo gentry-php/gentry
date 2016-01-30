@@ -60,7 +60,7 @@ abstract class Feature
         $this->tested = $this->tostring($args[$this->target]);
         $testedfeature = sprintf(
             "<magenta>%s::%s%s<gray>",
-            $this->tostring($args[$this->target]),
+            $this->class,
             $property ? '$' : '',
             $this->name
         );
