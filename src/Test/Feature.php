@@ -17,6 +17,7 @@ abstract class Feature
 {
     protected $target;
     protected $name;
+    protected $class;
     protected $messages = [];
     protected $tested;
 
@@ -25,11 +26,14 @@ abstract class Feature
      *
      * @param mixed $target The target to test against.
      * @param string $name The name of the feature.
+     * @param string $class String version of the target's class. Needed for
+     *  abstract testing.
      */
-    public function __construct($target, $name)
+    public function __construct($target, $name, $class)
     {
         $this->target = $target;
         $this->name = $name;
+        $this->class = $class;
     }
 
     /**
