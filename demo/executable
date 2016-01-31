@@ -1,0 +1,6 @@
+#!/usr/bin/php
+<?php
+
+echo 'test';
+exit(getenv("GENTRY") ? 0 : 1);
+
