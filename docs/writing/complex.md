@@ -42,6 +42,22 @@ class MyTest
 
 You could also define some functions for that, e.g. `getFoo`.
 
+> Note: PHP requires `__sleep` to return an array of serializable properties.
+> Since we won't be actually serializing anything, just return an empty array.
+
+## Resetting global state
+If you need to reset global state prior to testing (e.g. `$_POST = []`) just do
+so in `__wakeup` and/or `__sleep`.
+
+For convenience, you can call the static method
+`Gentry\Test::resetAllSuperglobals`. This set `$_GET`, `$_POST`, `$_SESSION`
+and `$_COOKIE` to empty arrays.
+
+> You shouldn't really need this unless a testable method does something like
+> `isset($_GET['foo'])` and you specifically want to test failure handling. For
+> success handling, your test method would declare `$_GET['foo'] = 'bar';`
+> anyway.
+
 ## Using an abstract base class
 If multiple tests share the same `__sleep` and `__wakeup` methods for instance,
 you'll want to use a base class or a trait for that. Any class declared as
