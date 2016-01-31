@@ -132,15 +132,37 @@ class Test
                 $thrown = null;
             }
             $expect = compact('result', 'thrown', 'out');
+            $check = $expect['result'];
             foreach ([
                 'is_a',
                 'is_subclass_of',
                 'method_exists',
                 'property_exists',
             ] as $magic) {
-                $check = $expect['result'];
+                if (property_exists($this->target, $magic)) {
+                    continue;
+                }
                 $this->target->$magic = function ($res) use ($magic, $check) {
                     return call_user_func($magic, $res, $check);
+                };
+            }
+            if (!property_exists($this->target, 'matches')) {
+                $this->target->matches = function ($res) use ($check) {
+                    return (bool)preg_match($check, $res);
+                };
+            }
+            if (!property_exists($this->target, 'count')) {
+                $this->target->count = function ($res) use ($check) {
+                    if ($res instanceof Generator) {
+                        $i = 0;
+                        foreach ($res as $item) {
+                            $i++;
+                        }
+                        return $i == $check;
+                    } elseif (is_array($res)) {
+                        return count($res) == $check;
+                    }
+                    return false;
                 };
             }
             if (!is_numeric($pipe)) {
