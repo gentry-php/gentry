@@ -11,42 +11,62 @@ use Reflector;
  */
 function out($text, $out = STDOUT)
 {
+    static $col = 0;
+    static $indent = '';
+    static $output;
+    if (!isset($output)) {
+        $output = function ($text) use ($out) {
+            fwrite($out, $text);
+        };
+    }
+
     $text = str_replace("\n", PHP_EOL, $text);
     $endsWithNewline = substr($text, -1) == PHP_EOL;
+    if (substr($text, 0, 4) == '  * ') {
+        $indent = '  * ';
+        $text = substr($text, 4);
+    }
     $text = Ansi::tagsToColors(rtrim($text));
-    preg_match("@^(\s*\**\s*)@", $text, $indent);
     $lines = [];
     $line =& $lines[];
-    foreach (preg_split(
-        "@\s+@m",
-        preg_replace("@^(\s*\**\s*)@", '', $text)
-    ) as $word) {
-        if (strlen(cleanOutput("$line $word")) > 80) {
-            $line =& $lines[];
-        }
-        if (!strlen($line)) {
-            if ($indent) {
-                if (count($lines) == 1) {
-                    $line .= $indent[1];
-                } else {
-                    $line .= str_repeat(' ', strlen($indent[1]));
-                }
-            }
-            $line .= $word;
+    foreach (preg_split("@\s+@m", trim($text)) as $word) {
+        $len = strlen(cleanOutput($word));
+        if (!$len) {
             continue;
+        }
+        if ($len + strlen($indent) + $col > 80) {
+            if (!$col) {
+                // Extremely long word. Just let it be then and
+                // move to the next line.
+                $output("$indent$word\n", $out);
+                continue;
+            }
+            $output(PHP_EOL, $out);
+            $col = 0;
+            $indent = str_repeat(' ', strlen($indent));
+            $output($indent.$word, $out);
+            $col += strlen($indent) + $len;
         } else {
-            $line .= " $word";
+            if (!$col) {
+                $output($indent, $out);
+                $col += strlen($indent);
+                $indent = str_repeat(' ', strlen($indent));
+            }
+            $space = true;
+            if ($col == strlen($indent)
+                || preg_match('@^[:!,;\?\.]@', cleanOutput($word))
+            ) {
+                $space = false;
+            }
+            $output(($space ? ' ' : '').$word, $out);
+            $col += $len + 1;
         }
     }
-    // PHP's output buffering doesn't catch fwrite(STDOUT, ...), so we wrap it.
-    $output = function ($text) use ($out) {
-        if ($out == STDOUT) {
-            echo $text;
-        } else {
-            fwrite($out, $text);
-        }
-    };
-    $output(implode(PHP_EOL, $lines).($endsWithNewline ? PHP_EOL : ''));
+    if ($endsWithNewline) {
+        $output(PHP_EOL, $out);
+        $col = 0;
+        $indent = '';
+    }
     $output(Ansi::tagsToColors('<reset>'));
 }
 
