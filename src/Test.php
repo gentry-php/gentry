@@ -43,32 +43,36 @@ class Test
         $this->annotations = new Annotations($this->test);
         $description = cleanDocComment($this->test);
         if (preg_match_all(
-            '@\{(\d+)\}(:{2}?\$?\w+)?@',
+            '@(^|[!\?,:;\.]).*?{(\d+)}(::\$?\w+)?.*?(?=$|[!\?,:;\.])@ms',
             $description,
             $matches,
             PREG_SET_ORDER
         )) {
             $arguments = $this->getArguments();
             foreach ($matches as $match) {
-                if (isset($match[2])) {
-                    $prop = substr($match[2], 2);
+                $match[0] = preg_replace('@{(\d+)}::\$?\w+@m', '{\\1}', $match[0]);
+                if (isset($match[3])) {
+                    $prop = substr($match[3], 2);
                     if ($prop{0} == '$') {
                         $this->features[] = new Test\Property(
-                            $match[1],
+                            $match[0],
+                            $match[2],
                             substr($prop, 1),
-                            $this->params[$match[1]]->getClass()->name
+                            $this->params[$match[2]]->getClass()->name
                         );
                     } else {
                         $this->features[] = new Test\Method(
-                            $match[1],
+                            $match[0],
+                            $match[2],
                             $prop,
-                            $this->params[$match[1]]->getClass()->name
+                            $this->params[$match[2]]->getClass()->name
                         );
                     }
                 } else {
                     $this->features[] = new Test\Proxy(
-                        $match[1],
-                        $this->params[$match[1]]->getClass()->name
+                        $match[0],
+                        $match[2],
+                        $this->params[$match[2]]->getClass()->name
                     );
                 }
             }
@@ -86,48 +90,27 @@ class Test
      */
     public function run(&$passed, &$failed, array &$messages)
     {
+        out('  * ');
         $args = [];
         try {
             $args = $this->getArguments();
         } catch (Exception $e) {
-            out("  * <blue>{$this->description}");
-            out(" <red>[FAILED]\n");
+            out("<blue>{$this->description}");
+            out("<red>[FAILED]\n");
             $messages[] = "Exception thrown during construction of argument: <magenta>".get_class($e)." (".$e->getMessage().")";
             $failed++;
             return;
         }
-        $this->description = preg_replace_callback(
-            '@{(\d+)}(::\$?\w+)?@m',
-            function ($match) use ($args) {
-                $work = $args[$match[1]];
-                if (is_null($work)
-                    and $class = $this->params[$match[1]]->getClass()
-                ) {
-                    $work = $class->name;
-                } else {
-                    $work = get_class($work);
-                }
-                if (!isset($match[2])) {
-                    $match[2] = '';
-                }
-                return "<darkBlue>$work{$match[2]}<blue>";
-            },
-            $this->description
-        );
         if (isset($this->annotations['Incomplete']) && \Gentry\VERBOSE) {
-            out("  * <blue>{$this->description}");
-            out(" <magenta>[INCOMPLETE]\n");
+            out("<blue>{$this->description}");
+            out("<magenta>[INCOMPLETE]\n");
             return;
-        }
-        if (isset($this->annotations['Repeat'])) {
-            $iterations = $this->annotations['Repeat'];
         }
         $expected = [
             'result' => null,
             'thrown' => null,
             'out' => '',
         ];
-        out("  * <blue>{$this->description}");
         $invoke = function () use ($args) {
             return $runs = $this->test instanceof ReflectionMethod ?
                 $this->test->invokeArgs($this->target, $args) :
@@ -179,13 +162,15 @@ class Test
             if ($feature = array_shift($this->features)) {
                 if ($feature instanceof Test\Proxy) {
                     if (is_numeric($pipe)) {
-                        out(" <red>[FAILED]\n");
+                        out("<blue>$this->description}");
+                        out("<red>[FAILED]\n");
                         $messages[] = "Pipe {$pipe} must be the name of a method when building integration tests.";
                         $failed++;
                         return;
                     }
                     if (!is_callable($result)) {
-                        out(" <red>[FAILED]\n");
+                        out("<blue>{$this->description}");
+                        out("<red>[FAILED]\n");
                         $messages[] = "Yielded value for integration tests must be a callable injecting the proxied feature's arguments.";
                         $failed++;
                         return;
@@ -195,7 +180,8 @@ class Test
                         $pipe,
                         new ReflectionFunction($result)
                     )) {
-                        out(" <red>[FAILED]\n");
+                        out("<blue>{$this->description}");
+                        out("<red>[FAILED]\n");
                         $messages[] = "<magenta>{$feature->class}::{$pipe}<gray>: No such method.";
                         $failed++;
                         return;
@@ -231,16 +217,16 @@ class Test
                     $this->testedFeatures[$tested][] = $name;
                 }
                 if (!$assert) {
-                    out(" <red>[FAILED]\n");
+                    out("<red>[FAILED]\n");
                     $messages = array_merge($messages, $feature->messages);
                     $failed++;
                     return;
                 } else {
-                    out(" <green>[OK]");
+                    out("<green>[OK]");
                     $passed++;
                 }
             } else {
-                out(" <magenta>[SKIPPED]");
+                out("<magenta>[SKIPPED]");
             }
             ob_start();
         }
