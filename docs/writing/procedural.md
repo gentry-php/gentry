@@ -59,8 +59,12 @@ class ProcedureIntegrationTest
 ```
 
 In short, you inject a dummy object and populate and test properties with the
-desired values. The downside is that Gentry will now keep complaining about a
-missing test for that function. You could mark is as `@Untestable` to suppress
-the warning; these kinds of methods are pretty untestable anyway, like using
-global variables. Or just ignore the warning. C'est la vie.
+desired values.
 
+> Tip: You'll probably want to add such a test _alongside_ the "normal" test for
+> the function. This stops Gentry from complaining about "missing tests" but
+> more importantly allows you to test the function proper before testing the
+> integration aspect, which usually makes sense.
+
+Did we mention global procedural functions altering application state are a
+_Really Bad Idea_(tm)?

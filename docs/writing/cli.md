@@ -43,6 +43,11 @@ use as the rest of your code you should be good to go.
 If you use a different logic and/or need other environment variables, feel free
 to define them in the `$command` string.
 
+## Setup and teardown
+This works of course in the exact same way as for any other test class in
+Gentry. `__construct`/`__destroy` for the feature as a whole, and
+`__wakeup`/`__sleep` on a per-scenario basis.
+
 ## Testing script output
 If your script emits output you need to test, just test it as if you were
 testing normal output: `echo` the expected output in the test method and watch
@@ -96,4 +101,17 @@ returns any items.
 
 Finally, we assert that running the script when it has nothing do also works
 without any errors.
+
+## Grouping logic for CLI tests
+There's two schools of thought here, each with its own merits. Use whatever
+appeals most to you.
+
+### 1. Group all CLI tests in one feature test
+This is the `TestCLI` class approach, related to the "group all test for methods
+of class `A` into an `ATest` feature class".
+
+### 2. Bundle CLI tests with the feature they belong with
+This is our personal approach, but YMMV. For a feature describing and testing
+the order process, we would like the script nullifying old orders to be tested
+there. But seriously, it's all a matter of preference.
 
