@@ -4,6 +4,7 @@ namespace Gentry;
 
 use Reflector;
 use ReflectionMethod;
+use ReflectionFunction;
 use ReflectionException;
 use zpt\anno\Annotations;
 use Closure;
@@ -42,28 +43,34 @@ class Test
         $this->annotations = new Annotations($this->test);
         $description = cleanDocComment($this->test);
         if (preg_match_all(
-            '@\{(\d+)\}::(\$?\w+)?@',
+            '@\{(\d+)\}(:{2}?\$?\w+)?@',
             $description,
             $matches,
             PREG_SET_ORDER
         )) {
             $arguments = $this->getArguments();
             foreach ($matches as $match) {
-                $prop = $match[2];
-                if ($prop{0} == '$') {
-                    $this->features[] = new Test\Property(
-                        $match[1],
-                        substr($prop, 1),
-                        $this->params[$match[1]]->getClass()->name
-                    );
+                if (isset($match[2])) {
+                    $prop = substr($match[2], 2);
+                    if ($prop{0} == '$') {
+                        $this->features[] = new Test\Property(
+                            $match[1],
+                            substr($prop, 1),
+                            $this->params[$match[1]]->getClass()->name
+                        );
+                    } else {
+                        $this->features[] = new Test\Method(
+                            $match[1],
+                            $prop,
+                            $this->params[$match[1]]->getClass()->name
+                        );
+                    }
                 } else {
-                    $this->features[] = new Test\Method(
+                    $this->features[] = new Test\Proxy(
                         $match[1],
-                        $prop,
                         $this->params[$match[1]]->getClass()->name
                     );
                 }
-                $this->feature = $prop;
             }
         }
         $this->description = $description;
@@ -85,11 +92,12 @@ class Test
         } catch (Exception $e) {
             out("  * <blue>{$this->description}");
             out(" <red>[FAILED]\n");
-            $failed[] = "Exception thrown during construction of argument: <magenta>".get_class($e)." (".$e->getMessage().")";
+            $messages[] = "Exception thrown during construction of argument: <magenta>".get_class($e)." (".$e->getMessage().")";
+            $failed++;
             return;
         }
         $this->description = preg_replace_callback(
-            '@{(\d+)}@m',
+            '@{(\d+)}(::\$?\w+)?@m',
             function ($match) use ($args) {
                 $work = $args[$match[1]];
                 if (is_null($work)
@@ -99,7 +107,10 @@ class Test
                 } else {
                     $work = get_class($work);
                 }
-                return $work;
+                if (!isset($match[2])) {
+                    $match[2] = '';
+                }
+                return "<darkBlue>$work{$match[2]}<blue>";
             },
             $this->description
         );
@@ -165,23 +176,48 @@ class Test
                     return false;
                 };
             }
-            if (!is_numeric($pipe)) {
-                if (isset($this->target->$pipe)
-                    && is_callable($this->target->$pipe)
-                ) {
-                    $pipe = $this->target->$pipe;
-                } elseif (!is_callable($pipe)) {
+            if ($feature = array_shift($this->features)) {
+                if ($feature instanceof Test\Proxy) {
+                    if (is_numeric($pipe)) {
+                        out(" <red>[FAILED]\n");
+                        $messages[] = "Pipe {$pipe} must be the name of a method when building integration tests.";
+                        $failed++;
+                        return;
+                    }
+                    if (!is_callable($result)) {
+                        out(" <red>[FAILED]\n");
+                        $messages[] = "Yielded value for integration tests must be a callable injecting the proxied feature's arguments.";
+                        $failed++;
+                        return;
+                    }
+                    if (!$feature->setProxiedFeature(
+                        $this->target,
+                        $pipe,
+                        new ReflectionFunction($result)
+                    )) {
+                        out(" <red>[FAILED]\n");
+                        $messages[] = "<magenta>{$feature->class}::{$pipe}<gray>: No such method.";
+                        $failed++;
+                        return;
+                    }
                     $pipe = null;
                 }
-                $expect['result'] = true;
-            } else {
-                $pipe = null;
-            }
-            if (is_callable($result)) {
-                $pipe = $result;
-                $expect['result'] = true;
-            }
-            if ($feature = array_shift($this->features)) {
+                if (!is_numeric($pipe)) {
+                    if (isset($this->target->$pipe)
+                        && is_callable($this->target->$pipe)
+                    ) {
+                        $pipe = $this->target->$pipe;
+                    } elseif (!is_callable($pipe)) {
+                        $pipe = null;
+                    }
+                    $expect['result'] = true;
+                } else {
+                    $pipe = null;
+                }
+                if (is_callable($result)) {
+                    $pipe = $result;
+                    $expect['result'] = true;
+                }
                 $assert = $feature->assert($args, $expect, $pipe);
                 $tested = $feature->tested;
                 if (!isset($this->testedFeatures[$tested])) {
