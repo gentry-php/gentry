@@ -16,12 +16,14 @@ class Proxy extends Method
      * Constructor. Note the `$name` of the feature is omitted for now, since
      * we won't know what it is until later, and the target is always 0.
      *
-     * @param mixed $target The target to run the feature against.
+     * @param string $description Description of the scenario.
+     * @param int $target Index of the target parameter. Note that internally
+     *  this class always assumes 0, but the description might say otherwise.
      * @param string $class The target's actual classname, for static calls.
      */
-    public function __construct($target, $class)
+    public function __construct($description, $target, $class)
     {
-        parent::__construct(0, null, $class);
+        parent::__construct($description, $target, null, $class);
     }
 
     /**
@@ -61,7 +63,19 @@ class Proxy extends Method
      */
     public function assert(array &$a, $e, callable $p = null)
     {
+        $testedfeature = sprintf(
+            "<darkBlue>%s::%s<blue>",
+            $this->class,
+            $this->name
+        );
+        \Gentry\out(str_replace(
+            '{'.$this->target.'}',
+            $testedfeature,
+            "<blue>{$this->description}"
+        ));
+        $this->description = null;
         $args = [$a[$this->target]];
+        $this->target = 0;
         foreach ($this->proxied->getParameters() as $argument) {
             $work =& $args[];
             if ($argument->isDefaultValueAvailable()) {
