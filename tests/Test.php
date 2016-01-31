@@ -82,5 +82,19 @@ class Test
         $test = new \tmp_foobar;
         yield true;
     }
+
+    /**
+     * {0} first, then {1}, then {2}::$test should be true.
+     */
+    public function integrationTest(Demo\Integration $a, Demo\Integration $b, Demo\IntegrationResult $c)
+    {
+        yield 'method1' => function ($foo = true) {
+            yield true;
+        };
+        yield 'method2' => function ($bar = true) {
+            yield 'count' => 2;
+        };
+        yield true;
+    }
 }
 
