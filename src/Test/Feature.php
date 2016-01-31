@@ -52,16 +52,10 @@ abstract class Feature
     public function assert(array &$args, $expected, callable $pipe = null)
     {
         $property = $this instanceof Property;
-        $testedfeature = sprintf(
-            "<darkBlue>%s::%s%s<blue>",
-            $this->class,
-            $property ? '$' : '',
-            $this->name
-        );
         if (isset($this->description)) {
             \Gentry\out(str_replace(
                 '{'.$this->target.'}',
-                $testedfeature,
+                "<darkBlue>".$this->testedFeature()."<blue>",
                 "<blue>{$this->description}"
             ));
             unset($this->description);
@@ -75,18 +69,21 @@ abstract class Feature
             }
         }
         $verbs = $property ? ['contain', 'found'] : ['return', 'got'];
+        if ($this instanceof Executable) {
+            $verbs[0] = 'exit with';
+        }
         $this->tested = $this->tostring($args[$this->target]);
         if (!$this->throwCompare($expected['thrown'], $actual['thrown'])) {
             $this->messages[] = sprintf(
                 "<gray>Expected %s to throw <darkGray>%s<gray>, caught <darkGray>%s",
-                $testedfeature,
+                $this->testedFeature(),
                 $this->tostring($expected['thrown']),
                 $this->tostring($actual['thrown'])
             );
         } elseif (!$this->isEqual($expected['result'], $actual['result'])) {
             $this->messages[] = sprintf(
-                "<gray>Expected %s to %s <darkGray>%s<gray>, %s <darkGray>%s",
-                $testedfeature,
+                "<gray>Expected <darkGray>%s<gray> to %s <darkGray>%s<gray>, %s <darkGray>%s",
+                $this->testedFeature(),
                 $verbs[0],
                 $this->tostring($expected['result']),
                 $verbs[1],
@@ -97,7 +94,7 @@ abstract class Feature
             $diff = $this->strdiff($expected['out'], $actual['out']);
             $this->messages[] = sprintf(
                 "<gray>Expected output for <darkGray>%s<gray>:\n",
-                strip_tags($testedfeature)
+                strip_tags($this->testedFeature())
             );
             $this->messages[] = $diff['old']."\n";
             $this->messages[] = "<gray>Actual output:\n";
@@ -224,6 +221,16 @@ abstract class Feature
             'old' => preg_replace("@ @ms", "<reset><bgYellow>.<reset>", $old),
             'new' => preg_replace("@ @ms", "<reset><bgYellow>.<reset>", $new),
         ];
+    }
+
+    public function testedFeature()
+    {
+        return sprintf(
+            "%s::%s%s",
+            $this->class,
+           $this instanceof Property ? '$' : '',
+            $this->name
+        );
     }
 
     /**
