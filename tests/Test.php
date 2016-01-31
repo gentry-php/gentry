@@ -30,8 +30,6 @@ class Test
             }
         );
         $test = new Test($target, $reflection);
-        \Gentry\out("  * <blue>stdClass::\$test should be true");
-        \Gentry\out(" <green>[OK]\n");
         echo "       ";
         yield 'is_array' => true;
     }
@@ -84,7 +82,8 @@ class Test
     }
 
     /**
-     * {0} first, then {1}, then {2}::$test should be true.
+     * First {0} returns true, then {1} returns an array with count == 2,
+     * finally {2}::$test should be true.
      */
     public function integrationTest(Demo\Integration $a, Demo\Integration $b, Demo\IntegrationResult $c)
     {
