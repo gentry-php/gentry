@@ -2,16 +2,10 @@
 
 namespace Gentry\Tests;
 
-use Gentry\Test;
-use Gentry\Group;
-use StdClass;
-use ReflectionFunction;
-use Gentry\Demo;
-
 /**
  * Command line test running
  */
-class Test
+class Cli
 {
     /**
      * Running {0} works without problems.
