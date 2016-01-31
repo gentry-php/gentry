@@ -10,6 +10,7 @@ pages:
     - 'Complexer tests': 'writing/complex.md'
     - 'Integration tests': 'writing/integration.md'
     - 'Testing command line scripts': 'writing/cli.md'
+    - 'Testing procedural functions': 'writing/procedural.md'
 - Generating tests:
     - 'About generated tests': 'generating/about.md'
 
