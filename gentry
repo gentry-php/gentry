@@ -222,22 +222,26 @@ foreach ($sourcecode->sources as $file => $code) {
         }
     }
 }
-if ($classes) {
-    out(sprintf(
-        "<cyan>Missing %d class scenario%s.\n",
-        $classes,
-        $classes == 1 ? '' : 's'
-    ));
-}
-if ($methods) {
-    out(sprintf(
-        "<cyan>Missing (at least) %d method test%s.\n",
-        $methods,
-        $methods == 1 ? '' : 's'
-    ));
+if (VERBOSE) {
+    out("\n");
+    if ($classes) {
+        out(sprintf(
+            "<cyan>Missing %d class scenario%s.\n",
+            $classes,
+            $classes == 1 ? '' : 's'
+        ));
+    }
+    if ($methods) {
+        out(sprintf(
+            "<cyan>Missing (at least) %d method test%s.\n",
+            $methods,
+            $methods == 1 ? '' : 's'
+        ));
+    }
 }
 
 $endit = function ($code) use ($start) {
+    out("\n");
     out(sprintf(
         "\n<magenta>Took %0.2f seconds, memory usage %4.2fMb.\n\n",
         microtime(true) - $start,
