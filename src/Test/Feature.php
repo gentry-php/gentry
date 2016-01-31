@@ -15,6 +15,7 @@ use Generator;
  */
 abstract class Feature
 {
+    protected $description;
     protected $target;
     protected $name;
     protected $class;
@@ -24,13 +25,16 @@ abstract class Feature
     /**
      * Constructor.
      *
-     * @param mixed $target The target to test against.
+     * @param string $description Description of the feature.
+     * @param int $target The target to test against, expressed as the argument
+     *  number.
      * @param string $name The name of the feature.
      * @param string $class String version of the target's class. Needed for
      *  abstract testing.
      */
-    public function __construct($target, $name, $class)
+    public function __construct($description, $target, $name, $class)
     {
+        $this->description = $description;
         $this->target = $target;
         $this->name = $name;
         $this->class = $class;
@@ -47,6 +51,21 @@ abstract class Feature
      */
     public function assert(array &$args, $expected, callable $pipe = null)
     {
+        $property = $this instanceof Property;
+        $testedfeature = sprintf(
+            "<darkBlue>%s::%s%s<blue>",
+            $this->class,
+            $property ? '$' : '',
+            $this->name
+        );
+        if (isset($this->description)) {
+            \Gentry\out(str_replace(
+                '{'.$this->target.'}',
+                $testedfeature,
+                "<blue>{$this->description}"
+            ));
+            unset($this->description);
+        }
         $actual = $this->actual($args) + ['result' => null];
         if (isset($pipe)) {
             try {
@@ -55,25 +74,18 @@ abstract class Feature
                 $actual['result'] = false;
             }
         }
-        $property = $this instanceof Property;
         $verbs = $property ? ['contain', 'found'] : ['return', 'got'];
         $this->tested = $this->tostring($args[$this->target]);
-        $testedfeature = sprintf(
-            "<magenta>%s::%s%s<gray>",
-            $this->class,
-            $property ? '$' : '',
-            $this->name
-        );
         if (!$this->throwCompare($expected['thrown'], $actual['thrown'])) {
             $this->messages[] = sprintf(
-                "<gray>Expected %s to throw <magenta>%s<gray>, caught <magenta>%s",
+                "<gray>Expected %s to throw <darkGray>%s<gray>, caught <darkGray>%s",
                 $testedfeature,
                 $this->tostring($expected['thrown']),
                 $this->tostring($actual['thrown'])
             );
         } elseif (!$this->isEqual($expected['result'], $actual['result'])) {
             $this->messages[] = sprintf(
-                "<gray>Expected %s to %s <magenta>%s<gray>, %s <magenta>%s",
+                "<gray>Expected %s to %s <darkGray>%s<gray>, %s <darkGray>%s",
                 $testedfeature,
                 $verbs[0],
                 $this->tostring($expected['result']),
@@ -84,17 +96,12 @@ abstract class Feature
         if ($expected['out'] != $actual['out']) {
             $diff = $this->strdiff($expected['out'], $actual['out']);
             $this->messages[] = sprintf(
-                <<<EOT
-<gray>Expected output for %s:<reset>
-%s
-<reset><gray>Actual output:<reset>
-%s
-EOT
-                ,
-                $testedfeature,
-                $diff['old'],
-                $diff['new']
+                "<gray>Expected output for <darkGray>%s<gray>:\n",
+                strip_tags($testedfeature)
             );
+            $this->messages[] = $diff['old']."\n";
+            $this->messages[] = "<gray>Actual output:\n";
+            $this->messages[] = $diff['new']."\n";
         }
         return $this->isEqual($expected['result'], $actual['result'])
             && $this->throwCompare($expected['thrown'], $actual['thrown'])
