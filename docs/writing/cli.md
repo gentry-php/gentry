@@ -27,15 +27,14 @@ class CliTest
      */
     public function($command = 'bin/myscript')
     {
-        yield 'exec' => 0;
+        yield 0;
     }
 }
 ```
 
 > In the Unix world, it's customary to exit with 0 if a script runs
 > successfully and with an error code on failure. Of course, your own scripts
-> are free to violate this decade-old convention - you can `yield 'exec' =>
-> 'whatever'`.
+> are free to violate this decade-old convention - you can `yield 'whatever'`.
 
 The forwarded call automatically has its `GENTRY` environment variable set, so
 assuming your script uses the same logic for determining e.g. which database to
@@ -76,11 +75,11 @@ class CliIntegrationTest
         yield 'getOldOrders' => function ($period = '-1 day') {
             yield 'count' => 1;
         };
-        yield 'exec' => 0;
+        yield 0;
         yield 'getOldOrders' => function ($period = '-1 day') {
             yield 'count' => 0;
         };
-        yield 'exec' => 0;
+        yield 0;
     }
 }
 ```
