@@ -100,11 +100,9 @@ feedback about stuff like incomplete tests.
 ## Detecting the environment
 For a lot of testing, you'll need to detect whether or not to use a mock object
 (e.g. for database connections), or "the real thang". The simplest way is to
-call `defined('Gentry\COMPOSER_INSTALL') since that constant is defined before
-Gentry does _anything_ else.
-
-Usually you'll do this in a `"bootstrap"` file. This could also setup
-superglobals like `$_SERVER` if you're testing controllers or such.
+check `getenv("GENTRY")` where needed. Gentry's executable sets that for you, so
+it's a sure-fire way of knowing you're in testing mode. Unless you're using that
+same environment variable yourself somewhere. But that would be silly.
 
 ## Generating missing tests
 Run Gentry with the `-g` flag to generate skeletons for missing tests for you:
