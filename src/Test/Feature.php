@@ -228,7 +228,7 @@ EOT
      */
     public function __get($prop)
     {
-        if (in_array($prop, ['name', 'messages', 'tested'])) {
+        if (in_array($prop, ['name', 'messages', 'tested', 'class'])) {
             return $this->$prop;
         }
         throw new ErrorException("Unreadable property $prop");
