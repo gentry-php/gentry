@@ -68,6 +68,12 @@ class Test
                             $this->params[$match[2]]->getClass()->name
                         );
                     }
+                } elseif (is_string($arguments[$match[2]])) {
+                    $this->features[] = new Test\Executable(
+                        $match[0],
+                        $match[2],
+                        $arguments[$match[2]]
+                    );
                 } else {
                     $this->features[] = new Test\Proxy(
                         $match[0],
