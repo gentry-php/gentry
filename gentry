@@ -55,6 +55,7 @@ EOT
 
 $autoloader = require COMPOSER_INSTALL;
 
+putenv("GENTRY=1");
 out("\n<magenta>Gentry 0.5.3 by Marijn Ophorst\n\n");
 
 $config = 'Gentry.json';
