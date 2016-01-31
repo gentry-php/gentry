@@ -2,10 +2,7 @@
 
 namespace Gentry\Tests;
 
-use Gentry\Test;
-use Gentry\Group;
-use StdClass;
-use ReflectionFunction;
+use stdClass;
 use Gentry\Demo;
 
 /**
@@ -16,10 +13,10 @@ class Complex
     /**
      * {0}::foo returns true when auto-used
      */
-    public function traittest(\stdClass &$test = null)
+    public function traittest(stdClass &$test = null)
     {
         if (false && version_compare(phpversion(), '7.0', '>=')) {
-            $test = new class() extends \stdClass {
+            $test = new class() extends stdClass {
                 use Demo\TestTrait;
             };
         } else {
