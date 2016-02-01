@@ -1,8 +1,5 @@
 {
     "src": "./src",
     "tests": "./tests",
-    "includePath": [],
-    "useIncludePath": false,
-    "prepend": false,
-    "strip": false
+    "bootstrap": "demo/procedure.php"
 }

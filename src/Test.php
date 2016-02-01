@@ -42,6 +42,7 @@ class Test
         $this->params = $this->test->getParameters();
         $this->annotations = new Annotations($this->test);
         $description = cleanDocComment($this->test);
+        $description = preg_replace("@\s{1,}@m", ' ', $description);
         if (preg_match_all(
             '@(^|[!\?,:;\.]).*?{(\d+)}(::\$?\w+)?.*?(?=$|[!\?,:;\.])@ms',
             $description,
@@ -74,7 +75,13 @@ class Test
                         $match[2],
                         $arguments[$match[2]]
                     );
-                } else {
+                } elseif ($this->params[$match[2]]->isCallable()) {
+                    $this->features[] = new Test\ProceduralFunction(
+                        $match[0],
+                        $match[2],
+                        $arguments[$match[2]]
+                    );
+                } elseif ($class = $this->params[$match[2]]->getClass()) {
                     $this->features[] = new Test\Proxy(
                         $match[0],
                         $match[2],
@@ -132,39 +139,7 @@ class Test
                 $thrown = null;
             }
             $expect = compact('result', 'thrown', 'out');
-            $check = $expect['result'];
-            foreach ([
-                'is_a',
-                'is_subclass_of',
-                'method_exists',
-                'property_exists',
-            ] as $magic) {
-                if (property_exists($this->target, $magic)) {
-                    continue;
-                }
-                $this->target->$magic = function ($res) use ($magic, $check) {
-                    return call_user_func($magic, $res, $check);
-                };
-            }
-            if (!property_exists($this->target, 'matches')) {
-                $this->target->matches = function ($res) use ($check) {
-                    return (bool)preg_match($check, $res);
-                };
-            }
-            if (!property_exists($this->target, 'count')) {
-                $this->target->count = function ($res) use ($check) {
-                    if ($res instanceof Generator) {
-                        $i = 0;
-                        foreach ($res as $item) {
-                            $i++;
-                        }
-                        return $i == $check;
-                    } elseif (is_array($res)) {
-                        return count($res) == $check;
-                    }
-                    return false;
-                };
-            }
+            Test\Feature::addPipes($this->target, $result);
             if ($feature = array_shift($this->features)) {
                 if ($feature instanceof Test\Proxy) {
                     if (is_numeric($pipe)) {

@@ -32,8 +32,8 @@ class Complex
     }
 
     /**
-     * First {0} returns true, then {1} returns an array with count == 2,
-     * finally {2}::$test should be true.
+     * Integration test: first {0} returns true, then {1} returns an array with
+     * count == 2, finally {2}::$test should be true.
      */
     public function integrationTest(Demo\Integration $a, Demo\Integration $b, Demo\IntegrationResult $c)
     {

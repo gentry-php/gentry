@@ -63,7 +63,7 @@ abstract class Feature
         $actual = $this->actual($args) + ['result' => null];
         if (isset($pipe)) {
             try {
-                $actual['result'] = $pipe($actual['result']);
+                $actual['result'] = call_user_func($pipe, $actual['result']);
             } catch (Exception $e) {
                 $actual['result'] = false;
             }
@@ -246,6 +246,43 @@ abstract class Feature
             return $this->$prop;
         }
         throw new ErrorException("Unreadable property $prop");
+    }
+    
+    /**
+     * Helper method to (re)attach default pipes to a testclass on a per-feature
+     * basis (since the actual `$result` isn't passed to the closures as an
+     * argument). Usually called automatically.
+     *
+     * @param object &$test The test object to attach to.
+     * @param mixed $result Whatever result the test expects.
+     */
+    public static function addPipes(&$test, $result)
+    {
+        foreach ([
+            'is_a',
+            'is_subclass_of',
+            'method_exists',
+            'property_exists',
+        ] as $magic) {
+            $test->$magic = function ($res) use ($magic, $result) {
+                return call_user_func($magic, $res, $result);
+            };
+        }
+        $test->matches = function ($res) use ($result) {
+            return (bool)preg_match($result, $res);
+        };
+        $test->count = function ($res) use ($result) {
+            if ($res instanceof Generator) {
+                $i = 0;
+                foreach ($res as $item) {
+                    $i++;
+                }
+                return $i == $result;
+            } elseif (is_array($res)) {
+                return count($res) == $result;
+            }
+            return false;
+        };
     }
 }
 
