@@ -277,7 +277,7 @@ abstract class Feature
                 foreach ($res as $item) {
                     $i++;
                 }
-                return $i == $check;
+                return $i == $result;
             } elseif (is_array($res)) {
                 return count($res) == $result;
             }
