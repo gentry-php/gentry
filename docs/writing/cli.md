@@ -43,6 +43,12 @@ use as the rest of your code you should be good to go.
 If you use a different logic and/or need other environment variables, feel free
 to define them in the `$command` string.
 
+> Note: there is no such things as an `executable` type hint in PHP. Gentry sees
+> that the parameter contains a string and checks it with `is_executable` (it's
+> the best we have). For strings like `php some/file.php` this returns false, so
+> as an exception an argument is also considered a command if its type is string
+> and the first four characters match `php ` (note the space).
+
 ## Setup and teardown
 This works of course in the exact same way as for any other test class in
 Gentry. `__construct`/`__destroy` for the feature as a whole, and
