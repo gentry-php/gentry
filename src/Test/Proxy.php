@@ -96,6 +96,7 @@ class Proxy extends Method
             } else {
                 $thrown = null;
             }
+            self::addPipes($this->testclass, $result);
             if (!is_numeric($pipe)) {
                 if (isset($this->testclass->$pipe)) {
                     $pipe = $this->testclass->$pipe;
