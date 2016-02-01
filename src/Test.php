@@ -139,7 +139,7 @@ class Test
                 $thrown = null;
             }
             $expect = compact('result', 'thrown', 'out');
-            Test\Feature::addPipes($this, $result);
+            Test\Feature::addPipes($this->target, $result);
             if ($feature = array_shift($this->features)) {
                 if ($feature instanceof Test\Proxy) {
                     if (is_numeric($pipe)) {
