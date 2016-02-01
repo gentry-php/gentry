@@ -139,31 +139,7 @@ class Test
                 $thrown = null;
             }
             $expect = compact('result', 'thrown', 'out');
-            foreach ([
-                'is_a',
-                'is_subclass_of',
-                'method_exists',
-                'property_exists',
-            ] as $magic) {
-                $this->target->$magic = function ($res) use ($magic, $result) {
-                    return call_user_func($magic, $res, $result);
-                };
-            }
-            $this->target->matches = function ($res) use ($result) {
-                return (bool)preg_match($result, $res);
-            };
-            $this->target->count = function ($res) use ($result) {
-                if ($res instanceof Generator) {
-                    $i = 0;
-                    foreach ($res as $item) {
-                        $i++;
-                    }
-                    return $i == $check;
-                } elseif (is_array($res)) {
-                    return count($res) == $result;
-                }
-                return false;
-            };
+            Test\Feature::addPipes($this, $result);
             if ($feature = array_shift($this->features)) {
                 if ($feature instanceof Test\Proxy) {
                     if (is_numeric($pipe)) {
