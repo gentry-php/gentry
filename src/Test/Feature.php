@@ -63,7 +63,7 @@ abstract class Feature
         $actual = $this->actual($args) + ['result' => null];
         if (isset($pipe)) {
             try {
-                $actual['result'] = $pipe($actual['result']);
+                $actual['result'] = call_user_func($pipe, $actual['result']);
             } catch (Exception $e) {
                 $actual['result'] = false;
             }
