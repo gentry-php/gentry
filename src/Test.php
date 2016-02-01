@@ -74,7 +74,13 @@ class Test
                         $match[2],
                         $arguments[$match[2]]
                     );
-                } else {
+                } elseif ($this->params[$match[2]]->isCallable()) {
+                    $this->features[] = new Test\ProceduralFunction(
+                        $match[0],
+                        $match[2],
+                        $arguments[$match[2]]
+                    );
+                } elseif ($class = $this->params[$match[2]]->getClass()) {
                     $this->features[] = new Test\Proxy(
                         $match[0],
                         $match[2],
