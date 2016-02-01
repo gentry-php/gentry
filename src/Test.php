@@ -42,6 +42,7 @@ class Test
         $this->params = $this->test->getParameters();
         $this->annotations = new Annotations($this->test);
         $description = cleanDocComment($this->test);
+        $description = preg_replace("@\s{1,}@m", ' ', $description);
         if (preg_match_all(
             '@(^|[!\?,:;\.]).*?{(\d+)}(::\$?\w+)?.*?(?=$|[!\?,:;\.])@ms',
             $description,
@@ -138,21 +139,20 @@ class Test
                 $thrown = null;
             }
             $expect = compact('result', 'thrown', 'out');
-            $check = $expect['result'];
             foreach ([
                 'is_a',
                 'is_subclass_of',
                 'method_exists',
                 'property_exists',
             ] as $magic) {
-                $this->target->$magic = function ($res) use ($magic, $check) {
-                    return call_user_func($magic, $res, $check);
+                $this->target->$magic = function ($res) use ($magic, $result) {
+                    return call_user_func($magic, $res, $result);
                 };
             }
-            $this->target->matches = function ($res) use ($check) {
-                return (bool)preg_match($check, $res);
+            $this->target->matches = function ($res) use ($result) {
+                return (bool)preg_match($result, $res);
             };
-            $this->target->count = function ($res) use ($check) {
+            $this->target->count = function ($res) use ($result) {
                 if ($res instanceof Generator) {
                     $i = 0;
                     foreach ($res as $item) {
@@ -160,7 +160,7 @@ class Test
                     }
                     return $i == $check;
                 } elseif (is_array($res)) {
-                    return count($res) == $check;
+                    return count($res) == $result;
                 }
                 return false;
             };
