@@ -2,6 +2,8 @@
 
 namespace Gentry\Tests;
 
+use SplFileInfo;
+
 /**
  * Procedural function and code checking
  */
@@ -14,6 +16,16 @@ class Procedural
     {
         $function = '\Gentry\Demo\procedure';
         yield true;
+    }
+
+    /**
+     * Including {0} returns 1.
+     */
+    public function includeFile(SplFileInfo &$file = null)
+    {
+        $file = new SplFileInfo('demo/file.php');
+        echo 'test';
+        yield 1;
     }
 }
 
