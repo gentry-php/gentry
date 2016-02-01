@@ -69,7 +69,11 @@ class Test
                             $this->params[$match[2]]->getClass()->name
                         );
                     }
-                } elseif (is_string($arguments[$match[2]])) {
+                } elseif (is_string($arguments[$match[2]])
+                    && (is_executable($arguments[$match[2]])
+                        || substr($arguments[$match[2]], 0, 4) == 'php '
+                    )
+                ) {
                     $this->features[] = new Test\Executable(
                         $match[0],
                         $match[2],
@@ -82,11 +86,19 @@ class Test
                         $arguments[$match[2]]
                     );
                 } elseif ($class = $this->params[$match[2]]->getClass()) {
-                    $this->features[] = new Test\Proxy(
-                        $match[0],
-                        $match[2],
-                        $this->params[$match[2]]->getClass()->name
-                    );
+                    if ($class->name == 'SplFileInfo') {
+                        $this->features[] = new Test\ProceduralFile(
+                            $match[0],
+                            $match[2],
+                            $arguments[$match[2]]
+                        );
+                    } else {
+                        $this->features[] = new Test\Proxy(
+                            $match[0],
+                            $match[2],
+                            $this->params[$match[2]]->getClass()->name
+                        );
+                    }
                 }
             }
         }
