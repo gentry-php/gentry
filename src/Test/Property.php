@@ -28,7 +28,7 @@ class Property extends Feature
         try {
             $actual['result'] = is_object($target) ?
                 $target->$property :
-                $target::$property;
+                $target::$$property;
         } catch (ErrorException $e) {
             $this->messages[] = sprintf(
                 "<red>ERROR: <gray>No such property <magenta>%s::$%s",
