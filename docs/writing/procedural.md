@@ -46,34 +46,6 @@ with default values as you would normally do.
 > screw up the order of things in your application), so if it can't be loaded
 > via PHP's autoload mechanism, you'll have to it manually.
 
-## Regular code
-Okay, seriously, this kind of stuff is bad form. Gentry won't even try to
-generate skeletons for you - you really should only use procedural code in
-bootstrap-type files, e.g. to setup routing or register dependencies. And of
-course an `index.php` entry point for your application.
-
-Having said that, we're aware that legacy code floats around so we want to at
-least try and help you to test that too. Let's see what we can do:
-
-```php
-<?php
-
-class ProceduralCodeTest
-{
-    /**
-     * {0} includes a file that returns 1
-     */
-    public function(SplFileInfo &$file = null)
-    {
-        $file = new SplFileInfo('path/to/file.php');
-        yield 1;
-    }
-}
-```
-
-Type-hint an argument with the `SplFileInfo` class. This tells Gentry we're
-going to test procedural code for that argument.
-
 ## Integration testing with procedural functions
 This reeks of bad application design, so it isn't offically supported. But if
 you really need to test the effects of a procedural function on your general
@@ -109,4 +81,54 @@ desired values.
 
 Did we mention global procedural functions altering application state are a
 _Really Bad Idea_(tm)?
+
+## Regular code
+Okay, seriously, this kind of stuff is _really_ bad form. Gentry won't even try
+to generate skeletons for you - you really should only use procedural code in
+bootstrap-type files, e.g. to setup routing or register dependencies. And of
+course an `index.php` entry point for your application.
+
+Having said that, we're aware that legacy code floats around so we want to at
+least try and help you to test that too. Let's see what we can do:
+
+```php
+<?php
+
+class ProceduralCodeTest
+{
+    /**
+     * {0} includes a file that returns 1
+     */
+    public function(SplFileInfo &$file = null)
+    {
+        $file = new SplFileInfo('path/to/file.php');
+        yield 1;
+    }
+}
+```
+
+Type-hint an argument with the `SplFileInfo` class. This tells Gentry we're
+going to test procedural code for that argument.
+
+Regular procedural code almost by default needs to be only integration tested,
+so instead of polluting global namespace Gentry places each variable assigned in
+a test procedural file onto the `SplFileInfo` object that was injected. So if we
+need to test that inside `path/to/file.php` a variable `$foo` is set to a
+`new Bar`, simply do this:
+
+```php
+<?php
+
+class ProceduralCodeTest
+{
+    /**
+     * {0}::$foo is set to a Bar.
+     */
+    public function(SplFileInfo &$file = null)
+    {
+        $file = new SplFileInfo('path/to/file.php');
+        yield new Bar;
+    }
+}
+```
 
