@@ -228,7 +228,7 @@ abstract class Feature
         return sprintf(
             "%s::%s%s",
             $this->class,
-           $this instanceof Property ? '$' : '',
+            $this instanceof Property ? '$' : '',
             $this->name
         );
     }
