@@ -53,7 +53,7 @@ class Test
             foreach ($sentences as $sentence) {
                 $work = $sentence[0];
                 $cnt = preg_match_all(
-                    '@(.*?){(\d+)}(::\$?\w+.*?)@ms',
+                    '@(.*?){(\d+)}(::\$?\w+)?@ms',
                     $work,
                     $in_sentence,
                     PREG_SET_ORDER
