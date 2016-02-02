@@ -32,6 +32,9 @@ function out($text, $out = STDOUT)
     foreach (preg_split("@\s+@m", trim($text)) as $word) {
         $len = strlen(cleanOutput($word));
         if (!$len) {
+            if (strlen($word)) {
+                $output($word);
+            }
             continue;
         }
         if ($len + strlen($indent) + $col > 80) {
@@ -67,7 +70,6 @@ function out($text, $out = STDOUT)
         $col = 0;
         $indent = '';
     }
-    $output(Ansi::tagsToColors('<reset>'));
 }
 
 function cleanOutput($string)
