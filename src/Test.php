@@ -44,11 +44,27 @@ class Test
         $description = cleanDocComment($this->test);
         $description = preg_replace("@\s{1,}@m", ' ', $description);
         if (preg_match_all(
-            '@(^|[!\?,:;\.]).*?{(\d+)}(::\$?\w+)?.*?(?=$|[!\?,:;\.])@ms',
+            '@(^|[!\?,;\.]).*?{(\d+)}(::\$?\w+)?.*?(?=$|[!\?,;\.])@ms',
             $description,
-            $matches,
+            $sentences,
             PREG_SET_ORDER
         )) {
+            $matches = [];
+            foreach ($sentences as $sentence) {
+                $cnt = preg_match_all(
+                    '@(.*?){(\d+)}(::\$?\w+)?(.*?)@',
+                    $sentence[0],
+                    $in_sentence,
+                    PREG_SET_ORDER
+                );
+                if ($cnt == 1) {
+                    $matches[] = $sentence;
+                } else {
+                    foreach ($in_sentence as $sub) {
+                        $matches[] = $sub;
+                    }
+                }
+            }
             $arguments = $this->getArguments();
             foreach ($matches as $match) {
                 $match[0] = preg_replace('@{(\d+)}::\$?\w+@m', '{\\1}', $match[0]);
