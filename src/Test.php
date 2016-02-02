@@ -51,9 +51,10 @@ class Test
         )) {
             $matches = [];
             foreach ($sentences as $sentence) {
+                $work = $sentence[0];
                 $cnt = preg_match_all(
-                    '@(.*?){(\d+)}(::\$?\w+)?(.*?)@',
-                    $sentence[0],
+                    '@(.*?){(\d+)}(::\$?\w+.*?)@ms',
+                    $work,
                     $in_sentence,
                     PREG_SET_ORDER
                 );
@@ -62,6 +63,10 @@ class Test
                 } else {
                     foreach ($in_sentence as $sub) {
                         $matches[] = $sub;
+                        $work = str_replace($sub[0], '', $work);
+                    }
+                    if (strlen($work)) {
+                        $matches[count($matches) - 1][0] .= $work;
                     }
                 }
             }
