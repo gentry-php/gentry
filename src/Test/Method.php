@@ -10,8 +10,23 @@ use Exception;
 /**
  * Test a method.
  */
-class Method extends Feature
+class Method extends Property
 {
+    private $args = [];
+
+    public function __construct(array $desc, $name, $class, Reflector $args)
+    {
+        parent::__construct($desc, $name, $class);
+        foreach ($args->getParameters() as $param) {
+            if ($param->isDefaultValueAvailable()) {
+                $work = $param->getDefaultValue();
+            } elseif ($class = $param->getClass()) {
+                $work = new $class;
+            }
+            $this->args[] =& $work;
+        }
+    }
+
     /**
      * Get a hash of actual property value results.
      *
@@ -38,7 +53,7 @@ class Method extends Feature
         try {
             $actual['result'] = $feature->invokeArgs(
                 $args[$this->target],
-                array_slice($args, 1)
+                $this->args
             );
         } catch (Exception $e) {
             $actual['thrown'] = $e;
