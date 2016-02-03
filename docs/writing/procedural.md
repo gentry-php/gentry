@@ -23,13 +23,15 @@ class ProcedureTest
     public function test(callable &$function = null)
     {
         $function = 'myAwesomeFunction';
-        yield true;
+        yield function () {
+            yield true;
+        };
     }
 }
 ```
 
-Gentry will detect that the string argument statisfied `is_callable` and will
-create a `Procedure` test instead of an `Executable`.
+Gentry will detect that the argument is type-hinted as `callable` and will
+create a `Procedure` test.
 
 Two other things of note: we _must_ pass a reference in this case and assign it
 the name of the function to test inside our test method, since Gentry has
@@ -38,8 +40,11 @@ would have been to omit the `callable` typehint, but this is more declarative
 (other programmers looking at your test will instantly see from its definition
 that a function is to be tested).
 
-If the function expects arguments, simply pass them as additional parameters
-with default values as you would normally do.
+Yield an anonymous function specifying the arguments to call the function under
+test with as you normally would. Note that we do not specify a `yield`ed key
+since this would not make sense for "normal" functions.
+
+The keys/values `yield`ed by the function can be pipes as normally.
 
 > Gentry doesn't auto-include the file with your function declaration, so you
 > must do that in your test. Gentry doesn't auto-include anything (it might
