@@ -10,6 +10,14 @@ use Exception;
  */
 class Property extends Feature
 {
+    protected $class;
+
+    public function __construct(array $description, $name, $class)
+    {
+        $this->class = $class;
+        parent::__construct($description, $name);
+    }
+
     /**
      * Get a hash of actual property value results.
      *
@@ -40,6 +48,16 @@ class Property extends Feature
         }
         $actual['out'] = \Gentry\cleanOutput(ob_get_clean());
         return $actual;
+    }
+
+    public function testedFeature()
+    {
+        return sprintf(
+            "%s::%s%s",
+            $this->class,
+            $this instanceof Method ? '' : '$',
+            $this->name
+        );
     }
 }
 
