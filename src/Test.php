@@ -395,9 +395,9 @@ class Test
                         foreach ($res as $item) {
                             $i++;
                         }
-                        return $i == $result;
+                        return $i;
                     } elseif (is_array($res)) {
-                        return count($res) == $result;
+                        return count($res);
                     }
                     return false;
                 };
