@@ -11,7 +11,7 @@ use Gentry\Demo;
 class Complex
 {
     /**
-     * {0}::foo returns true when auto-used
+     * {0} returns true when auto-used
      */
     public function traittest(stdClass &$test = null)
     {
@@ -26,7 +26,9 @@ class Complex
             }
         }
         $test = new \tmp_foobar;
-        yield true;
+        yield 'foo' => function () {
+            yield true;
+        };
     }
 
     /**
