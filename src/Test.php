@@ -7,9 +7,9 @@ use ReflectionMethod;
 use ReflectionFunction;
 use ReflectionException;
 use zpt\anno\Annotations;
-use Closure;
 use Exception;
 use ErrorException;
+use Closure;
 use Generator;
 
 /**
@@ -44,7 +44,7 @@ class Test
         $description = cleanDocComment($this->test);
         $description = preg_replace("@\s{1,}@m", ' ', $description);
         if (preg_match_all(
-            '@(^|[!\?,;\.]).*?{(\d+)}(::\$?\w+)?.*?(?=$|[!\?,;\.])@ms',
+            '@(^|[!\?,;\.]).*?{(\d+)}.*?(?=$|[!\?,;\.])@ms',
             $description,
             $sentences,
             PREG_SET_ORDER
@@ -53,7 +53,7 @@ class Test
             foreach ($sentences as $sentence) {
                 $work = $sentence[0];
                 $cnt = preg_match_all(
-                    '@(.*?){(\d+)}(::\$?\w+)?@ms',
+                    '@(.*?){(\d+)}?@ms',
                     $work,
                     $in_sentence,
                     PREG_SET_ORDER
@@ -71,57 +71,7 @@ class Test
                 }
             }
             $arguments = $this->getArguments();
-            foreach ($matches as $match) {
-                $match[0] = preg_replace('@{(\d+)}::\$?\w+@m', '{\\1}', $match[0]);
-                if (isset($match[3])) {
-                    $prop = substr($match[3], 2);
-                    if ($prop{0} == '$') {
-                        $this->features[] = new Test\Property(
-                            $match[0],
-                            $match[2],
-                            substr($prop, 1),
-                            $this->params[$match[2]]->getClass()->name
-                        );
-                    } else {
-                        $this->features[] = new Test\Method(
-                            $match[0],
-                            $match[2],
-                            $prop,
-                            $this->params[$match[2]]->getClass()->name
-                        );
-                    }
-                } elseif (is_string($arguments[$match[2]])
-                    && (is_executable($arguments[$match[2]])
-                        || substr($arguments[$match[2]], 0, 4) == 'php '
-                    )
-                ) {
-                    $this->features[] = new Test\Executable(
-                        $match[0],
-                        $match[2],
-                        $arguments[$match[2]]
-                    );
-                } elseif ($this->params[$match[2]]->isCallable()) {
-                    $this->features[] = new Test\ProceduralFunction(
-                        $match[0],
-                        $match[2],
-                        $arguments[$match[2]]
-                    );
-                } elseif ($class = $this->params[$match[2]]->getClass()) {
-                    if ($class->name == 'SplFileInfo') {
-                        $this->features[] = new Test\ProceduralFile(
-                            $match[0],
-                            $match[2],
-                            $arguments[$match[2]]
-                        );
-                    } else {
-                        $this->features[] = new Test\Proxy(
-                            $match[0],
-                            $match[2],
-                            $this->params[$match[2]]->getClass()->name
-                        );
-                    }
-                }
-            }
+            $this->features = $matches;
         }
         $this->description = $description;
     }
@@ -163,7 +113,7 @@ class Test
                 $runs = $this->test->invokeArgs($args);
         };
         ob_start();
-        foreach ($invoke() as $pipe => $result) {
+        foreach ($invoke() as $id => $result) {
             $out = cleanOutput(ob_get_clean());
             if ($result instanceof Exception) {
                 $thrown = $result;
@@ -172,8 +122,73 @@ class Test
                 $thrown = null;
             }
             $expect = compact('result', 'thrown', 'out');
-            Test\Feature::addPipes($this->target, $result);
             if ($feature = array_shift($this->features)) {
+                if (is_string($args[$feature[2]])) {
+                    if ($id == 'execute') {
+                        $feature = new Test\Executable(
+                            $feature,
+                            $args[$feature[2]]
+                        );
+                    }
+                } elseif ($result instanceof Closure) {
+                    $feature = new Test\Method(
+                        $feature,
+                        $id,
+                        $this->params[$feature[2]]->getClass()->name,
+                        new ReflectionFunction($result)
+                    );
+                    $result = call_user_func($result);
+                } else {
+                    $feature = new Test\Property(
+                        $feature,
+                        $id,
+                        $this->params[$feature[2]]->getClass()->name
+                    );
+                }
+                /*
+                if (isset($match[3])) {
+                    $prop = substr($match[3], 2);
+                    if ($prop{0} == '$') {
+                    } else {
+                        $this->features[] = new Test\Method(
+                            $match[0],
+                            $match[2],
+                            $prop,
+                            $this->params[$match[2]]->getClass()->name
+                        );
+                    }
+                } elseif (is_string($arguments[$match[2]])
+                    && (is_executable($arguments[$match[2]])
+                        || substr($arguments[$match[2]], 0, 4) == 'php '
+                    )
+                ) {
+                    $this->features[] = new Test\Executable(
+                        $match[0],
+                        $match[2],
+                        $arguments[$match[2]]
+                    );
+                } elseif ($this->params[$match[2]]->isCallable()) {
+                    $this->features[] = new Test\ProceduralFunction(
+                        $match[0],
+                        $match[2],
+                        $arguments[$match[2]]
+                    );
+                } elseif ($class = $this->params[$match[2]]->getClass()) {
+                    if ($class->name == 'SplFileInfo') {
+                        $this->features[] = new Test\ProceduralFile(
+                            $match[0],
+                            $match[2],
+                            $arguments[$match[2]]
+                        );
+                    } else {
+                        $this->features[] = new Test\Proxy(
+                            $match[0],
+                            $match[2],
+                            $this->params[$match[2]]->getClass()->name
+                        );
+                    }
+                }
+            }
                 if ($feature instanceof Test\Proxy) {
                     if (is_numeric($pipe)) {
                         out("<blue>$this->description}");
@@ -218,7 +233,14 @@ class Test
                     $pipe = $result;
                     $expect['result'] = true;
                 }
-                $assert = $feature->assert($args, $expect, $pipe);
+                */
+                foreach ($this->results($result, $expect) as $pipe => $exp) {
+                    $assert = $feature->assert(
+                        $args,
+                        $exp,
+                        $this->pipe($pipe, $exp['result'])
+                    );
+                }
                 $tested = $feature->tested;
                 if (!isset($this->testedFeatures[$tested])) {
                     $this->testedFeatures[$tested] = [];
@@ -247,6 +269,28 @@ class Test
         ob_end_clean();
         out("\n");
         return $args;
+    }
+
+    private function results($result)
+    {
+        if (!($result instanceof Generator)) {
+            $result = [null => $result];
+        }
+        ob_start();
+        foreach ($result as $pipe => $res) {
+            $expect = [
+                'result' => $res,
+                'thrown' => null,
+                'out' => \Gentry\cleanOutput(ob_get_clean()),
+            ];
+            if ($res instanceof Exception) {
+                $expect['thrown'] = $res;
+                $expect['result'] = null;
+            }
+            yield $pipe => $expect;
+            ob_start();
+        }
+        ob_end_clean();
     }
 
     /**
@@ -317,6 +361,52 @@ class Test
         $_POST = [];
         $_SESSION = [];
         $_COOKIE = [];
+    }
+
+    /**
+     * Helper method to (re)attach default pipes to a testclass on a per-feature
+     * basis (since the actual `$result` isn't passed to the closures as an
+     * argument). Usually called automatically.
+     *
+     * @param mixed $pipe A possibly callable pipe.
+     * @param mixed $result Whatever result the test expects.
+     */
+    private function pipe($pipe, $result)
+    {
+        if (is_numeric($pipe)) {
+            return null;
+        }
+        switch ($pipe) {
+            case 'is_a':
+            case 'is_subclass_of':
+            case 'method_exists':
+            case 'property_exists':
+                return function ($res) use ($pipe, $result) {
+                    return call_user_func($pipe, $res, $result);
+                };
+            case 'matches':
+                return function ($res) use ($result) {
+                    return (bool)preg_match($result, $res);
+                };
+            case 'count':
+                return function ($res) use ($result) {
+                    if ($res instanceof Generator) {
+                        $i = 0;
+                        foreach ($res as $item) {
+                            $i++;
+                        }
+                        return $i == $result;
+                    } elseif (is_array($res)) {
+                        return count($res) == $result;
+                    }
+                    return false;
+                };
+            default:
+                if (is_callable($pipe)) {
+                    return $pipe;
+                }
+                return null;
+        }
     }
 }
 
