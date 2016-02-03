@@ -6,9 +6,9 @@ class Executable extends Feature
 {
     private $command;
 
-    public function __construct($description, $target, &$command)
+    public function __construct(array $description, &$command)
     {
-        parent::__construct($description, $target, '', '');
+        parent::__construct($description, '');
         $this->command = $command;
     }
 
