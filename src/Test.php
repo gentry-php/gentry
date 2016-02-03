@@ -123,21 +123,30 @@ class Test
             }
             $expect = compact('result', 'thrown', 'out');
             if ($feature = array_shift($this->features)) {
-                if (is_string($args[$feature[2]])) {
-                    if ($id == 'execute') {
+                if ($result instanceof Closure) {
+                    if ($this->params[$feature[2]]->isCallable()) {
+                        $feature = new Test\ProceduralFunction(
+                            $feature,
+                            new ReflectionFunction($result)
+                        );
+                    } else {
+                        $feature = new Test\Method(
+                            $feature,
+                            $id,
+                            $this->params[$feature[2]]->getClass()->name,
+                            new ReflectionFunction($result)
+                        );
+                    }
+                    $result = call_user_func($result);
+                } elseif (is_string($args[$feature[2]])) {
+                    if ($id === 'execute') {
                         $feature = new Test\Executable(
                             $feature,
                             $args[$feature[2]]
                         );
+                    } elseif (is_callable($args[$feature[2]])) {
+                        die('ok');
                     }
-                } elseif ($result instanceof Closure) {
-                    $feature = new Test\Method(
-                        $feature,
-                        $id,
-                        $this->params[$feature[2]]->getClass()->name,
-                        new ReflectionFunction($result)
-                    );
-                    $result = call_user_func($result);
                 } else {
                     $feature = new Test\Property(
                         $feature,
