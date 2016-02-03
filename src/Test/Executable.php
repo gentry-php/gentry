@@ -8,8 +8,8 @@ class Executable extends Feature
 
     public function __construct(array $description, &$command)
     {
-        parent::__construct($description, '');
         $this->command = $command;
+        parent::__construct($description, '');
     }
 
     /**
