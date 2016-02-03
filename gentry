@@ -69,6 +69,8 @@ foreach ($argv as $i => $arg) {
         $verbose = true;
     } elseif ($arg == '-g') {
         $generate = true;
+    } elseif (preg_match('@--filter=(.*)@', $arg, $filter)) {
+        $filter = $filter[1];
     } else {
         $config = $arg;
     }
@@ -118,8 +120,8 @@ $passed = 0;
 $failed = 0;
 $messages = [];
 $incomplete = 0;
-foreach ($existing->tests as $class => $file) {
-    $class = new $class;
+foreach ($existing->tests as $classname => $file) {
+    $class = new $classname;
     $reflection = new ReflectionClass($class);
     $annotations = new Annotations($reflection);
     $ok = false;
@@ -141,6 +143,11 @@ foreach ($existing->tests as $class => $file) {
         new Annotations(new ReflectionMethod($class, '__wakeup')) :
         [];
     foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+        if (isset($filter)
+            && !preg_match("@$filter@", "$classname::$method")
+        ) {
+            continue;
+        }
         if ($method->name{0} == '_') {
             continue;
         }
