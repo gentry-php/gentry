@@ -16,9 +16,7 @@ class Complex
     public function traittest(stdClass &$test = null)
     {
         if (false && version_compare(phpversion(), '7.0', '>=')) {
-            $test = new class() extends stdClass {
-                use Demo\TestTrait;
-            };
+            $test = require '../demo/php7.php';
         } else {
             if (!class_exists('tmp_foobar')) {
                 eval("class tmp_foobar extends \stdClass
