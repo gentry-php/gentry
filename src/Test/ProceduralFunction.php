@@ -10,10 +10,10 @@ class ProceduralFunction extends Feature
 {
     private $fn;
 
-    public function __construct($description, $target, &$fn)
+    public function __construct(array $description, &$fn)
     {
-        parent::__construct($description, $target, '', '');
         $this->fn = $fn;
+        parent::__construct($description, '');
     }
 
     /**
@@ -24,7 +24,6 @@ class ProceduralFunction extends Feature
      */
     public function actual(array $args)
     {
-        $this->fn = $args[$this->target];
         $callargs = $args;
         unset($callargs[$this->target]);
         $callargs = array_values($callargs);
