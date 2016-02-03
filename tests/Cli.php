@@ -13,8 +13,8 @@ class Cli
     public function cliTest($command = 'demo/executable', $command2 = 'demo/failing-executable')
     {
         echo 'test';
-        yield 0;
-        yield 1;
+        yield 'execute' => 0;
+        yield 'execute' => 1;
     }
 }
 
