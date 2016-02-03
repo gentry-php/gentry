@@ -25,19 +25,25 @@ abstract class Feature
     /**
      * Constructor.
      *
-     * @param string $description Description of the feature.
+     * @param array $description Description of the feature, as regexed from
+     *  its doccomment. Index 0 is the full description, 2 is the parameter
+     *  number of the target to test.
      * @param int $target The target to test against, expressed as the argument
      *  number.
      * @param string $name The name of the feature.
      * @param string $class String version of the target's class. Needed for
      *  abstract testing.
      */
-    public function __construct($description, $target, $name, $class)
+    public function __construct(array $description, $name)
     {
-        $this->description = $description;
-        $this->target = $target;
+        $this->description = $description[0];
+        $this->target = $description[2];
         $this->name = $name;
-        $this->class = $class;
+        \Gentry\out(str_replace(
+            '{'.$this->target.'}',
+            "<darkBlue>".$this->testedFeature()."<blue>",
+            "<blue>{$this->description}"
+        ));
     }
 
     /**
@@ -51,15 +57,7 @@ abstract class Feature
      */
     public function assert(array &$args, $expected, callable $pipe = null)
     {
-        $property = $this instanceof Property;
-        if (isset($this->description)) {
-            \Gentry\out(str_replace(
-                '{'.$this->target.'}',
-                "<darkBlue>".$this->testedFeature()."<blue>",
-                "<blue>{$this->description}"
-            ));
-            unset($this->description);
-        }
+        $property = !($this instanceof Method);
         $actual = $this->actual($args) + ['result' => null];
         if (isset($pipe)) {
             try {
@@ -225,12 +223,7 @@ abstract class Feature
 
     public function testedFeature()
     {
-        return sprintf(
-            "%s::%s%s",
-            $this->class,
-            $this instanceof Property ? '$' : '',
-            $this->name
-        );
+        return $this->name;
     }
 
     /**
@@ -246,43 +239,6 @@ abstract class Feature
             return $this->$prop;
         }
         throw new ErrorException("Unreadable property $prop");
-    }
-    
-    /**
-     * Helper method to (re)attach default pipes to a testclass on a per-feature
-     * basis (since the actual `$result` isn't passed to the closures as an
-     * argument). Usually called automatically.
-     *
-     * @param object &$test The test object to attach to.
-     * @param mixed $result Whatever result the test expects.
-     */
-    public static function addPipes(&$test, $result)
-    {
-        foreach ([
-            'is_a',
-            'is_subclass_of',
-            'method_exists',
-            'property_exists',
-        ] as $magic) {
-            $test->$magic = function ($res) use ($magic, $result) {
-                return call_user_func($magic, $res, $result);
-            };
-        }
-        $test->matches = function ($res) use ($result) {
-            return (bool)preg_match($result, $res);
-        };
-        $test->count = function ($res) use ($result) {
-            if ($res instanceof Generator) {
-                $i = 0;
-                foreach ($res as $item) {
-                    $i++;
-                }
-                return $i == $result;
-            } elseif (is_array($res)) {
-                return count($res) == $result;
-            }
-            return false;
-        };
     }
 }
 
