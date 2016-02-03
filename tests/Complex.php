@@ -33,7 +33,7 @@ class Complex
 
     /**
      * Integration test: first {0} returns true, then {1} returns an array with
-     * count == 2, finally {2}::$test should be true.
+     * count == 2, finally {2} should be true.
      */
     public function integrationTest(Demo\Integration $a, Demo\Integration $b, Demo\IntegrationResult $c)
     {
@@ -43,7 +43,7 @@ class Complex
         yield 'method2' => function ($bar = true) {
             yield 'count' => 2;
         };
-        yield true;
+        yield 'test' => true;
     }
 }
 
