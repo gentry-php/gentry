@@ -3,17 +3,18 @@
 namespace Gentry\Test;
 
 use Exception;
+use Reflector;
 use ReflectionFunction;
 use ReflectionException;
 
-class ProceduralFunction extends Feature
+class ProceduralFunction extends Method
 {
     private $fn;
 
-    public function __construct(array $description, &$fn)
+    public function __construct(array $description, $name, Reflector &$args)
     {
-        $this->fn = $fn;
-        parent::__construct($description, '');
+        $this->fn = $name;
+        parent::__construct($description, '', null, $args);
     }
 
     /**
@@ -24,9 +25,6 @@ class ProceduralFunction extends Feature
      */
     public function actual(array $args)
     {
-        $callargs = $args;
-        unset($callargs[$this->target]);
-        $callargs = array_values($callargs);
         $actual = ['thrown' => null, 'out' => '', 'result' => false];
         try {
             $function = new ReflectionFunction($this->fn);
@@ -36,7 +34,7 @@ class ProceduralFunction extends Feature
         }
         ob_start();
         try {
-            $actual['result'] = $function->invokeArgs($callargs);
+            $actual['result'] = $function->invokeArgs($this->args);
         } catch (Exception $e) {
             $actual['thrown'] = $e;
         }
