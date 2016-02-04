@@ -146,8 +146,6 @@ class Test
                             $feature,
                             $args[$feature[2]]
                         );
-                    } elseif (is_callable($args[$feature[2]])) {
-                        die('ok');
                     }
                 } elseif (is_integer($id)) {
                     if ($args[$feature[2]] instanceof SplFileInfo) {
@@ -165,95 +163,6 @@ class Test
                         $this->params[$feature[2]]->getClass()->name
                     );
                 }
-                /*
-                if (isset($match[3])) {
-                    $prop = substr($match[3], 2);
-                    if ($prop{0} == '$') {
-                    } else {
-                        $this->features[] = new Test\Method(
-                            $match[0],
-                            $match[2],
-                            $prop,
-                            $this->params[$match[2]]->getClass()->name
-                        );
-                    }
-                } elseif (is_string($arguments[$match[2]])
-                    && (is_executable($arguments[$match[2]])
-                        || substr($arguments[$match[2]], 0, 4) == 'php '
-                    )
-                ) {
-                    $this->features[] = new Test\Executable(
-                        $match[0],
-                        $match[2],
-                        $arguments[$match[2]]
-                    );
-                } elseif ($this->params[$match[2]]->isCallable()) {
-                    $this->features[] = new Test\ProceduralFunction(
-                        $match[0],
-                        $match[2],
-                        $arguments[$match[2]]
-                    );
-                } elseif ($class = $this->params[$match[2]]->getClass()) {
-                    if ($class->name == 'SplFileInfo') {
-                        $this->features[] = new Test\ProceduralFile(
-                            $match[0],
-                            $match[2],
-                            $arguments[$match[2]]
-                        );
-                    } else {
-                        $this->features[] = new Test\Proxy(
-                            $match[0],
-                            $match[2],
-                            $this->params[$match[2]]->getClass()->name
-                        );
-                    }
-                }
-            }
-                if ($feature instanceof Test\Proxy) {
-                    if (is_numeric($pipe)) {
-                        out("<blue>$this->description}");
-                        out("<red>[FAILED]\n");
-                        $messages[] = "Pipe {$pipe} must be the name of a method when building integration tests.";
-                        $failed++;
-                        return;
-                    }
-                    if (!is_callable($result)) {
-                        out("<blue>{$this->description}");
-                        out("<red>[FAILED]\n");
-                        $messages[] = "Yielded value for integration tests must be a callable injecting the proxied feature's arguments.";
-                        $failed++;
-                        return;
-                    }
-                    if (!$feature->setProxiedFeature(
-                        $this->target,
-                        $pipe,
-                        new ReflectionFunction($result)
-                    )) {
-                        out("<blue>{$this->description}");
-                        out("<red>[FAILED]\n");
-                        $messages[] = "<magenta>{$feature->class}::{$pipe}<gray>: No such method.";
-                        $failed++;
-                        return;
-                    }
-                    $pipe = null;
-                }
-                if (!is_numeric($pipe)) {
-                    if (isset($this->target->$pipe)
-                        && is_callable($this->target->$pipe)
-                    ) {
-                        $pipe = $this->target->$pipe;
-                    } elseif (!is_callable($pipe)) {
-                        $pipe = null;
-                    }
-                    $expect['result'] = true;
-                } else {
-                    $pipe = null;
-                }
-                if (is_callable($result)) {
-                    $pipe = $result;
-                    $expect['result'] = true;
-                }
-                */
                 foreach ($this->results($result, $expect) as $pipe => $exp) {
                     $assert = $feature->assert(
                         $args,
@@ -291,23 +200,23 @@ class Test
         return $args;
     }
 
-    private function results($result)
+    private function results($result, array $expect)
     {
         if (!($result instanceof Generator)) {
             $result = [null => $result];
         }
         ob_start();
         foreach ($result as $pipe => $res) {
-            $expect = [
+            $expected = [
                 'result' => $res,
                 'thrown' => null,
-                'out' => \Gentry\cleanOutput(ob_get_clean()),
+                'out' => $expect['out'].\Gentry\cleanOutput(ob_get_clean()),
             ];
             if ($res instanceof Exception) {
-                $expect['thrown'] = $res;
-                $expect['result'] = null;
+                $expected['thrown'] = $res;
+                $expected['result'] = null;
             }
-            yield $pipe => $expect;
+            yield $pipe => $expected;
             ob_start();
         }
         ob_end_clean();
