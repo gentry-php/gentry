@@ -125,21 +125,21 @@ class Test
             $expect = compact('result', 'thrown', 'out');
             if ($feature = array_shift($this->features)) {
                 if ($result instanceof Closure) {
+                    $result = new ReflectionFunction($result);
                     if ($this->params[$feature[2]]->isCallable()) {
                         $feature = new Test\ProceduralFunction(
                             $feature,
                             $args[$feature[2]],
-                            new ReflectionFunction($result)
+                            $result
                         );
                     } else {
                         $feature = new Test\Method(
                             $feature,
                             $id,
                             $this->params[$feature[2]]->getClass()->name,
-                            new ReflectionFunction($result)
+                            $result
                         );
                     }
-                    $result = call_user_func($result);
                 } elseif (is_string($args[$feature[2]])) {
                     if ($id === 'execute') {
                         $feature = new Test\Executable(
