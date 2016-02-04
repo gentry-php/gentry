@@ -12,7 +12,8 @@
     "require": {
         "zeptech/annotations": "^1.0.0",
         "monomelodies/kingconf": "^1.0",
-        "simoneast/simple-ansi-colors": "^1.0"
+        "simoneast/simple-ansi-colors": "^1.0",
+        "jonnyw/php-phantomjs": "4.*"
     },
     "bin": [
         "gentry"
@@ -28,5 +29,13 @@
             "Gentry\\Tests\\": "tests",
             "Gentry\\Demo\\": "demo"
         }
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "PhantomInstaller\\Installer::installPhantomJS"
+        ],
+        "post-update-cmd": [
+            "PhantomInstaller\\Installer::installPhantomJS"
+        ]
     }
 }
