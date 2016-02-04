@@ -124,7 +124,9 @@ class Test
             }
             $expect = compact('result', 'thrown', 'out');
             if ($feature = array_shift($this->features)) {
-                if ($result instanceof Closure) {
+                if ($result instanceof Closure
+                    && (new ReflectionFunction($result))->isGenerator()
+                ) {
                     $result = new ReflectionFunction($result);
                     if ($this->params[$feature[2]]->isCallable()) {
                         $feature = new Test\ProceduralFunction(
