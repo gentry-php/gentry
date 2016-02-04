@@ -14,6 +14,7 @@ class Cli
     {
         echo 'test';
         yield 'execute' => 0;
+        echo 'test';
         yield 'execute' => 1;
     }
 }
