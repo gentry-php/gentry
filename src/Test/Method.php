@@ -12,7 +12,7 @@ use Exception;
  */
 class Method extends Property
 {
-    private $args = [];
+    protected $args = [];
 
     public function __construct(array $desc, $name, $class, Reflector $args)
     {
