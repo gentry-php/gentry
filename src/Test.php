@@ -127,6 +127,7 @@ class Test
                     if ($this->params[$feature[2]]->isCallable()) {
                         $feature = new Test\ProceduralFunction(
                             $feature,
+                            $args[$feature[2]],
                             new ReflectionFunction($result)
                         );
                     } else {
