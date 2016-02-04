@@ -27,7 +27,7 @@ class CliTest
      */
     public function($command = 'bin/myscript')
     {
-        yield 0;
+        yield 'execute' => 0;
     }
 }
 ```
@@ -43,11 +43,12 @@ use as the rest of your code you should be good to go.
 If you use a different logic and/or need other environment variables, feel free
 to define them in the `$command` string.
 
-> Note: there is no such things as an `executable` type hint in PHP. Gentry sees
-> that the parameter contains a string and checks it with `is_executable` (it's
-> the best we have). For strings like `php some/file.php` this returns false, so
-> as an exception an argument is also considered a command if its type is string
-> and the first four characters match `php ` (note the space).
+The special key `"execute"` instructs Gentry that the argument in question
+should be, ehm, executed. Currently Gentry does no validation on the command, so
+it really is up to you to make sure it is executable.
+
+> If the parameter specified _isn't_ a string, normal logic kicks in, i.e. the
+> key is assumed to be a property, method or array index.
 
 ## Setup and teardown
 This works of course in the exact same way as for any other test class in
@@ -86,11 +87,11 @@ class CliIntegrationTest
         yield 'getOldOrders' => function ($period = '-1 day') {
             yield 'count' => 1;
         };
-        yield 0;
+        yield 'execute' => 0;
         yield 'getOldOrders' => function ($period = '-1 day') {
             yield 'count' => 0;
         };
-        yield 0;
+        yield 'execute' => 0;
     }
 }
 ```

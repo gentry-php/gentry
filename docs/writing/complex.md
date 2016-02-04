@@ -12,7 +12,7 @@ testclass. Likewise, teardown in the `__destroy` magic method.
 For per-test setup and teardown (like loading a database fixture), use
 `__wakeup` and `__sleep` respectively.
 
-Each of these methods may be annotated with an `@Description`. Note this will
+Each of these methods may be annotated with a `@Description`. Note this will
 only be outputted when running in verbose mode.
 
 For reusable objects, the following pattern is common:
@@ -28,14 +28,16 @@ class MyTest
     }
 
     /**
-     * {0}::bar should return true
+     * {0} should return true
      */
     public function testSomething(Foo &$foo = null)
     {
         // Note $foo is a reference in the method declaration; we can thus
         // assign the instantiated object to it to test on.
         $foo = $this->foo;
-        yield true;
+        yield 'bar' => function () {
+            yield true;
+        };
     }
 }
 ```
@@ -44,6 +46,7 @@ You could also define some functions for that, e.g. `getFoo`.
 
 > Note: PHP requires `__sleep` to return an array of serializable properties.
 > Since we won't be actually serializing anything, just return an empty array.
+> But in most cases you'll only need `__wakeup` to reset stuff.
 
 ## Resetting global state
 If you need to reset global state prior to testing (e.g. `$_POST = []`) just do
@@ -78,14 +81,38 @@ _that_ will be compared instead:
 ```php
 <?php
 
-class MyArrayTest extends Scenario
+class MyPipeTest extends Scenario
 {
     /**
-     * count({0}::$bar) should equal three.
+     * count({0}) should equal three.
      */
     public function threeItems(Foo $foo)
     {
-        yield 'count' => 3;
+        yield 'bar' => function () {
+            // "count" satisfies `is_callable`, hence a pipe:
+            yield 'count' => 3;
+        };
+    }
+}
+```
+
+To do the same for properties, we need a little trick: wrap an anonymous
+function inside `call_user_func` (since directly `yield`ing it would make Gentry
+assume we're testing a method):
+
+```php
+<?php
+
+class MyArrayTest extends Scenario
+{
+    /**
+     * count({0}) should equal three.
+     */
+    public function threeItems(Foo $foo)
+    {
+        yield 'bar' => call_user_func(function() {
+            yield 'count' => 3;
+        });
     }
 }
 ```
@@ -101,12 +128,16 @@ You can yield multiple callables to run multiple checks, e.g.:
 class MyArrayTest extends Scenario
 {
     /**
-     * {0}::$bar should be an array, and count({0}::$bar) must equal three.
+     * {0} should be an array, and count({0}) must equal three.
      */
     public function threeItems(Foo $foo)
     {
-        yield 'is_array' => true;
-        yield 'count' => 3;
+        yield 'bar' => call_user_func(function () {
+            yield 'is_array' => true;
+        });
+        yield 'bar' => call_user_func(function () {
+            yield 'count' => 3;
+        });
     }
 }
 ```
@@ -115,7 +146,7 @@ The second test will only be tried if the first one succeeds, etc. So if
 `$foo->bar` ends up with a non-array value, the scenario will fail and the
 second test is marked as "skipped".
 
-Note that the return values are reset for every "pipe", so technically it's more
+Return values for methods are reset for each `yield`, so technically it's more
 of a filter than a pipe ;).
 
 ### Using custom functions
@@ -163,9 +194,6 @@ class MyArrayTest extends Scenario
 }
 ```
 
-For convenience, you can also directly yield a callable. This is shorthand for
-`$this->randomName = $theYieldedCallable; yield 'randomName' => true;`.
-
 ### Expecting a `Closure`
 If the method or property under test _expects_ a `Closure` (i.e. its return
 value isn't to be piped), you could simply pipe through `is_callable` itself:
@@ -209,16 +237,22 @@ class SomeTest
 Gentry's regular object comparison logic will kick in now.
 
 ### Special cases
-For convenience, the following callable keys are automatically overridden on the
-object under test: `is_a`, `is_subclass_of`, `method_exists`, `property_exists`.
-For these special cases, the yielded value is actually the second parameter of
-the function, e.g. `yield 'is_a' => 'Foo';`.
+For convenience, the following callable keys are automatically defined by
+Gentry: `is_a`, `is_subclass_of`, `method_exists`, `property_exists`. For these
+special cases, the yielded value is actually the second parameter of the
+function, e.g. `yield 'is_a' => 'Foo';`.
+
+The pipe `count` extends PHP's `count` function to also count generators
+correctly.
+
+Note that you can _still_ override these on your test object by using the
+appropriate keys. This override will only apply to the current test object,
+subsequent features will be tested using the defaults again.
 
 ## Repeating tests
 Sometimes you want the exact same test to be repeated a number of times, e.g. to
 assure it returns the same result for each consecutive run. Simply mention
-`"{0}::someMethod"` the desired number of times, and `yield` as many expected
-results.
+`"{0}"` the desired number of times, and `yield` as many expected results.
 
 > Note:  `__wakeup` and `__sleep` are only called once for all iterations. If
 > you specifically need to retest a method including setup and teardown, you'll

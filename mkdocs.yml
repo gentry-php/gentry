@@ -8,7 +8,9 @@ pages:
 - Writing tests:
     - 'The basics': 'writing/basics.md'
     - 'Complexer tests': 'writing/complex.md'
+    - 'Unit tests': 'writing/unit.md'
     - 'Integration tests': 'writing/integration.md'
+    - 'Acceptance tests': 'writing/acceptance.md'
     - 'Testing command line scripts': 'writing/cli.md'
     - 'Testing procedural code': 'writing/procedural.md'
 - Generating tests:

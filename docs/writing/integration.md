@@ -1,19 +1,9 @@
 # Integration tests
-Gentry's basic premise is that each scenario tests exactly one method on one
-object. This works great for classical unit tests, but what if you want to run
-something more akin to an _integration test_?
-
 Integration tests test multiple features on various components, which should
 remain in a consistent state - as defined by the programmer - throughout the
 test. For example, a user can login, place an order, complete the payment
 process, log out and back in, and see her order history with the updated item.
 That's a lot of calls to make, and on a lot of different objects!
-
-One could accomplish this by placing these test in a seperate scenario class and
-doing setup/teardown in its constructor instead of in `__wakeup`/`__sleep`, but
-luckily Gentry offers an easier way which is more descriptive (after all, it
-won't be immediately apparent to the casual reader that the tests are related).
-You can also use the following syntax:
 
 ```php
 <?php
@@ -37,47 +27,16 @@ class Test
 }
 ```
 
-Whoah, what's going on here?
+Grouping-wise, you could also unit test `Foo::methodA` and `Bar::methodB` in the
+same test class as your integration test, or leave them in separate test
+classes. This is partly a matter of taste and partly a matter of logic; if the
+unit tested method only makes sense in the context of the integration test (e.g.
+`UserModel::login` probably only gets called during login and its associated
+integration test) we'd advise to keep them together. If a method gets called in
+multiple places (`UserModel::getAvatar` for instance) we'd probably keep it
+separate in a `UserModelTest` feature.
 
-First, we left out the method names in our doccomment for `{0}` and `{1}`. Next,
-we used the "pipe style" to yield key/value pairs of method names and callables.
-Gentry recognises when the pipe is an existing method on one of the injected
-objects, _and_ its value is itself a callable. In these cases, the method in
-question will be called using the parameters defined in the callable (instead of
-taking parameters from the test method itself). Finally, the callable yields the
-expected result - optionally via a pipe - of calling that method. Inside the
-callable, you can yield multiple pipes; the singular result is checked on all of
-them without re-calling the method. To recall the method (e.g. `methodB` in the
-above example) mention multiple `{n}` items for that parameter and simply yield
-multiple callables with that method name as normally.
-
-Of course, the callables can have referenced arguments too which are first
-"massaged" before yielding. They can also be shared using the `use (&$varname)`
-syntax.
-
-## Testing related properties in an integration
-Note that the `yield "$someProperty" => function () { ... }` syntax doesn't make
-sense and hence isn't supported. If you need to test properties of > related
-objects, simply write `{n}::$property` in your description:
-
-```php
-<?php
-
-class Test
-{
-    /**
-     * {0} does something, so does {1} and afterwards {0}::$foo is true.
-     */
-    public function anotherIntegrationTest(Foo $foo, Bar $bar)
-    {
-        yield 'methodA' => function () {
-            yield true;
-        };
-        yield 'methodB' => function () {
-            yield true;
-        };
-        yield true;
-    }
-}
-```
+Note that Gentry doesn't care either way (you could even test your entire
+application in just one big class...) and will correctly detect which methods
+still require testing no matter how you group them.
 
