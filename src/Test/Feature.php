@@ -9,6 +9,7 @@ use zpt\anno\Annotations;
 use Exception;
 use ErrorException;
 use Generator;
+use Closure;
 
 /**
  * Abstract base class for a feature test. Normally only used internally.
@@ -59,6 +60,10 @@ abstract class Feature
     {
         $property = !($this instanceof Method);
         $actual = $this->actual($args) + ['result' => null];
+        if ($expected['result'] instanceof Closure) {
+            $actual['result'] = call_user_func($expected['result'], $actual['result']);
+            $expected['result'] = true;
+        }
         if (isset($pipe)) {
             try {
                 $actual['result'] = call_user_func($pipe, $actual['result']);
