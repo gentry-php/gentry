@@ -1,5 +1,6 @@
 <?php
 
 echo 'test';
-return 1;
+$foo = 'bar';
+return 'hi there';
 
