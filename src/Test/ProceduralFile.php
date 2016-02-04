@@ -5,47 +5,59 @@ namespace Gentry\Test;
 use Exception;
 use ReflectionFunction;
 use ReflectionException;
+use Gentry\File;
 
-class ProceduralFile extends Feature
+class ProceduralFile extends Method
 {
-    private $fiile;
+    private $file;
 
-    public function __construct($description, $target, &$file)
+    public function __construct(array $description, File &$file)
     {
-        parent::__construct($description, $target, '', '');
         $this->file = $file;
+        parent::__construct(
+            $description,
+            'getReturnedValue',
+            'Gentry\File',
+            new ReflectionFunction(function () {})
+        );
     }
 
     /**
-     * Get a hash of actual function results.
+     * Include a procedural file and return resulting object representation.
      *
      * @param array $args Arguments to test with.
-     * @return array A hash with value, thrown exception and output results.
+     * @return Gentry\File An object representing the included file's
+     *  environment.
+     * @see Gentry\File
      */
-    public function actual(array &$args)
+    public function actual(array $args)
     {
-        $this->file = $args[$this->target];
         $actual = ['thrown' => null, 'out' => '', 'result' => false];
-        $resutl = false;
+        $result = false;
+        $out = '';
+        $vars = [];
         try {
-            $before = [];
-            list($result, $vars) = call_user_func(function () {
+            foreach (call_user_func(function () {
                 ob_start();
-                return [include $this->file, get_defined_vars()];
-            });
-            $after = array_diff($before, $vars);
+                yield 'result' => include $this->file->__toString();
+                yield 'out' => \Gentry\cleanOutput(ob_get_clean());
+                yield 'vars' => get_defined_vars();
+            }) as $var => $val) {
+                $$var = $val;
+            }
         } catch (Exception $e) {
             $actual['thrown'] = $e;
-            $after = [];
+            $actual['out'] = \Gentry\cleanOutput(ob_get_clean());
         }
-        $actual['result'] = $result;
-        $actual['out'] = \Gentry\cleanOutput(ob_get_clean());
-        return $actual;
+        $this->file->setIncludeResults($result, $out, $vars);
+        $args[$this->target] = $this->file;
+        $actual['result']  = $result;
+        return $actual + parent::actual($args);
     }
 
     public function testedFeature()
     {
-        return $this->file;
+        return $this->file->getBaseName();
     }
 }
 
