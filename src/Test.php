@@ -11,6 +11,7 @@ use Exception;
 use ErrorException;
 use Closure;
 use Generator;
+use SplFileInfo;
 
 /**
  * The main test class. Normally gets constructed internally, you don't have
@@ -147,6 +148,15 @@ class Test
                         );
                     } elseif (is_callable($args[$feature[2]])) {
                         die('ok');
+                    }
+                } elseif (is_integer($id)) {
+                    if ($args[$feature[2]] instanceof SplFileInfo) {
+                        $id = 'getReturnedValue';
+                        $args[$feature[2]] = new File($args[$feature[2]]);
+                        $feature = new Test\ProceduralFile(
+                            $feature,
+                            $args[$feature[2]]
+                        );
                     }
                 } else {
                     $feature = new Test\Property(
