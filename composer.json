@@ -10,10 +10,13 @@
         }
     ],
     "require": {
+        "php": ">=5.5",
         "zeptech/annotations": "^1.0.0",
         "monomelodies/kingconf": "^1.0",
         "simoneast/simple-ansi-colors": "^1.0",
-        "php": ">=5.5"
+        "jonnyw/php-phantomjs": "4.*",
+        "psr/cache": "^1.0",
+        "monomelodies/dabble": "^1.5"
     },
     "bin": [
         "gentry"
@@ -29,5 +32,13 @@
             "Gentry\\Tests\\": "tests",
             "Gentry\\Demo\\": "demo"
         }
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "PhantomInstaller\\Installer::installPhantomJS"
+        ],
+        "post-update-cmd": [
+            "PhantomInstaller\\Installer::installPhantomJS"
+        ]
     }
 }

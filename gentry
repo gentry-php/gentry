@@ -34,14 +34,12 @@ foreach ([
     __DIR__.'/vendor/autoload.php',
 ] as $file) {
     if (file_exists($file)) {
-        define('Gentry\COMPOSER_INSTALL', $file);
         break;
     }
+    unset($file);
 }
 
-unset($file);
-
-if (!defined('Gentry\COMPOSER_INSTALL')) {
+if (!isset($file)) {
     fwrite(STDERR, <<<EOT
 \033[1;31mError: \033[0mYou need to set up the project dependencies using the following commands:
 
@@ -53,9 +51,20 @@ EOT
     die(1);
 }
 
-$autoloader = require COMPOSER_INSTALL;
+$autoloader = require $file;
+putenv("GENTRY_VENDOR=".realpath(dirname($file)));
+unset($file);
 
+// Indicates we're running as Gentry, hence environment should deal with tests
+// and associated fixtures instead of a "normal" database.
 putenv("GENTRY=1");
+
+// A pseudo-random client id for this run of tests. Used mainly to associate a
+// cache pool with a single client in a cross-script manner (e.g. when running
+// acceptance tests).
+$client = substr(md5(microtime(true)), 0, 6);
+putenv("GENTRY_CLIENT=$client");
+
 out("\n<magenta>Gentry 0.6.2 by Marijn Ophorst\n\n");
 
 $config = 'Gentry.json';
@@ -88,6 +97,9 @@ if (isset($config->bootstrap)) {
         require $file;
     }
 }
+
+// Initialize the cache pool
+Cache\Pool::getInstance();
 
 $sourcecode = new Sourcecode($config);
 if (VERBOSE) {
