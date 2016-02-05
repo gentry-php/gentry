@@ -260,6 +260,7 @@ if (VERBOSE) {
 }
 
 $endit = function ($code) use ($start) {
+    Cache\Pool::getInstance()->clear();
     out("\n");
     out(sprintf(
         "\n<magenta>Took %0.2f seconds, memory usage %4.2fMb.\n\n",
