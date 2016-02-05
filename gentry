@@ -55,7 +55,16 @@ EOT
 
 $autoloader = require COMPOSER_INSTALL;
 
+// Indicates we're running as Gentry, hence environment should deal with tests
+// and associated fixtures instead of a "normal" database.
 putenv("GENTRY=1");
+
+// A pseudo-random client id for this run of tests. Used mainly to associate a
+// cache pool with a single client in a cross-script manner (e.g. when running
+// acceptance tests).
+$client = md5(microtime(true));
+putenv("GENTRY_CLIENT=$client");
+
 out("\n<magenta>Gentry 0.6.2 by Marijn Ophorst\n\n");
 
 $config = 'Gentry.json';
