@@ -62,14 +62,12 @@ unset($file);
 // and associated fixtures instead of a "normal" database.
 putenv("GENTRY=1");
 
-$session = md5(microtime(true));
-session_id($session);
-session_start();
-
 // A pseudo-random client id for this run of tests. Used mainly to associate a
 // cache pool with a single client in a cross-script manner (e.g. when running
-// acceptance tests).
-$client = substr($session, 0, 6);
+// acceptance tests). It's also passed as the default session id to the Browser
+// headless client (you can override it if your application uses specific checks
+// on session id validity).
+$client = substr(md5(microtime(true)), 0, 6);
 putenv("GENTRY_CLIENT=$client");
 
 out("\n<magenta>Gentry 0.6.2 by Marijn Ophorst\n\n");
