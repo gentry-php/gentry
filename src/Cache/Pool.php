@@ -116,7 +116,7 @@ class Pool implements CacheItemPoolInterface
         try {
             self::$db->delete(
                 'items',
-                ['pool' => $this->client]
+                ['pool' => $this->client, 'keyname' => $key]
             );
             return true;
         } catch (Exception $e) {
@@ -144,13 +144,13 @@ class Pool implements CacheItemPoolInterface
 
     public function save(CacheItemInterface $item)
     {
-        $this->deleteItem($key);
+        $this->deleteItem($item->getKey());
         try {
             self::$db->insert(
                 'items',
                 [
                     'pool' => $this->client,
-                    'keyname' => $key,
+                    'keyname' => $item->getKey(),
                     'value' => serialize($item),
                 ]
             );
