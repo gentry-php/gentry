@@ -23,6 +23,9 @@ if (!ini_get('date.timezone')) {
 
 error_reporting(E_ALL);
 set_error_handler(function($errno, $errstr, $errfile, $errline, $errcontext) {
+    if ($errno == E_USER_DEPRECATED) {
+        return;
+    }
     throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
 });
 require __DIR__.'/src/helpers.php';
@@ -61,7 +64,9 @@ putenv("GENTRY=1");
 
 // A pseudo-random client id for this run of tests. Used mainly to associate a
 // cache pool with a single client in a cross-script manner (e.g. when running
-// acceptance tests).
+// acceptance tests). It's also passed as the default session id to the Browser
+// headless client (you can override it if your application uses specific checks
+// on session id validity).
 $client = substr(md5(microtime(true)), 0, 6);
 putenv("GENTRY_CLIENT=$client");
 

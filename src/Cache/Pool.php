@@ -7,6 +7,7 @@ use Psr\Cache\CacheItemInterface;
 use Dabble\Adapter\Sqlite;
 use Dabble\Query\Exception;
 use Dabble\Query\DeleteException;
+use ErrorException;
 
 /**
  * A simple cache pool for Gentry.
@@ -35,13 +36,23 @@ class Pool implements CacheItemPoolInterface
     {
         $this->client = getenv("GENTRY_CLIENT");
         if (!isset(self::$db)) {
-            self::$db = new Sqlite(getenv("GENTRY_VENDOR").'/gentry.sq3');
+            $path = sys_get_temp_dir().'/'.getenv("GENTRY_CLIENT").'.sq3';
+            self::$db = new Sqlite($path);
             self::$db->exec("CREATE TABLE IF NOT EXISTS items (
                 pool VARCHAR(6),
                 keyname VARCHAR(32),
                 value TEXT,
                 PRIMARY KEY(pool, keyname)
             )");
+            chmod($path, 0666);
+        }
+    }
+
+    public function __destruct()
+    {
+        try {
+            @unlink(sys_get_temp_dir().'/'.getenv("GENTRY_CLIENT").'.sq3');
+        } catch (ErrorException $e) {
         }
     }
 
