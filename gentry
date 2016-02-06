@@ -23,6 +23,9 @@ if (!ini_get('date.timezone')) {
 
 error_reporting(E_ALL);
 set_error_handler(function($errno, $errstr, $errfile, $errline, $errcontext) {
+    if ($errno == E_USER_DEPRECATED) {
+        return;
+    }
     throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
 });
 require __DIR__.'/src/helpers.php';
@@ -59,10 +62,14 @@ unset($file);
 // and associated fixtures instead of a "normal" database.
 putenv("GENTRY=1");
 
+$session = md5(microtime(true));
+session_id($session);
+session_start();
+
 // A pseudo-random client id for this run of tests. Used mainly to associate a
 // cache pool with a single client in a cross-script manner (e.g. when running
 // acceptance tests).
-$client = substr(md5(microtime(true)), 0, 6);
+$client = substr($session, 0, 6);
 putenv("GENTRY_CLIENT=$client");
 
 out("\n<magenta>Gentry 0.6.2 by Marijn Ophorst\n\n");
