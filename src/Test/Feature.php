@@ -38,7 +38,7 @@ abstract class Feature
     public function __construct(array $description, $name)
     {
         $this->description = $description[0];
-        $this->target = $description[2];
+        $this->target = $description[1];
         $this->name = $name;
         \Gentry\out(str_replace(
             '{'.$this->target.'}',
