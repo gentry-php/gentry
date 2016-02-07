@@ -12,7 +12,11 @@ use ReflectionFunction;
  */
 class Basic
 {
-    public function __construct()
+    /**
+     * Test::run should successfully run a test, pipe the result and catch
+     * trimmed output
+     */
+    public function testClass(Test $test)
     {
         $target = new stdClass;
         $target->test = true;
@@ -25,21 +29,11 @@ class Basic
                 yield assert($test->test);
             }
         );
-        $this->function = $reflection;
-        $this->test = new Test($target, $reflection);
-    }
-
-    /**
-     * Test::run should successfully run a test, pipe the result and catch
-     * trimmed output
-     */
-    public function testClass(Test &$test)
-    {
+        $test->__gentryConstruct($target, $reflection);
         echo "       ";
         $passed = 0;
         $failed = 0;
         $messages = [];
-        var_dump($test->run($passed, $failed, $messages));
         yield assert(is_array($test->run($passed, $failed, $messages)));
     }
 
