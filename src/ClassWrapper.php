@@ -7,7 +7,19 @@ use ReflectionClass;
 
 trait ClassWrapper
 {
-    public static function logGentryMethodCall($method)
+    public function __construct()
+    {
+    }
+
+    public function __gentryConstruct(...$args)
+    {
+        try {
+            parent::__construct(...$args);
+        } catch (Throwable $e) {
+        }
+    }        
+
+    public static function __gentryLogMethodCall($method)
     {
         static $logger;
         if (!isset($logger)) {
@@ -17,21 +29,6 @@ trait ClassWrapper
             ->getParentClass()
             ->name;
         $logger->logFeature(Logger::METHOD, [$instance, $method]);
-    }
-
-    public function __get($property)
-    {
-        return $this->gentryInstance->{$property};
-    }
-
-    public function __set($property, $value)
-    {
-        $this->gentryInstance->{$property} = $value;
-    }
-
-    public function __isset($property)
-    {
-        return isset($this->gentryInstance->{$property});
     }
 }
 
