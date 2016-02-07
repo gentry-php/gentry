@@ -290,12 +290,12 @@ EOT
         $work = eval(<<<EOT
 return new class $mod
     use Gentry\ClassWrapper;
+    private static \$__gentryConstructionArguments;
 
     $methods
 };
 EOT
         );
-        $work = (new ReflectionClass($work))->newInstanceWithoutConstructor();
         try {
             $work->__gentryConstruct(...$args);
             return $work;
