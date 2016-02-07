@@ -5,7 +5,7 @@ namespace Gentry;
 class Logger
 {
     const METHOD = 'method';
-    const FUNC = 'function';
+    const PROCEDURE = 'procedure';
 
     private $logged = [];
 
