@@ -9,10 +9,14 @@ trait ClassWrapper
 {
     public function __construct()
     {
+        if (isset(self::$__gentryConstructionArguments)) {
+            parent::__construct(...self::$__gentryConstructionArguments);
+        }
     }
 
     public function __gentryConstruct(...$args)
     {
+        self::$__gentryConstructionArguments = $args;
         try {
             parent::__construct(...$args);
         } catch (Throwable $e) {
