@@ -15,3 +15,7 @@ E.g. for a class `Foo` with methods `bar` and `baz` you might have a test class
 
 Use unit tests to assure that, in isolation, methods do what they should.
 
+> Tip: if a unit test's description only contains one instance of `"{0}"`, you
+> can omit it altogether. Gentry will assume you meant to end your description
+> with `"{0}"`.
+

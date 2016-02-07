@@ -53,8 +53,8 @@ If you need to reset global state prior to testing (e.g. `$_POST = []`) just do
 so in `__wakeup` and/or `__sleep`.
 
 For convenience, you can call the static method
-`Gentry\Test::resetAllSuperglobals`. This set `$_GET`, `$_POST`, `$_SESSION`
-and `$_COOKIE` to empty arrays.
+`Gentry\Test::resetAllSuperglobals`. This sets `$_GET`, `$_POST`, `$_SESSION`
+and `$_COOKIE` to empty arrays (it doesn't touch `$GLOBALS` by design).
 
 > You shouldn't really need this unless a testable method does something like
 > `isset($_GET['foo'])` and you specifically want to test failure handling. For
@@ -72,194 +72,38 @@ in a different directory than your tests, e.g. define `tests/specs` as the
 `"tests"` directory and place your mocks in `tests/mocks` and have your
 autoloader handle them.
 
-## Piping results before assertion
-`yield` supports specifying a "key" to return along with the expected result.
-If you do so, and the key satisfies `is_callable`, the result from the tested
-method or property will be piped through that callable and the return value of
-_that_ will be compared instead:
+## Injecting objects with constructor arguments
+Place a (public) property on your test class with the same name as the parameter
+you want to inject. This should obviously be done in the constructor. Gentry
+will detect that the object is "predefined" and use that instead of what you're
+trying to inject.
+
+> Note the injected object will need to satisfy the type hint specified! If it
+> doesn't Gentry will fallback to attempting auto-construction.
+
+For example, a class `Foo` requiring two constructor arguments:
 
 ```php
 <?php
 
-class MyPipeTest extends Scenario
+class MyTest
 {
-    /**
-     * count({0}) should equal three.
-     */
-    public function threeItems(Foo $foo)
+    public function __construct()
     {
-        yield 'bar' => function () {
-            // "count" satisfies `is_callable`, hence a pipe:
-            yield 'count' => 3;
-        };
+        $this->foo = new Foo('bar', 42);
+    }
+
+    /**
+     * The getNumber method should return the 42 from the constructor.
+     */
+    public function testIt(Foo $foo)
+    {
+        yield assert($foo->getNumber() == 42);
     }
 }
 ```
 
-To do the same for properties, we need a little trick: wrap an anonymous
-function inside `call_user_func` (since directly `yield`ing it would make Gentry
-assume we're testing a method):
-
-```php
-<?php
-
-class MyArrayTest extends Scenario
-{
-    /**
-     * count({0}) should equal three.
-     */
-    public function threeItems(Foo $foo)
-    {
-        yield 'bar' => call_user_func(function() {
-            yield 'count' => 3;
-        });
-    }
-}
-```
-
-The above test passes if `Foo::$bar` contains an array with three entries.
-
-### Using multiple pipes
-You can yield multiple callables to run multiple checks, e.g.:
-
-```php
-<?php
-
-class MyArrayTest extends Scenario
-{
-    /**
-     * {0} should be an array, and count({0}) must equal three.
-     */
-    public function threeItems(Foo $foo)
-    {
-        yield 'bar' => call_user_func(function () {
-            yield 'is_array' => true;
-        });
-        yield 'bar' => call_user_func(function () {
-            yield 'count' => 3;
-        });
-    }
-}
-```
-
-The second test will only be tried if the first one succeeds, etc. So if
-`$foo->bar` ends up with a non-array value, the scenario will fail and the
-second test is marked as "skipped".
-
-Return values for methods are reset for each `yield`, so technically it's more
-of a filter than a pipe ;).
-
-### Using custom functions
-A key is considered callable if, well, it is, _or_ if your test object has a
-callable property of the same name. This allows you to pipe custom checks, so we
-could rewrite the above example as:
-
-```php
-<?php
-
-class MyArrayTest extends Scenario
-{
-    /**
-     * {0}::$bar should be an array, and count({0}::$bar) must equal three.
-     */
-    public function threeItems(Foo $foo)
-    {
-        $this->foocheck = function ($result) {
-            return is_array($result) && count($result) == 3;
-        };
-        yield 'foocheck' => true;
-    }
-}
-```
-
-Note that the property check is done _before_ the regular `is_callable` check.
-Hence, you can override built-in functions. This could also make sense if you
-need to call a built-in with multiple arguments, retaining the name for clarity:
-
-```php
-<?php
-
-class MyArrayTest extends Scenario
-{
-    /**
-     * {0}::$bar should contain at least three items.
-     */
-    public function threeItems(Foo $foo)
-    {
-        $this->array_key_exists = function ($result) {
-            return array_key_exists(2, $result);
-        };
-        yield 'array_key_exists' => true;
-    }
-}
-```
-
-### Expecting a `Closure`
-If the method or property under test _expects_ a `Closure` (i.e. its return
-value isn't to be piped), you could simply pipe through `is_callable` itself:
-
-```php
-<?php
-
-class SomeTest
-{
-    /**
-     * {0}::bar returns a callable
-     */
-    function mytest(Foo $foo)
-    {
-        yield 'is_callable' => true;
-    }
-}
-```
-
-> If you yielded a callable, it would act as a pipe after all.
-
-Alternatively you can also wrap the callable in an anonymous function:
-
-```php
-<?php
-
-class SomeTest
-{
-    /**
-     * {0}::bar returns a callable
-     */
-    function mytest(Foo $foo)
-    {
-        yield function ($result) {
-            return function () {};
-        };
-    }
-}
-```
-
-Gentry's regular object comparison logic will kick in now.
-
-### Special cases
-For convenience, the following callable keys are automatically defined by
-Gentry: `is_a`, `is_subclass_of`, `method_exists`, `property_exists`. For these
-special cases, the yielded value is actually the second parameter of the
-function, e.g. `yield 'is_a' => 'Foo';`.
-
-The pipe `count` extends PHP's `count` function to also count generators
-correctly.
-
-Note that you can _still_ override these on your test object by using the
-appropriate keys. This override will only apply to the current test object,
-subsequent features will be tested using the defaults again.
-
-## Repeating tests
-Sometimes you want the exact same test to be repeated a number of times, e.g. to
-assure it returns the same result for each consecutive run. Simply mention
-`"{0}"` the desired number of times, and `yield` as many expected results.
-
-> Note:  `__wakeup` and `__sleep` are only called once for all iterations. If
-> you specifically need to retest a method including setup and teardown, you'll
-> need to call those yourself in the appropriate places.
-
-Repeated tests are mostly useful for ensuring that something happens the exact
-same way for a number of consecutive calls, _or_ the converse: for a database
-insertion, for instance, the first call can succeed but subsequent ones might be
-expected to fail (duplicate primary key errors for instance).
+If the object's constructor can be mimicked using default arguments, Gentry will
+pass those for you. So this is only needed for "complex" objects with lots of
+construction logic.
 
