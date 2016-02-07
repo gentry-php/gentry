@@ -207,9 +207,6 @@ class Test
             && $this->target->{$param->name} instanceof $type->name ?
             $this->target->{$param->name} :
             null;
-        if (isset($instance)) {
-            $type = new ReflectionClass($instance);
-        }
         // This is nasty, but we need to dynamically extend the
         // original class to allow type hinting to work.
         $args = [];
@@ -237,15 +234,10 @@ class Test
                             $args[] = function () {};
                             break;
                         default:
-                            $args[] = $this->createWrappedObject(
-                                new ReflectionClass("$ptype")
-                            );
+                            $args[] = null;
                     }
                 }
             }
-        }
-        if (!isset($instance) && count($params) == count($args)) {
-            $instance = $type->newInstanceArgs($args);
         }
         $methods = [];
         foreach ($type->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
@@ -275,7 +267,7 @@ class Test
 public %1\$sfunction %2\$s(%3\$s) {
     self::logGentryMethodCall('%2\$s'); 
     try {
-        %4\$s
+        return parent::%2\$s(%4\$s);
     } catch (Throwable \$e) {
         return \$e;
     }
@@ -286,13 +278,7 @@ EOT
                 $method->isStatic() ? 'static ' : '',
                 $method->name,
                 implode(', ', $arguments),
-                sprintf(
-                    $method->isStatic() ?
-                        'return parent::%1$s(%2$s);' :
-                        'return $this->gentryInstance->%1$s(%2$s);',
-                    $method->name,
-                    implode(', ', array_keys($arguments))
-                )
+                implode(', ', array_keys($arguments))
             );
         }
         $methods = implode("\n", $methods);
@@ -304,22 +290,19 @@ EOT
         } else {
             $mod = "extends {$type->name} {";
         }
+        $construction = [];
+        foreach ($args as $arg) {
+            $construction = $this->tostring($arg);
+        }
+        $construction = implode(', ', $construction);
         $work = eval(<<<EOT
-return new class $mod
+return new class($construction) $mod
     use Gentry\ClassWrapper;
-
-    private \$gentryInstance;
-
-    public function __construct() {
-    }
 
     $methods
 };
 EOT
         );
-        if (isset($instance)) {
-            $work->setGentryInstance($instance);
-        }
         return $work;
     }
 
