@@ -24,6 +24,7 @@ class Test
     private $params;
     private $annotations;
     private $description;
+    private $finally = '';
     private $feature;
     private $testtype = 'method';
     private $testedFeatures = [];
@@ -44,35 +45,18 @@ class Test
         $this->annotations = new Annotations($this->test);
         $description = cleanDocComment($this->test);
         $description = preg_replace("@\s{1,}@m", ' ', $description);
-        if (preg_match_all(
-            '@(^|[!\?,;\.]).*?{(\d+)}.*?(?=$|[!\?,;\.])@ms',
+        $sentences = preg_split(
+            '@{(\d+)}@',
             $description,
-            $sentences,
-            PREG_SET_ORDER
-        )) {
-            $matches = [];
-            foreach ($sentences as $sentence) {
-                $work = $sentence[0];
-                $cnt = preg_match_all(
-                    '@(.*?){(\d+)}?@ms',
-                    $work,
-                    $in_sentence,
-                    PREG_SET_ORDER
-                );
-                if ($cnt == 1) {
-                    $matches[] = $sentence;
-                } else {
-                    foreach ($in_sentence as $sub) {
-                        $matches[] = $sub;
-                        $work = str_replace($sub[0], '', $work);
-                    }
-                    if (strlen($work)) {
-                        $matches[count($matches) - 1][0] .= $work;
-                    }
-                }
-            }
-            $arguments = $this->getArguments();
-            $this->features = $matches;
+            -1,
+            PREG_SPLIT_DELIM_CAPTURE
+        );
+        if (count($sentences) == 1) {
+            $sentences[] = '0';
+        }
+        $this->finally = array_pop($sentences);
+        for ($i = 0; $i < count($sentences); $i += 2) {
+            $this->features[] = [$sentences[$i], $sentences[$i + 1]];
         }
         $this->description = $description;
     }
@@ -124,43 +108,45 @@ class Test
             }
             $expect = compact('result', 'thrown', 'out');
             if ($feature = array_shift($this->features)) {
-                if ($result instanceof Closure) {
-                    if ($this->params[$feature[2]]->isCallable()) {
+                if ($result instanceof Closure
+                    && (new ReflectionFunction($result))->isGenerator()
+                ) {
+                    $result = new ReflectionFunction($result);
+                    if ($this->params[$feature[1]]->isCallable()) {
                         $feature = new Test\ProceduralFunction(
                             $feature,
-                            $args[$feature[2]],
-                            new ReflectionFunction($result)
+                            $args[$feature[1]],
+                            $result
                         );
                     } else {
                         $feature = new Test\Method(
                             $feature,
                             $id,
-                            $this->params[$feature[2]]->getClass()->name,
-                            new ReflectionFunction($result)
+                            $this->params[$feature[1]]->getClass()->name,
+                            $result
                         );
                     }
-                    $result = call_user_func($result);
-                } elseif (is_string($args[$feature[2]])) {
+                } elseif (is_string($args[$feature[1]])) {
                     if ($id === 'execute') {
                         $feature = new Test\Executable(
                             $feature,
-                            $args[$feature[2]]
+                            $args[$feature[1]]
                         );
                     }
                 } elseif (is_integer($id)) {
-                    if ($args[$feature[2]] instanceof SplFileInfo) {
+                    if ($args[$feature[1]] instanceof SplFileInfo) {
                         $id = 'getReturnedValue';
-                        $args[$feature[2]] = new File($args[$feature[2]]);
+                        $args[$feature[1]] = new File($args[$feature[1]]);
                         $feature = new Test\ProceduralFile(
                             $feature,
-                            $args[$feature[2]]
+                            $args[$feature[1]]
                         );
                     }
                 } else {
                     $feature = new Test\Property(
                         $feature,
                         $id,
-                        $this->params[$feature[2]]->getClass()->name
+                        $this->params[$feature[1]]->getClass()->name
                     );
                 }
                 foreach ($this->results($result, $expect) as $pipe => $exp) {
@@ -196,7 +182,7 @@ class Test
             ob_start();
         }
         ob_end_clean();
-        out("\n");
+        out("<blue>{$this->finally}\n");
         return $args;
     }
 

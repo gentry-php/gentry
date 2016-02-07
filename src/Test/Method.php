@@ -14,17 +14,20 @@ class Method extends Property
 {
     protected $args = [];
 
-    public function __construct(array $desc, $name, $class, Reflector $args)
+    public function __construct(array $desc, $name, $class, Reflector &$args)
     {
         parent::__construct($desc, $name, $class);
         foreach ($args->getParameters() as $param) {
-            if ($param->isDefaultValueAvailable()) {
-                $work = $param->getDefaultValue();
-            } elseif ($class = $param->getClass()) {
-                $work = new $class;
-            }
-            $this->args[] =& $work;
+            call_user_func(function () use ($param) {
+                if ($param->isDefaultValueAvailable()) {
+                    $work = $param->getDefaultValue();
+                } elseif ($class = $param->getClass()) {
+                    $work = new $class;
+                }
+                $this->args[] = &$work;
+            });
         }
+        $args = $args->invokeArgs($this->args);
     }
 
     /**
