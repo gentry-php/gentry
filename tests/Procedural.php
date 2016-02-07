@@ -18,18 +18,12 @@ class Procedural
     }
 
     /**
-     * Including {0} returns "hi there", replaying {0} outputs "test" and {0}
-     * will have `foo` set to "bar".
+     * Including returns "hi there" {?}, and $foo exists afterwards {?}.
      */
     public function includeFile(SplFileInfo &$file = null)
     {
-        $file = new SplFileInfo(realpath(__DIR__.'/../demo/file.php'));
-        yield "hi there";
-        yield 'replay' => function () {
-            echo 'test';
-            yield null;
-        };
-        yield 'foo' => 'bar';
+        yield assert('hi there' == include __DIR__.'/../demo/file.php');
+        yield assert($foo == 'bar');
     }
 }
 
