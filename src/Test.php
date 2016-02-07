@@ -2,10 +2,10 @@
 
 namespace Gentry;
 
-use Reflector;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionFunction;
+use ReflectionFunctionAbstract;
 use ReflectionParameter;
 use ReflectionException;
 use zpt\anno\Annotations;
@@ -37,10 +37,10 @@ class Test
      * Constructor.
      *
      * @param mixed $target The test class this scenario is targeting.
-     * @param Reflector $function Reflected function representing this
-     *  particular scenario.
+     * @param ReflectionFunctionAbstract $function Reflected function
+     *  representing this particular scenario.
      */
-    public function __construct($target, Reflector $function)
+    public function __construct($target, ReflectionFunctionAbstract $function)
     {
         $this->test = $function;
         $this->target = $target;
@@ -203,10 +203,6 @@ class Test
     private function createWrappedObject(ReflectionParameter $param)
     {
         $type = $param->getClass();
-        $instance = isset($this->target->{$param->name})
-            && $this->target->{$param->name} instanceof $type->name ?
-            $this->target->{$param->name} :
-            null;
         // This is nasty, but we need to dynamically extend the
         // original class to allow type hinting to work.
         $args = [];
@@ -240,11 +236,11 @@ class Test
             }
         }
         $methods = [];
-        foreach ($type->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-            if ($method->isInternal()) {
+        foreach ($type->getMethods() as $method) {
+            if ($method->name == '__construct') {
                 continue;
             }
-            if ($method->name == '__construct') {
+            if ($method->isFinal()) {
                 continue;
             }
             $arguments = [];
@@ -265,11 +261,11 @@ class Test
             $methods[] = sprintf(
                 <<<EOT
 public %1\$sfunction %2\$s(%3\$s) {
-    self::logGentryMethodCall('%2\$s'); 
+    self::__gentryLogMethodCall('%2\$s'); 
     try {
         return parent::%2\$s(%4\$s);
     } catch (Throwable \$e) {
-        return \$e;
+        return %5\$s;
     }
 }
 
@@ -278,7 +274,8 @@ EOT
                 $method->isStatic() ? 'static ' : '',
                 $method->name,
                 implode(', ', $arguments),
-                implode(', ', array_keys($arguments))
+                implode(', ', array_keys($arguments)),
+                $method->name == '__toString' ? '$e->getMessage()' : '$e'
             );
         }
         $methods = implode("\n", $methods);
@@ -290,20 +287,21 @@ EOT
         } else {
             $mod = "extends {$type->name} {";
         }
-        $construction = [];
-        foreach ($args as $arg) {
-            $construction = $this->tostring($arg);
-        }
-        $construction = implode(', ', $construction);
         $work = eval(<<<EOT
-return new class($construction) $mod
+return new class $mod
     use Gentry\ClassWrapper;
 
     $methods
 };
 EOT
         );
-        return $work;
+        $work = (new ReflectionClass($work))->newInstanceWithoutConstructor();
+        try {
+            $work->__gentryConstruct(...$args);
+            return $work;
+        } catch (Exception $e) {
+            return $work;
+        }
     }
 
     /**
