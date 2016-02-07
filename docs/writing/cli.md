@@ -23,11 +23,12 @@ so:
 class CliTest
 {
     /**
-     * Running {0} should exit with 0.
+     * Running myscript should exit with 0.
      */
-    public function($command = 'bin/myscript')
+    public function()
     {
-        yield 'execute' => 0;
+        passthru('/path/to/myscript', $return);
+        yield assert($return == 0);
     }
 }
 ```
@@ -41,14 +42,7 @@ assuming your script uses the same logic for determining e.g. which database to
 use as the rest of your code you should be good to go.
 
 If you use a different logic and/or need other environment variables, feel free
-to define them in the `$command` string.
-
-The special key `"execute"` instructs Gentry that the argument in question
-should be, ehm, executed. Currently Gentry does no validation on the command, so
-it really is up to you to make sure it is executable.
-
-> If the parameter specified _isn't_ a string, normal logic kicks in, i.e. the
-> key is assumed to be a property, method or array index.
+to define them in the command passed to `passthru`.
 
 ## Setup and teardown
 This works of course in the exact same way as for any other test class in
@@ -78,20 +72,18 @@ pseudo-code illustrating that:
 class CliIntegrationTest
 {
     /**
-     * {1} has an old order. After running {0}, {1} should contain no items.
-     * Finally, running {0} doesn't do anything but also doesn't give an error.
+     * There is one old order {?}. After running the script {?}, there should be
+     * zero {?). Finally, running the script again doesn't do anything but also
+     * doesn't give an error.
      */
-    public function oldOrders($command = 'bin/cleanup', OrderService $orders)
+    public function oldOrders(OrderService $orders)
     {
         // Assuming our fixture contains one such order for testing...
-        yield 'getOldOrders' => function ($period = '-1 day') {
-            yield 'count' => 1;
-        };
-        yield 'execute' => 0;
-        yield 'getOldOrders' => function ($period = '-1 day') {
-            yield 'count' => 0;
-        };
-        yield 'execute' => 0;
+        yield assert(count($orders->getOldOrders('-1 day')) == 1);
+        passthru('bin/cleanup', $result);
+        yield assert($result == 0);
+        yield assert(count($orders->getOldOrders('-1 day')) == 0);
+        yield assert($result == 0);
     }
 }
 ```
