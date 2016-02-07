@@ -10,7 +10,7 @@
         }
     ],
     "require": {
-        "php": ">=5.5",
+        "php": ">=7",
         "zeptech/annotations": "^1.0.0",
         "monomelodies/kingconf": "^1.0",
         "simoneast/simple-ansi-colors": "^1.0",
