@@ -29,6 +29,11 @@ trait ClassWrapper
         return $this->gentryInstance->{$property};
     }
 
+    public function __set($property, $value)
+    {
+        $this->gentryInstance->{$property} = $value;
+    }
+
     public function __isset($property)
     {
         return isset($this->gentryInstance->{$property});
