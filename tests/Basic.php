@@ -12,59 +12,52 @@ use ReflectionFunction;
  */
 class Basic
 {
-    /**
-     * {0} should successfully run a test, pipe the result and catch trimmed output
-     */
-    public function testClass(Test &$test = null)
+    public function __construct()
     {
         $target = new stdClass;
         $target->test = true;
         $reflection = new ReflectionFunction(
             /**
-             * {0} should be true
+             * Test should be true
              */
             function (stdClass &$test = null) use ($target) {
                 $test = $target;
-                yield 'test' => true;
+                yield assert($test->test);
             }
         );
-        $test = new Test($target, $reflection);
-        echo "       ";
-        yield 'run' => function ($passed = 0, $failed = 0, $messages = []) {
-            yield 'is_array' => true;
-        };
+        $this->function = $reflection;
+        $this->test = new Test($target, $reflection);
     }
 
     /**
-     * {0} should return true, and {0} should contain "bar"
+     * Test::run should successfully run a test, pipe the result and catch
+     * trimmed output
+     */
+    public function testClass(Test &$test)
+    {
+        echo "       ";
+        $passed = 0;
+        $failed = 0;
+        $messages = [];
+        var_dump($test->run($passed, $failed, $messages));
+        yield assert(is_array($test->run($passed, $failed, $messages)));
+    }
+
+    /**
+     * 'test' should return true {?}, and 'foo' should contain "bar"
      */
     public function testMultiple(Demo\Test $test)
     {
-        yield 'test' => function () {
-            yield true;
-        };
-        yield 'foo' => 'bar';
-    }
-
-    /**
-     * {0} should output 4 spaces and return true
-     */
-    public function raw(Demo\Test $test)
-    {
-        echo '    ';
-        yield 'test' => function () {
-            yield true;
-        };
+        yield assert($test->test());
+        yield assert($test->foo == 'bar');
     }
     
     /**
-     * {0} should be tested statically
+     * aStaticMethod should be tested statically
      */
     public function statically(Demo\Test $test = null)
     {
-        yield 'aStaticMethod' => function () {
-            yield true;
-        };
+        yield assert($test::aStaticMethod());
     }
 }
 

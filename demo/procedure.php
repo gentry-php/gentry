@@ -4,6 +4,6 @@ namespace Gentry\Demo;
 
 function procedure($in)
 {
-    return $in;
+    return $in / 2;
 }
 
