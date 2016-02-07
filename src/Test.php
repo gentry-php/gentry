@@ -172,6 +172,19 @@ class Test
                     } else {
                         $work = $this->createWrappedObject($param);
                     }
+                } elseif ($param->isCallable()) {
+                    $work = function ($fn) {
+                        $logger = Logger::getInstance();
+                        $logger->logFeature(Logger::PROCEDURE, $fn);
+                        $arguments = func_get_args();
+                        array_shift($arguments);
+                        $reflection = new ReflectionFunction($fn);
+                        try {
+                            return $reflection->invokeArgs($arguments);
+                        } catch (Exception $e) {
+                            return $e;
+                        }
+                    };
                 }
                 $args[] =& $work;
             });
