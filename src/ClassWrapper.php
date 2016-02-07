@@ -7,11 +7,6 @@ use ReflectionClass;
 
 trait ClassWrapper
 {
-    public function setGentryInstance($object)
-    {
-        $this->gentryInstance = $object;
-    }
-
     public static function logGentryMethodCall($method)
     {
         static $logger;
