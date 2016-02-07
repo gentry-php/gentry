@@ -181,16 +181,6 @@ foreach ($existing->tests as $classname => $file) {
         }
         $args = $test->run($passed, $failed, $messages);
         $features = $test->getTestedFeatures();
-        foreach ($features as $target => $features) {
-            if (!isset($coveredFeatures[$target])) {
-                $coveredFeatures[$target] = [];
-            }
-            foreach ($features as $feature) {
-                if (!in_array($feature, $coveredFeatures[$target])) {
-                    $coveredFeatures[$target][] = $feature;
-                }
-            }
-        }
 
         if (method_exists($class, '__sleep')
             && !isset($annotations['Chain'])
@@ -201,6 +191,21 @@ foreach ($existing->tests as $classname => $file) {
     unset($class);
 }
 out("\n");
+
+foreach (Logger::getInstance()->getLoggedFeatures() as $type => $features) {
+    if ($type == Logger::METHOD) {
+        foreach ($features as $target => $features) {
+            if (!isset($coveredFeatures[$target])) {
+                $coveredFeatures[$target] = [];
+            }
+            foreach ($features as $feature) {
+                if (!in_array($feature, $coveredFeatures[$target])) {
+                    $coveredFeatures[$target][] = $feature;
+                }
+            }
+        }
+    }
+}
 if ($passed) {
     out(sprintf(
         "<green>%d test%s passed.\n",
