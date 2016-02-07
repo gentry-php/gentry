@@ -10,14 +10,11 @@ use SplFileInfo;
 class Procedural
 {
     /**
-     * Calling {0} with true returns true.
+     * Calling demo procedure with 42 returns 21.
      */
-    public function procedure(callable &$function = null)
+    public function procedure(callable $function)
     {
-        $function = '\Gentry\Demo\procedure';
-        yield function ($arg = true) {
-            yield true;
-        };
+        yield assert($function('Gentry\Demo\procedure', 42) == 21);
     }
 
     /**
