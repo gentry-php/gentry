@@ -156,7 +156,7 @@ foreach ($existing->tests as $classname => $file) {
     if ($reflection->getDocComment()) {
         out("<darkBlue>".cleanDocComment($reflection)."\n");
     }
-    $wakeup = method_exists($class, '__wakeup') && VERBOSE ?
+    $wakeup = method_exists($class, '__wakeup') ?
         new Annotations(new ReflectionMethod($class, '__wakeup')) :
         [];
     foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
