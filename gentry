@@ -173,10 +173,22 @@ foreach ($existing->tests as $classname => $file) {
         $annotations = new Annotations($method);
         if (!isset($annotations['Incomplete'])) {
             if (method_exists($class, '__wakeup')) {
-                if (isset($wakeup['Description']) && VERBOSE) {
-                    out("    <gray>({$wakeup['Description']})\n");
+                if (isset($wakeup['Description'])) {
+                    echo "  \033[1;30m* \033[0;37m{$wakeup['Description']}     ";
+                } else {
+                    echo "  \033[1;30m* \033[0;37mWaking up...     ";
                 }
-                $class->__wakeup();
+                $steps = $class->__wakeup();
+                if ($steps) {
+                    $i = 0;
+                    $total = count($steps);
+                    while ($step = array_shift($steps)) {
+                        $step();
+                        ++$i;
+                        echo "\033[4D\033[1;30m".str_pad(round($i / $total * 100), 3, ' ', STR_PAD_LEFT).'%';
+                    }
+                }
+                out("\n");
             }
         }
         $args = $test->run($passed, $failed, $messages);
