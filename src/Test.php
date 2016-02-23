@@ -102,7 +102,11 @@ class Test
                 } else {
                     $thrown = null;
                 }
-                out("<green>[OK]");
+                if (strlen($out)) {
+                    out("<darkGreen>[OK, but unchecked output]");
+                } else {
+                    out("<green>[OK]");
+                }
                 $passed++;
                 if ($feature = array_shift($this->features)) {
                     out("<blue>$feature");
