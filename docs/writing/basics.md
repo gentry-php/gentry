@@ -209,7 +209,9 @@ class MyTest
 ```
 
 ## Testing if something has output
-Echo the expected output in your test method:
+Gentry buffers all output. If any tested method emits output, it by default
+assumes this is OK but issues a warning. To test something's output, buffer it
+in your test and `assert` it as for all tests:
 
 ```php
 <?php
@@ -221,37 +223,16 @@ class MyTest
      */
     public function checkOutput(Foo $foo)
     {
-        echo 'Hello world!';
-        // Note: assuming `helloWorld` has no return value, we need to
-        // expect `null`. In PHP, functions not returning anything actually
-        // return `null`.
-        yield assert($foo->helloWorld() == null);
+        ob_start();
+        $foo->helloWorld();
+        yield assert('Hello world!' == ob_get_clean());
     }
 }
 ```
 
 This test will fail if `Foo::helloWorld()` produces a different output.
 
-Gentry will trim the output for convenience. Note that the output buffer isi
-reset after each breakpoint. E.g. this fictional test would succeed:
-
-```php
-<?php
-
-class MyTest
-{
-    /**
-     * World has the correct output {?}, as does Mars.
-     */
-    public function checkOutput(Foo $foo)
-    {
-        echo 'Hello world!';
-        yield assert($foo->helloWorld() == null);
-        echo 'Hello Mars!';
-        yield assert($foo->helloMars() == null);
-    }
-}
-```
+Note that the output buffer is reset after each breakpoint.
 
 ## Marking incomplete tests
 Test methods annotated with `@Incomplete` are skipped and will only issue a
