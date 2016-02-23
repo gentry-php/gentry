@@ -189,9 +189,10 @@ following:
 ```
 
 ## Testing if a certain exception is thrown
-When forwarding method calls, Gentry catches all exceptions and returns them
-instead of the expected return value. So you can simply `assert` that a method
-"returned" an exception:
+Catch the expected exception in your test and `assert` its type. This creates
+two code paths (the `catch` and the normal execution. Make sure you also add an
+assertion for when the exception isn't thrown (which should presumably cause the
+test to fail):
 
 ```php
 <?php
@@ -203,7 +204,12 @@ class MyTest
      */
     public function itShouldThrowAnException(Foo $foo)
     {
-        yield assert($foo->bar() instanceof Exception); 
+        $e = null;
+        try {
+            $foo->bar();
+        } catch (Exception $e) {
+        }
+        yield assert($e instanceof MyExpectedException);
     }
 }
 ```
@@ -232,7 +238,26 @@ class MyTest
 
 This test will fail if `Foo::helloWorld()` produces a different output.
 
-Note that the output buffer is reset after each breakpoint.
+Note that the output buffer is reset after each breakpoint, so to also `assert`
+the method's return value you would need an intermediate variable:
+
+```php
+<?php
+
+class MyTest
+{
+    /**
+     * It has the correct output
+     */
+    public function checkOutput(Foo $foo)
+    {
+        ob_start();
+        $return = $foo->helloWorld();
+        yield assert('Hello world!' == ob_get_clean());
+        yield assert($return);
+    }
+}
+```
 
 ## Marking incomplete tests
 Test methods annotated with `@Incomplete` are skipped and will only issue a
