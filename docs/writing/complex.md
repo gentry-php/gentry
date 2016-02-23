@@ -61,6 +61,12 @@ and `$_COOKIE` to empty arrays (it doesn't touch `$GLOBALS` by design).
 > success handling, your test method would declare `$_GET['foo'] = 'bar';`
 > anyway.
 
+## Setup progress
+If your `__wakeup` method returns an array of callables, Gentry will show a
+progress indicator while the setup operation is in progress. If you don't want
+or need one, just return nothing and only the description (or a default) will be
+displayed.
+
 ## Using an abstract base class
 If multiple tests share the same `__sleep` and `__wakeup` methods for instance,
 you'll want to use a base class or a trait for that. Any class declared as

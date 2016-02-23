@@ -112,7 +112,12 @@ class Test
         } catch (AssertionError $e) {
             out("<red>[FAILED]");
             $failed++;
-            $messages[] = $e->getMessage();
+            $messages[] = sprintf(
+                '<darkGray>%s <gray>in %s on line <darkGray>%s',
+                substr($e->getMessage(), 7, -1),
+                basename($e->getFile()),
+                $e->getLine()
+            );
         }
         ob_end_clean();
         out("<blue>{$this->finally}\n");
@@ -290,12 +295,12 @@ EOT
         $work = eval(<<<EOT
 return new class $mod
     use Gentry\ClassWrapper;
+    private static \$__gentryConstructionArguments;
 
     $methods
 };
 EOT
         );
-        $work = (new ReflectionClass($work))->newInstanceWithoutConstructor();
         try {
             $work->__gentryConstruct(...$args);
             return $work;
