@@ -189,9 +189,10 @@ following:
 ```
 
 ## Testing if a certain exception is thrown
-When forwarding method calls, Gentry catches all exceptions and returns them
-instead of the expected return value. So you can simply `assert` that a method
-"returned" an exception:
+Catch the expected exception in your test and `assert` its type. This creates
+two code paths (the `catch` and the normal execution. Make sure you also add an
+assertion for when the exception isn't thrown (which should presumably cause the
+test to fail):
 
 ```php
 <?php
@@ -203,13 +204,20 @@ class MyTest
      */
     public function itShouldThrowAnException(Foo $foo)
     {
-        yield assert($foo->bar() instanceof Exception); 
+        $e = null;
+        try {
+            $foo->bar();
+        } catch (Exception $e) {
+        }
+        yield assert($e instanceof MyExpectedException);
     }
 }
 ```
 
 ## Testing if something has output
-Echo the expected output in your test method:
+Gentry buffers all output. If any tested method emits output, it by default
+assumes this is OK but issues a warning. To test something's output, buffer it
+in your test and `assert` it as for all tests:
 
 ```php
 <?php
@@ -221,19 +229,17 @@ class MyTest
      */
     public function checkOutput(Foo $foo)
     {
-        echo 'Hello world!';
-        // Note: assuming `helloWorld` has no return value, we need to
-        // expect `null`. In PHP, functions not returning anything actually
-        // return `null`.
-        yield assert($foo->helloWorld() == null);
+        ob_start();
+        $foo->helloWorld();
+        yield assert('Hello world!' == ob_get_clean());
     }
 }
 ```
 
 This test will fail if `Foo::helloWorld()` produces a different output.
 
-Gentry will trim the output for convenience. Note that the output buffer isi
-reset after each breakpoint. E.g. this fictional test would succeed:
+Note that the output buffer is reset after each breakpoint, so to also `assert`
+the method's return value you would need an intermediate variable:
 
 ```php
 <?php
@@ -241,14 +247,14 @@ reset after each breakpoint. E.g. this fictional test would succeed:
 class MyTest
 {
     /**
-     * World has the correct output {?}, as does Mars.
+     * It has the correct output
      */
     public function checkOutput(Foo $foo)
     {
-        echo 'Hello world!';
-        yield assert($foo->helloWorld() == null);
-        echo 'Hello Mars!';
-        yield assert($foo->helloMars() == null);
+        ob_start();
+        $return = $foo->helloWorld();
+        yield assert('Hello world!' == ob_get_clean());
+        yield assert($return);
     }
 }
 ```
