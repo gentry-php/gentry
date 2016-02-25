@@ -70,7 +70,7 @@ putenv("GENTRY=1");
 $client = substr(md5(microtime(true)), 0, 6);
 putenv("GENTRY_CLIENT=$client");
 
-out("\n<magenta>Gentry 0.7.6 by Marijn Ophorst\n\n");
+out("\n<magenta>Gentry 0.7.7 by Marijn Ophorst\n\n");
 
 $config = 'Gentry.json';
 $verbose = false;
@@ -156,9 +156,6 @@ foreach ($existing->tests as $classname => $file) {
     if ($reflection->getDocComment()) {
         out("<darkBlue>".cleanDocComment($reflection)."\n");
     }
-    $wakeup = method_exists($class, '__wakeup') ?
-        new Annotations(new ReflectionMethod($class, '__wakeup')) :
-        [];
     foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
         if (isset($filter)
             && !preg_match("@$filter@", "$classname::$method")
@@ -171,13 +168,10 @@ foreach ($existing->tests as $classname => $file) {
         $tested++;
         $test = new Test($class, $method);
         $annotations = new Annotations($method);
+        echo "  \033[1;30m* ";
         if (!isset($annotations['Incomplete'])) {
             if (method_exists($class, '__wakeup')) {
-                if (isset($wakeup['Description'])) {
-                    echo "  \033[1;30m* \033[0;37m{$wakeup['Description']}     ";
-                } else {
-                    echo "  \033[1;30m* \033[0;37mWaking up...     ";
-                }
+                echo "\033[0;37mInitialising...     ";
                 $steps = $class->__wakeup();
                 if ($steps) {
                     $i = 0;
@@ -188,7 +182,7 @@ foreach ($existing->tests as $classname => $file) {
                         echo "\033[4D\033[1;30m".str_pad(round($i / $total * 100), 3, ' ', STR_PAD_LEFT).'%';
                     }
                 }
-                out("\n");
+                echo "\033[24D";
             }
         }
         $args = $test->run($passed, $failed, $messages);

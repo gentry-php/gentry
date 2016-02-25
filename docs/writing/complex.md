@@ -12,9 +12,6 @@ testclass. Likewise, teardown in the `__destroy` magic method.
 For per-test setup and teardown (like loading a database fixture), use
 `__wakeup` and `__sleep` respectively.
 
-Each of these methods may be annotated with a `@Description`. Note this will
-only be outputted when running in verbose mode.
-
 For reusable objects, the following pattern is common:
 
 ```php

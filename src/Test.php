@@ -65,7 +65,6 @@ class Test
      */
     public function run(&$passed, &$failed, array &$messages)
     {
-        out('  * ');
         $args = [];
         try {
             $args = $this->getArguments();
@@ -91,7 +90,7 @@ class Test
                 $this->test->invokeArgs($this->target, $args) :
                 $runs = $this->test->invokeArgs($args);
         };
-        \Gentry\out("<blue>".array_shift($this->features));
+        \Gentry\out("  * <blue>".array_shift($this->features));
         ob_start();
         try {
            foreach ($invoke() as $result) {
