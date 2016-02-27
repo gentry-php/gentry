@@ -165,9 +165,9 @@ foreach ($existing->tests as $classname => $file) {
         $tested++;
         $test = new Test($class, $method);
         $annotations = new Annotations($method);
-        echo "  \033[1;30m* ";
         if (!isset($annotations['Incomplete'])) {
             if (method_exists($class, '__wakeup')) {
+                echo "  \033[1;30m* ";
                 echo "\033[0;37mInitialising...     ";
                 $steps = $class->__wakeup();
                 if ($steps) {
