@@ -40,7 +40,7 @@ class Pool implements CacheItemPoolInterface
         self::$path = sys_get_temp_dir()."/{$this->client}.cache";
         self::$cache = [];
         if (file_exists(self::$path)) {
-            self::$cache = unserialize(file_get_contents($path));
+            self::$cache = unserialize(file_get_contents(self::$path));
         } else {
             file_put_contents(self::$path, serialize(self::$cache));
             chmod(self::$path, 0666);
