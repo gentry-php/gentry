@@ -5,7 +5,6 @@ namespace Gentry\Cache;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Cache\CacheItemInterface;
 use ErrorException;
-use PDO;
 
 /**
  * A simple cache pool for Gentry.
@@ -26,41 +25,46 @@ class Pool implements CacheItemPoolInterface
     private $deferred = [];
 
     /**
-     * @var PDO Static link to a PDO adapter for storage.
+     * @var string Full pathname of the temporary storage file.
      */
-    private static $db;
+    private static $path;
 
-    public function __construct(PDO $pdo)
+    /**
+     * @var array Key/value hash of the current cache contents.
+     */
+    private static $cache;
+
+    public function __construct()
     {
         $this->client = getenv("GENTRY_CLIENT");
-        self::$db = $pdo;
-        self::$db->exec("CREATE TABLE IF NOT EXISTS _gentry_cache (
-            pool VARCHAR(6),
-            keyname VARCHAR(32),
-            value TEXT,
-            PRIMARY KEY(pool, keyname)
-        )");
+        self::$path = sys_get_temp_dir()."/{$this->client}.cache";
+        self::$cache = [];
+        if (file_exists(self::$path)) {
+            self::$cache = unserialize(file_get_contents($path));
+        } else {
+            file_put_contents(self::$path, serialize(self::$cache));
+            chmod(self::$path, 0666);
+        }            
     }
 
-    public static function getInstance(PDO $pdo = null)
+    public function __destruct()
+    {
+        file_put_contents(self::$path, serialize(self::$cache));
+    }
+
+    public static function getInstance()
     {
         static $pool;
         if (!isset($pool)) {
-            $pool = new static($pdo);
+            $pool = new static;
         }
         return $pool;
     }
 
     public function getItem($key)
     {
-        static $stmt;
-        if (!isset($stmt)) {
-            $stmt = self::$db->prepare("SELECT value FROM _gentry_cache
-                WHERE pool = ? AND keyname = ?");
-        }
-        $stmt->execute([$this->client, $key]);
-        if ($value = $stmt->fetchColumn()) {
-            return unserialize($value);
+        if (isset(self::$cache[$key])) {
+            return self::$cache[$key];
         }
         throw new InvalidArgumentException($key);
     }
@@ -83,53 +87,33 @@ class Pool implements CacheItemPoolInterface
 
     public function hasItem($key)
     {
-        try {
-            $this->getItem($key);
-            return true;
-        } catch (InvalidArgumentException $e) {
-            return false;
-        }
+        return isset(self::$cache[$key]);
     }
 
     public function clear()
     {
-        static $stmt;
-        if (!isset($stmt)) {
-            $stmt = self::$db->prepare("DELETE FROM _gentry_cache
-                WHERE pool = ?");
-        }
-        $stmt->execute([$this->client]);
+        self::$cache = [];
         return true;
     }
 
     public function deleteItem($key)
     {
-        static $stmt;
-        if (!isset($stmt)) {
-            $stmt = self::$db->prepare("DELETE FROM _gentry_cache
-                WHERE pool = ? AND keyname = ?");
-        }
-        $stmt->execute([$this->client, $key]);
+        unset(self::$cache[$key]);
         return true;
     }
 
     public function deleteItems(array $keys)
     {
         array_walk($keys, function ($key) {
-            $this->deleteItem($key);
+            unset(self::$cache[$key]);
         });
         return true;
     }
 
     public function save(CacheItemInterface $item)
     {
-        static $stmt;
-        if (!isset($stmt)) {
-            $stmt = self::$db->prepare("INSERT INTO _gentry_cache
-                VALUES (?, ?, ?)");
-        }
-        $this->deleteItem($item->getKey());
-        $stmt->execute([$this->client, $item->getKey(), serialize($item)]);
+        self::$cache[$item->getKey()] = $item;
+        file_put_contents(self::$path, serialize(self::$cache));
         return true;
     }
 
@@ -141,10 +125,7 @@ class Pool implements CacheItemPoolInterface
     public function commit()
     {
         while ($item = array_shift($this->deferred)) {
-            if (!($this->save($item))) {
-                array_unshift($this->deferred, $item);
-                return false;
-            }
+            $this->save($item);
         }
         return true;
     }
