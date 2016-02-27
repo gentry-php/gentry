@@ -39,17 +39,21 @@ class Pool implements CacheItemPoolInterface
         $this->client = getenv("GENTRY_CLIENT");
         self::$path = sys_get_temp_dir()."/{$this->client}.cache";
         self::$cache = [];
-        if (file_exists(self::$path)) {
-            self::$cache = unserialize(file_get_contents(self::$path));
-        } else {
-            file_put_contents(self::$path, serialize(self::$cache));
-            chmod(self::$path, 0666);
-        }            
     }
 
     public function __destruct()
     {
         file_put_contents(self::$path, serialize(self::$cache));
+    }
+
+    public function __wakeup()
+    {
+        if (file_exists(self::$path)) {
+            self::$cache = unserialize(file_get_contents(self::$path));
+        } else {
+            file_put_contents(self::$path, serialize(self::$cache));
+            chmod(self::$path, 0666);
+        }
     }
 
     public static function getInstance()
@@ -63,6 +67,7 @@ class Pool implements CacheItemPoolInterface
 
     public function getItem($key)
     {
+        $this->__wakeup();
         if (isset(self::$cache[$key])) {
             return self::$cache[$key];
         }
@@ -87,23 +92,27 @@ class Pool implements CacheItemPoolInterface
 
     public function hasItem($key)
     {
+        $this->__wakeup();
         return isset(self::$cache[$key]);
     }
 
     public function clear()
     {
+        $this->__wakeup();
         self::$cache = [];
         return true;
     }
 
     public function deleteItem($key)
     {
+        $this->__wakeup();
         unset(self::$cache[$key]);
         return true;
     }
 
     public function deleteItems(array $keys)
     {
+        $this->__wakeup();
         array_walk($keys, function ($key) {
             unset(self::$cache[$key]);
         });
@@ -112,6 +121,7 @@ class Pool implements CacheItemPoolInterface
 
     public function save(CacheItemInterface $item)
     {
+        $this->__wakeup();
         self::$cache[$item->getKey()] = $item;
         file_put_contents(self::$path, serialize(self::$cache));
         return true;
