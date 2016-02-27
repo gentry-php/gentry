@@ -70,7 +70,7 @@ putenv("GENTRY=1");
 $client = substr(md5(microtime(true)), 0, 6);
 putenv("GENTRY_CLIENT=$client");
 
-out("\n<magenta>Gentry 0.7.7 by Marijn Ophorst\n\n");
+out("\n<magenta>Gentry 0.8.0 by Marijn Ophorst\n\n");
 
 $config = 'Gentry.json';
 $verbose = false;
@@ -102,9 +102,6 @@ if (isset($config->bootstrap)) {
         require $file;
     }
 }
-
-// Initialize the cache pool
-Cache\Pool::getInstance();
 
 $sourcecode = new Sourcecode($config);
 if (VERBOSE) {
@@ -168,9 +165,10 @@ foreach ($existing->tests as $classname => $file) {
         $tested++;
         $test = new Test($class, $method);
         $annotations = new Annotations($method);
-        echo "  \033[1;30m* ";
         if (!isset($annotations['Incomplete'])) {
+            Cache\Pool::getInstance()->clear();
             if (method_exists($class, '__wakeup')) {
+                echo "  \033[1;30m* ";
                 echo "\033[0;37mInitialising...     ";
                 $steps = $class->__wakeup();
                 if ($steps) {
@@ -182,15 +180,13 @@ foreach ($existing->tests as $classname => $file) {
                         echo "\033[4D\033[1;30m".str_pad(round($i / $total * 100), 3, ' ', STR_PAD_LEFT).'%';
                     }
                 }
-                echo "\033[24D";
+                echo "\033[24D\033[0m";
             }
         }
         $args = $test->run($passed, $failed, $messages);
         $features = $test->getTestedFeatures();
 
-        if (method_exists($class, '__sleep')
-            && !isset($annotations['Chain'])
-        ) {
+        if (method_exists($class, '__sleep')) {
             $class->__sleep();
         }
     }
@@ -276,7 +272,10 @@ if (VERBOSE) {
 }
 
 $endit = function ($code) use ($start) {
-    Cache\Pool::getInstance()->clear();
+    try {
+        @unlink(sys_get_temp_dir().'/'.getenv("GENTRY_CLIENT").'.cache');
+    } catch (ErrorException $e) {
+    }
     out("\n");
     out(sprintf(
         "\n<magenta>Took %0.2f seconds, memory usage %4.2fMb.\n\n",

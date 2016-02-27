@@ -20,7 +20,7 @@ class Procedural
     /**
      * Including returns "hi there" {?}, and $foo exists afterwards {?}.
      */
-    public function includeFile(SplFileInfo &$file = null)
+    public function includeFile()
     {
         yield assert('hi there' == include __DIR__.'/../demo/file.php');
         yield assert($foo == 'bar');

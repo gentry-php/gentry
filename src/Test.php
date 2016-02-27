@@ -116,8 +116,18 @@ class Test
             out("<red>[FAILED]");
             $failed++;
             $messages[] = sprintf(
-                '<darkGray>%s <gray>in %s on line <darkGray>%s',
+                '<darkGray>%s <gray>in <darkGray>%s <gray>on line <darkGray>%s',
                 substr($e->getMessage(), 7, -1),
+                basename($e->getFile()),
+                $e->getLine()
+            );
+        } catch (Exception $e) {
+            out("<red>[ERROR]");
+            $failed++;
+            $messages[] = sprintf(
+                '<gray>Caught exception <darkGray>%s <gray> with message <darkGray>%s <gray>in <darkGray>%s <gray>on line <darkGray>%s',
+                get_class($e),
+                $e->getMessage(),
                 basename($e->getFile()),
                 $e->getLine()
             );
