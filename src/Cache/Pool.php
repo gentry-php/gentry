@@ -30,7 +30,8 @@ class Pool implements CacheItemPoolInterface
     private static $path;
 
     /**
-     * @var array Key/value hash of the current cache contents.
+     * @var array Psr\Cache\CacheItemInterface Key/value hash of the current
+     *  cache contents.
      */
     private static $cache;
 
@@ -39,17 +40,26 @@ class Pool implements CacheItemPoolInterface
         $this->client = getenv("GENTRY_CLIENT");
         self::$path = sys_get_temp_dir()."/{$this->client}.cache";
         self::$cache = [];
+    }
+
+    public function __destruct()
+    {
+        self::persist();
+    }
+    
+    public static function persist()
+    {
+        file_put_contents(self::$path, serialize(self::$cache));
+    }
+
+    public function __wakeup()
+    {
         if (file_exists(self::$path)) {
             self::$cache = unserialize(file_get_contents(self::$path));
         } else {
             file_put_contents(self::$path, serialize(self::$cache));
             chmod(self::$path, 0666);
-        }            
-    }
-
-    public function __destruct()
-    {
-        file_put_contents(self::$path, serialize(self::$cache));
+        }
     }
 
     public static function getInstance()
