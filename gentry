@@ -271,7 +271,10 @@ if (VERBOSE) {
 }
 
 $endit = function ($code) use ($start) {
-    Cache\Pool::getInstance()->clear();
+    try {
+        @unlink(sys_get_temp_dir().'/'.getenv("GENTRY_CLIENT").'.cache');
+    } catch (ErrorException $e) {
+    }
     out("\n");
     out(sprintf(
         "\n<magenta>Took %0.2f seconds, memory usage %4.2fMb.\n\n",
