@@ -4,10 +4,8 @@ namespace Gentry\Cache;
 
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Cache\CacheItemInterface;
-use Dabble\Adapter\Sqlite;
-use Dabble\Query\Exception;
-use Dabble\Query\DeleteException;
 use ErrorException;
+use PDO;
 
 /**
  * A simple cache pool for Gentry.
@@ -28,57 +26,43 @@ class Pool implements CacheItemPoolInterface
     private $deferred = [];
 
     /**
-     * @var Dabble\Adapter\Sqlite Static link to the SQLite adapter.
+     * @var PDO Static link to a PDO adapter for storage.
      */
     private static $db;
 
-    public function __construct()
+    public function __construct(PDO $pdo)
     {
         $this->client = getenv("GENTRY_CLIENT");
-        if (!isset(self::$db)) {
-            $path = sys_get_temp_dir().'/'.getenv("GENTRY_CLIENT").'.sq3';
-            self::$db = new Sqlite($path);
-            self::$db->exec("CREATE TABLE IF NOT EXISTS items (
-                pool VARCHAR(6),
-                keyname VARCHAR(32),
-                value TEXT,
-                PRIMARY KEY(pool, keyname)
-            )");
-            chmod($path, 0666);
-        }
+        self::$db = $pdo;
+        self::$db->exec("CREATE TABLE IF NOT EXISTS _gentry_cache (
+            pool VARCHAR(6),
+            keyname VARCHAR(32),
+            value TEXT,
+            PRIMARY KEY(pool, keyname)
+        )");
     }
 
-    public function __destruct()
-    {
-        try {
-            @unlink(sys_get_temp_dir().'/'.getenv("GENTRY_CLIENT").'.sq3');
-        } catch (ErrorException $e) {
-        }
-    }
-
-    public static function getInstance()
+    public static function getInstance(PDO $pdo = null)
     {
         static $pool;
         if (!isset($pool)) {
-            $pool = new static;
+            $pool = new static($pdo);
         }
         return $pool;
     }
 
     public function getItem($key)
     {
-        try {
-            return unserialize(self::$db->fetchColumn(
-                'items',
-                'value',
-                [
-                    'pool' => $this->client,
-                    'keyname' => $key,
-                ]
-            ));
-        } catch (Exception $e) {
-            throw new InvalidArgumentException;
+        static $stmt;
+        if (!isset($stmt)) {
+            $stmt = self::$db->prepare("SELECT value FROM _gentry_cache
+                WHERE pool = ? AND keyname = ?");
         }
+        $stmt->execute([$this->client, $key]);
+        if ($value = $stmt->fetchColumn()) {
+            return unserialize($value);
+        }
+        throw new InvalidArgumentException($key);
     }
 
     public function getItems(array $keys = [])
@@ -109,66 +93,44 @@ class Pool implements CacheItemPoolInterface
 
     public function clear()
     {
-        try {
-            self::$db->delete(
-                'items',
-                ['pool' => $this->client]
-            );
-        } catch (DeleteException $e) {
-            // Nothing in cache, that's fine.
-        } catch (Exception $e) {
-            return false;
+        static $stmt;
+        if (!isset($stmt)) {
+            $stmt = self::$db->prepare("DELETE FROM _gentry_cache
+                WHERE pool = ?");
         }
+        $stmt->execute([$this->client]);
         return true;
     }
 
     public function deleteItem($key)
     {
-        try {
-            self::$db->delete(
-                'items',
-                ['pool' => $this->client, 'keyname' => $key]
-            );
-            return true;
-        } catch (Exception $e) {
-            return false;
+        static $stmt;
+        if (!isset($stmt)) {
+            $stmt = self::$db->prepare("DELETE FROM _gentry_cache
+                WHERE pool = ? AND keyname = ?");
         }
+        $stmt->execute([$this->client, $key]);
+        return true;
     }
 
     public function deleteItems(array $keys)
     {
-        try {
-            self::$db->delete(
-                'items',
-                [
-                    'pool' => $this->client,
-                    'keyname' => ['IN' => $keys],
-                ]
-            );
-        } catch (DeleteException $e) {
-            // Nothing in cache, that's fine.
-        } catch (Exception $e) {
-            return false;
-        }
+        array_walk($keys, function ($key) {
+            $this->deleteItem($key);
+        });
         return true;
     }
 
     public function save(CacheItemInterface $item)
     {
-        $this->deleteItem($item->getKey());
-        try {
-            self::$db->insert(
-                'items',
-                [
-                    'pool' => $this->client,
-                    'keyname' => $item->getKey(),
-                    'value' => serialize($item),
-                ]
-            );
-            return true;
-        } catch (Exception $e) {
-            return false;
+        static $stmt;
+        if (!isset($stmt)) {
+            $stmt = self::$db->prepare("INSERT INTO _gentry_cache
+                VALUES (?, ?, ?)");
         }
+        $this->deleteItem($item->getKey());
+        $stmt->execute([$this->client, $item->getKey(), serialize($item)]);
+        return true;
     }
 
     public function saveDeferred(CacheItemInterface $item)
