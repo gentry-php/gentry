@@ -30,7 +30,8 @@ class Pool implements CacheItemPoolInterface
     private static $path;
 
     /**
-     * @var array Key/value hash of the current cache contents.
+     * @var array Psr\Cache\CacheItemInterface Key/value hash of the current
+     *  cache contents.
      */
     private static $cache;
 
@@ -42,6 +43,11 @@ class Pool implements CacheItemPoolInterface
     }
 
     public function __destruct()
+    {
+        self::persist();
+    }
+    
+    public static function persist()
     {
         file_put_contents(self::$path, serialize(self::$cache));
     }
@@ -67,7 +73,6 @@ class Pool implements CacheItemPoolInterface
 
     public function getItem($key)
     {
-        $this->__wakeup();
         if (isset(self::$cache[$key])) {
             return self::$cache[$key];
         }
@@ -92,27 +97,23 @@ class Pool implements CacheItemPoolInterface
 
     public function hasItem($key)
     {
-        $this->__wakeup();
         return isset(self::$cache[$key]);
     }
 
     public function clear()
     {
-        $this->__wakeup();
         self::$cache = [];
         return true;
     }
 
     public function deleteItem($key)
     {
-        $this->__wakeup();
         unset(self::$cache[$key]);
         return true;
     }
 
     public function deleteItems(array $keys)
     {
-        $this->__wakeup();
         array_walk($keys, function ($key) {
             unset(self::$cache[$key]);
         });
@@ -121,7 +122,6 @@ class Pool implements CacheItemPoolInterface
 
     public function save(CacheItemInterface $item)
     {
-        $this->__wakeup();
         self::$cache[$item->getKey()] = $item;
         file_put_contents(self::$path, serialize(self::$cache));
         return true;
