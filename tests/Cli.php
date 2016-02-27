@@ -8,13 +8,18 @@ namespace Gentry\Tests;
 class Cli
 {
     /**
-     * Running {0} works without problems, {1} fails.
+     * Running first script works without problems {?} and echoes "test" {?},
+     * the second one fails {?}.
      */
     public function cliTest($command = 'demo/executable', $command2 = 'demo/failing-executable')
     {
-        echo 'test';
-        yield 'execute' => 0;
-        yield 'execute' => 1;
+        ob_start();
+        passthru(__DIR__.'/../demo/executable', $return);
+        $out = ob_get_clean();
+        yield assert($return == 0);
+        yield assert($out == 'test');
+        passthru(__DIR__.'/../demo/failing-executable', $return);
+        yield assert($return == 1);
     }
 }
 
