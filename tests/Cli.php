@@ -11,7 +11,7 @@ class Cli
      * Running first script works without problems {?} and echoes "test" {?},
      * the second one fails {?}.
      */
-    public function cliTest($command = 'demo/executable', $command2 = 'demo/failing-executable')
+    public function cliTest()
     {
         ob_start();
         passthru(__DIR__.'/../demo/executable', $return);
