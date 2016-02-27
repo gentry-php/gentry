@@ -22,6 +22,7 @@ class Browser
         $request->setMethod('GET');
         $request->setUrl($url);
         $client->send($request, $response);
+        Cache\Pool::getInstance()->__wakeup();
         return $response;
     }
 
@@ -32,6 +33,7 @@ class Browser
         $request->setUrl($url);
         $request->setRequestData($data);
         $client->send($request, $response);
+        Cache\Pool::getInstance()->__wakeup();
         return $response;
     }
 
