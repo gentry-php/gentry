@@ -50,7 +50,10 @@ class Pool implements CacheItemPoolInterface
     public static function persist()
     {
         file_put_contents(self::$path, serialize(self::$cache));
-        chmod(self::$path, 0666);
+        try {
+            chmod(self::$path, 0666);
+        } catch (ErrorException $e) {
+        }
     }
 
     public function __wakeup()
