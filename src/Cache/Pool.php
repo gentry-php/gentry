@@ -124,6 +124,7 @@ class Pool implements CacheItemPoolInterface
     {
         self::$cache[$item->getKey()] = $item;
         file_put_contents(self::$path, serialize(self::$cache));
+        chmod(self::$path, 0666);
         return true;
     }
 
