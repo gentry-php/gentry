@@ -50,6 +50,7 @@ class Pool implements CacheItemPoolInterface
     public static function persist()
     {
         file_put_contents(self::$path, serialize(self::$cache));
+        chmod(self::$path, 0666);
     }
 
     public function __wakeup()
@@ -57,8 +58,7 @@ class Pool implements CacheItemPoolInterface
         if (file_exists(self::$path)) {
             self::$cache = unserialize(file_get_contents(self::$path));
         } else {
-            file_put_contents(self::$path, serialize(self::$cache));
-            chmod(self::$path, 0666);
+            self::persist();
         }
     }
 
@@ -123,8 +123,7 @@ class Pool implements CacheItemPoolInterface
     public function save(CacheItemInterface $item)
     {
         self::$cache[$item->getKey()] = $item;
-        file_put_contents(self::$path, serialize(self::$cache));
-        chmod(self::$path, 0666);
+        self::persist();
         return true;
     }
 
