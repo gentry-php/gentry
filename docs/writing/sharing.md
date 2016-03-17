@@ -55,3 +55,15 @@ Also note that - Gentry's cache being extremely simple - anything you store will
 be serialized/deserialized. So take care not to store stuff like database
 handles (or implement proper `__sleep`/`__wakeup` methods if you must).
 
+The Gentry Cache pool comes in handy when testing methods that interact with the
+outside world (sending mails, talking to an API etc.) but don't necessarily
+return a useful value. E.g. a `save` handler sending a confirmation email won't
+return the mail in question but rather `null` or an error message or code, but
+you explicitly want to check if that email contains a confirmation link.
+
+## Use unique keys
+Keys are unique (as in, per Gentry run), so any duplicate keys will overwrite
+existing values. This generally isn't a problem as the cache is reset before
+each test is run, but it's good to keep in mind when choosing keys. Apart from
+that, the key can be anything unique you can use in your test.
+
