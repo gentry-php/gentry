@@ -6,13 +6,16 @@ use JonnyW\PhantomJs\Client;
 
 class Browser
 {
-    private static $sessionname = 'PHPSESSID';
-    private static $sessionid = null;
+    public static $sessionname = 'PHPSESSID';
+    private $sessionid = null;
 
-    public function __construct()
+    public function __construct($sessionid = null)
     {
-        if (!isset(self::$sessionid)) {
-            self::$sessionid = getenv('GENTRY_CLIENT');
+        if (isset($sessionid)) {
+            if ($sessionid === true) {
+                $sessionid = session_id();
+            }
+            $this->sessionid = $sessionid;
         }
     }
 
@@ -37,22 +40,6 @@ class Browser
         return $response;
     }
 
-    /**
-     * Override session defaults for this run.
-     *
-     * @param string $name Optional session name. Defaults to `PHPSESSID`.
-     * @param string $id Optional session id. Defaults to `GENTRY_CLIENT`.
-     */
-    public static function setSession($name = null, $id = null)
-    {
-        if (isset($name)) {
-            self::$sessionname = $name;
-        }
-        if (isset($id)) {
-            self::$sessionid = $id;
-        }
-    }
-
     private function initializeRequest()
     {
         $client = Client::getInstance();
@@ -62,7 +49,7 @@ class Browser
         $request = $client->getMessageFactory()->createRequest();
         $response = $client->getMessageFactory()->createResponse();
         $client->getProcedureCompiler()->disableCache();
-        $request->addHeader('Cookie', self::$sessionname.'='.self::$sessionid);
+        $request->addHeader('Cookie', self::$sessionname.'='.$this->sessionid);
         $request->addHeader('Gentry', getenv("GENTRY"));
         $request->addHeader('Gentry-Client', getenv("GENTRY_CLIENT"));
         $request->addHeader('User-Agent', 'Gentry/PhantomJs headless');
