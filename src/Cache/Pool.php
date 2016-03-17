@@ -10,7 +10,8 @@ use ErrorException;
  * A simple cache pool for Gentry.
  *
  * Unlike a "serious" cache implementation, this simply stores cached values in
- * an SQLite database `gentry.sq3` in your `vendor` dir.
+ * a file in your system's temp-dir as a serialized string for the duration of
+ * this run.
  */
 class Pool implements CacheItemPoolInterface
 {
@@ -40,6 +41,7 @@ class Pool implements CacheItemPoolInterface
         $this->client = getenv("GENTRY_CLIENT");
         self::$path = sys_get_temp_dir()."/{$this->client}.cache";
         self::$cache = [];
+        $this->__wakeup();
     }
 
     public function __destruct()
@@ -106,6 +108,7 @@ class Pool implements CacheItemPoolInterface
     public function clear()
     {
         self::$cache = [];
+        self::persist();
         return true;
     }
 
