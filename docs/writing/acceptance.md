@@ -36,11 +36,22 @@ symlink the executable there.
 > This is needed due to an apparent bug in the PhpPhantomJs package. It's
 > _supposed_ to get its location from Composer, only it seems to be hardcoded.
 
+Note that the PhantomInstaller requires PHP's BZ2 module (it's `composer.json`
+doesn't explicitly state that, without it the installation will fail with no
+meaningful error message).
+
 ## Preparing your project
 Your project needs to be made Gentry-aware. For regular tests we did that via
 the `getenv('GENTRY')` check; for HTTP calls it is similar. Gentry's browser
 passes these variables in headers, and they are thus available as
 `$_SERVER['HTTP_GENTRY_something']` entries in the server superglobal.
+
+In a central place - this can be any place depending on your project, as long as
+you're 100% sure every called page will run that bit of code - place a check for
+these headers and make sure your application understands it's running in test
+mode if they're set.
+
+> So, in test mode, use a mock database etc.
 
 ## Writing an acceptance test
 To write these tests, we'll make use of the `Gentry\Browser` object. This is a
@@ -68,75 +79,81 @@ were checking in this example. You can also get the full page contents, inspect
 all headers etc. See the PHP PhantomJS API documentation for all options.
 
 ## Sessions and cookies
-Gentry sets a "fake" session id with the same value as the "client id" used for
-the test run (a 6 character mini-hash). The default session name is `PHPSESSID`.
-You can override these if you need to;
+PhantomJS (and, therefore, the Gentry `Browser`) can also handle sessions (so
+you can test stuff like logging in and performing restricted operations).
+
+While we could have jumped through hoops and tried to read the session ID
+actually set by a request, we chose to "fixate" the required session ID instead
+on the `Browser` object. This is much more convenient for a number of reasons:
+
+1. It's simpler, to begin with - no parsing of cookie jars.
+2. You have _complete_ control over sessions.
+3. You don't have to do an extra request before `POST`ing to a restricted page
+   to first get the ID, perform a login etc.
+4. Even better: assuming you have access to the session data, since you can know
+   the ID in advance you can setup a logged in user!
+
+When you construct the `Browser` object you can pass an optional `$sessionid`
+parameter. This is the session ID used:
 
 ```php
 <?php
 
 // ...
-        Gentry\Browser::setSession('my-name', 'my-id');
-        $browser = new Gentry\Browser;
+        $browser = new Gentry\Browser('abcd');
 // ...
 ```
-
-The ID parameter is optional since it's probably only relevant if your custom
-session does some insane validity checking on it.
 
 > When passing a custom id, it's up to you to make sure your test script and
-> your online application can somehow access the same pool.
+> your online application can somehow access the same session storage. If your
+> application uses [database sessions](http://cesession.monomelodies.nl) that
+> won't be an issue; if you're using PHP sessions both the CLI tests and the
+> test site instance will need access to the same `tmp` directory.
 
-## Sharing data
-Not all data gets stored in a database. For instance, you might want to write an
-acceptance test for a signup page, and verify in the test that a mail was sent
-to the user signing up (for confirmation purposes). Obviously we don't want to
-actually send an email (let alone connect to an actual mailbox to retrieve it).
-For this you can use Gentry's super-simple `Cache` classes.
+Custom session IDs are useful if either your session handler is picky about the
+format of the session ID, _or_ when testing with multiple users (see below).
 
-> While the Gentry cache is fully PSR-compliant, it is _not_ intended for use
-> outside of Gentry. The storage is strictly per-run and it doesn't do anything
-> like file locking since normally you wouldn't need that during testing (as
-> opposed to on, say, a high traffic application).
+To use a custom session name, set the static `Browser::$sessionname` string to
+whatever you need. Gentry makes the reasonable assumption that session names are
+constant within an appliction.
 
-### Step 1: intercept what you need
-This is up to you and your implementation, but the idea is that whenever
-something goes "outside" your application (like an email, but could also be a
-call to or from an external API) you implement a _mock_ handler for that. Inside
-the mock, instead of performing the intended action store the intended result
-(or whatever value you're going to need to check on later) in the cache pool.
-An example:
+If you don't explicitly set a session ID, chances are your application will try
+to set one (which Gentry will ignore).
 
-```php
-function mockMailer($to, $message)
-{
-    Gentry\Cache\Pool::getInstance()
-        ->save(new Gentry\Cache\Item('mail', <<<EOT
-To: $to
-Message: $message
-EOT
-        ));
-}
-```
+For most applications, a session ID as generated by `session_id()` will suffice.
+So as a shorthand, you may pass `true` as a contructor parameter to use this
+default.
 
-### Step 2: assert the cached data
-Then, in your actual test, retrieve the cached item:
+## Testing with multiple concurrent users
+A handy propery of the `Browser` object accepting a random session id is the
+possibility for an acceptance test to actually test interaction between
+different users of your application. E.g., user John logs in and sends a message
+to Mary; when Mary opens her message center, she should see the new message.
+
+An acceptance test with multiple users would be implemented something like this:
 
 ```php
+<?php
+
 // ...
-$item = Gentry\Cache\Pool::getInstance()->getItem('mail');
-yield asset($item->get() == <<<EOT
-To: john@doe.com
-Message: Howdy!
-EOT
-);
+// We let PHP generate random session ids.
+$john = new Browser(session_id());
+$mary = new Browser(session_id());
+
+// John sends his message
+$response = $john->post('/message/', ['to' => 'Mary', 'body' => 'Hi Mary!']);
+yield assert($response->getStatus() == 200);
+// Mary opens the message page
+$response = $mary->get('/message/');
+yield assert(strpos($response->getContent(), 'Unread: 1'));
+// Empty mock database, so this message got ID 1
+$response = $mary->get('/message/1/');
+yield assert(strpons($response->getContent(), 'From: John'));
+// Mary read it, so now unread should be 0 again
+$response = $mary->get('/message/');
+yield assert(strpos($response->getContent(), 'Unread: 0'));
+// And finally John would see the message was read:
+$response = $john->get('/message/1/');
+yield assert(strpos($response->getContent(), 'Status: read'));
 ```
-
-Note that per PSR-6, items are stored in the cache wrapped in an object
-implementing `Psr\Cache\CacheInterface`. Use the `get` method to retrieve the
-actual contents.
-
-Also note that - Gentry's cache being extremely simple - anything you store will
-be serialized/deserialized. So take care not to store stuff like database
-handles (or implement proper `__sleep`/`__wakeup` methods).
 
