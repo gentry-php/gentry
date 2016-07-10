@@ -6,7 +6,7 @@ assertion than simple equality (e.g. "it returns an integer _and_ the integer
 contains a value less than `10`).
 
 ## Setup and teardown
-Setup (like injecting mocks) should be done in the _constructor_ of your
+Setup (like injecting mocks) should be done in the `__construct`or of your
 testclass. Likewise, teardown in the `__destroy` magic method.
 
 For per-test setup and teardown (like loading a database fixture), use

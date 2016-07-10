@@ -107,7 +107,7 @@ There's two schools of thought here, each with its own merits. Use whatever
 appeals most to you.
 
 ### 1. Group all CLI tests in one feature test
-This is the `TestCLI` class approach, related to the "group all test for methods
+This is the `CliTest` class approach, related to the "group all test for methods
 of class `A` into an `ATest` feature class".
 
 ### 2. Bundle CLI tests with the feature they belong with
