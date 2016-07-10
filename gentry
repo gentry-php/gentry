@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
 
-namespace Gentry;
+namespace Gentry\Gentry;
 
 use Ansi;
 use RecursiveIteratorIterator;
