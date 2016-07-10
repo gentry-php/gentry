@@ -84,7 +84,7 @@ test for that particular object:
 Run the Gentry executable. Its output will include something like:
 
 ```
-* Bar should always ireturn true [OK] [OK] [OK] [FAILED]
+* Bar should always return true [OK] [OK] [OK] [FAILED]
 ```
 
 That makes sense, we specifically wanted the last test to fail to see what
