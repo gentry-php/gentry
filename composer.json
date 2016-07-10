@@ -1,5 +1,5 @@
 {
-    "name": "monomelodies/gentry",
+    "name": "gentry/gentry",
     "description": "PHP unit test generation tools",
     "type": "library",
     "license": "MIT",
@@ -15,22 +15,21 @@
         "monomelodies/kingconf": "^1.0",
         "simoneast/simple-ansi-colors": "^1.0",
         "jonnyw/php-phantomjs": "4.*",
-        "psr/cache": "^1.0",
-        "monomelodies/dabble": "^1.5"
+        "psr/cache": "^1.0"
     },
     "bin": [
         "gentry"
     ],
     "autoload": {
         "psr-4": {
-            "Gentry\\": "src"
+            "Gentry\\Gentry\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Gentry\\": "src",
-            "Gentry\\Tests\\": "tests",
-            "Gentry\\Demo\\": "demo"
+            "Gentry\\Gentry\\": "src",
+            "Gentry\\Gentry\\Tests\\": "tests",
+            "Gentry\\Gentry\\Demo\\": "demo"
         }
     },
     "scripts": {
