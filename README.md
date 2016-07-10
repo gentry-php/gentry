@@ -41,7 +41,6 @@ options:
     "src": "/path/to/src",
     "tests": "/path/to/tests",
     "bootstrap": "/path/to/bootstrap.php",
-    "namespace": "Foo",
     "ignore": "some.*?regex"
 }
 ```
