@@ -1,6 +1,6 @@
 <?php
 
-namespace Gentry;
+namespace Gentry\Gentry;
 
 use ReflectionClass;
 use ReflectionMethod;
@@ -90,7 +90,7 @@ class Test
                 $this->test->invokeArgs($this->target, $args) :
                 $runs = $this->test->invokeArgs($args);
         };
-        \Gentry\out("  * <blue>".array_shift($this->features));
+        out("  * <blue>".array_shift($this->features));
         ob_start();
         try {
            foreach ($invoke() as $result) {
@@ -307,7 +307,7 @@ EOT
         }
         $work = eval(<<<EOT
 return new class $mod
-    use Gentry\ClassWrapper;
+    use Gentry\Gentry\ClassWrapper;
     private static \$__gentryConstructionArguments;
 
     $methods

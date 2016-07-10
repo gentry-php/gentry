@@ -89,7 +89,7 @@ foreach ($argv as $i => $arg) {
         $config = $arg;
     }
 }
-define('Gentry\VERBOSE', $verbose);
+define('Gentry\Gentry\VERBOSE', $verbose);
 try {
     $config = (object)(array)(new Kingconf\Config($config));
 } catch (Kingconf\Exception $e) {

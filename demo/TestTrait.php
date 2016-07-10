@@ -1,6 +1,6 @@
 <?php
 
-namespace Gentry\Demo;
+namespace Gentry\Gentry\Demo;
 
 trait TestTrait
 {

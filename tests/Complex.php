@@ -1,9 +1,9 @@
 <?php
 
-namespace Gentry\Tests;
+namespace Gentry\Gentry\Tests;
 
 use stdClass;
-use Gentry\Demo;
+use Gentry\Gentry\Demo;
 
 /**
  * Complex test running

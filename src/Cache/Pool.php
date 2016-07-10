@@ -1,6 +1,6 @@
 <?php
 
-namespace Gentry\Cache;
+namespace Gentry\Gentry\Cache;
 
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Cache\CacheItemInterface;

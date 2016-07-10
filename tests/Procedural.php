@@ -1,6 +1,6 @@
 <?php
 
-namespace Gentry\Tests;
+namespace Gentry\Gentry\Tests;
 
 use SplFileInfo;
 

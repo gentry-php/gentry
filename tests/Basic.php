@@ -1,9 +1,9 @@
 <?php
 
-namespace Gentry\Tests;
+namespace Gentry\Gentry\Tests;
 
-use Gentry\Test;
-use Gentry\Demo;
+use Gentry\Gentry\Test;
+use Gentry\Gentry\Demo;
 use stdClass;
 use ReflectionFunction;
 

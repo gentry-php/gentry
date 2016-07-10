@@ -1,6 +1,6 @@
 <?php
 
-namespace Gentry;
+namespace Gentry\Gentry;
 
 use JonnyW\PhantomJs\Client;
 
