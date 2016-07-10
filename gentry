@@ -3,6 +3,7 @@
 
 namespace Gentry\Gentry;
 
+use Gentry\Cache;
 use Ansi;
 use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
@@ -166,7 +167,9 @@ foreach ($existing->tests as $classname => $file) {
         $test = new Test($class, $method);
         $annotations = new Annotations($method);
         if (!isset($annotations['Incomplete'])) {
-            Cache\Pool::getInstance()->clear();
+            if (class_exists('Gentry\Cache\Pool')) {
+                Cache\Pool::getInstance()->clear();
+            }
             if (method_exists($class, '__wakeup')) {
                 echo "  \033[1;30m* ";
                 echo "\033[0;37mInitialising...     ";
