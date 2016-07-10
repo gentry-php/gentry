@@ -30,7 +30,7 @@ composer require --dev monomelodies/gentry
 You can now run `vendor/bin/gentry`.
 
 ### Manual
-Download or clone the repo. There's an executable in the root.
+Download or clone the repo. There's an executable in the `./bin` directory.
 
 ## Configuration
 Create a `Gentry.json` file in the root of your project. It uses the following
