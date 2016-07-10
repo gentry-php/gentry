@@ -83,6 +83,7 @@ class CliIntegrationTest
         passthru('bin/cleanup', $result);
         yield assert($result == 0);
         yield assert(count($orders->getOldOrders('-1 day')) == 0);
+        passthru('bin/cleanup', $result);
         yield assert($result == 0);
     }
 }
