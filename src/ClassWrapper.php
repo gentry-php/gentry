@@ -7,10 +7,14 @@ use ReflectionClass;
 
 trait ClassWrapper
 {
+    private static $__gentryConstructionArguments = [];
+
     public function __construct()
     {
         if (isset(self::$__gentryConstructionArguments)) {
-            parent::__construct(...self::$__gentryConstructionArguments);
+            if (method_exists(get_parent_class($this), '__construct')) {
+                parent::__construct(...self::$__gentryConstructionArguments);
+            }
         }
     }
 
@@ -18,7 +22,9 @@ trait ClassWrapper
     {
         self::$__gentryConstructionArguments = $args;
         try {
-            parent::__construct(...$args);
+            if (method_exists(get_parent_class($this), '__construct')) {
+                parent::__construct(...$args);
+            }
         } catch (Throwable $e) {
         }
     }        
