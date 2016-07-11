@@ -90,7 +90,7 @@ class Test
                 $this->test->invokeArgs($this->target, $args) :
                 $runs = $this->test->invokeArgs($args);
         };
-        out("  * <blue>".array_shift($this->features));
+        \Gentry\out("  * <blue>".array_shift($this->features));
         ob_start();
         try {
            foreach ($invoke() as $result) {
@@ -280,20 +280,14 @@ class Test
                 <<<EOT
 public %1\$sfunction %2\$s(%3\$s) {
     self::__gentryLogMethodCall('%2\$s'); 
-    try {
-        return parent::%2\$s(%4\$s);
-    } catch (Throwable \$e) {
-        return %5\$s;
-    }
+    return call_user_func_array('parent::%2\$s', func_get_args());
 }
 
 EOT
                 ,
                 $method->isStatic() ? 'static ' : '',
                 $method->name,
-                implode(', ', $arguments),
-                implode(', ', array_keys($arguments)),
-                $method->name == '__toString' ? '$e->getMessage()' : '$e'
+                implode(', ', $arguments)
             );
         }
         $methods = implode("\n", $methods);
