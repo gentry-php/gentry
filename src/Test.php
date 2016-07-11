@@ -299,15 +299,14 @@ EOT
         } else {
             $mod = "extends {$type->name} {";
         }
-        $work = eval(<<<EOT
-return new class $mod
+        $definition = <<<EOT
+\$work = new class $mod
     use Gentry\Gentry\ClassWrapper;
-    private static \$__gentryConstructionArguments;
 
     $methods
 };
-EOT
-        );
+EOT;
+        eval($definition);
         try {
             $work->__gentryConstruct(...$args);
             return $work;
