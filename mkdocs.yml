@@ -8,7 +8,6 @@ pages:
 - Writing tests:
     - 'The basics': 'writing/basics.md'
     - 'Complexer tests': 'writing/complex.md'
-    - 'Sharing data': 'writing/sharing.md'
     - 'Unit tests': 'writing/unit.md'
     - 'Integration tests': 'writing/integration.md'
     - 'Acceptance tests': 'writing/acceptance.md'
