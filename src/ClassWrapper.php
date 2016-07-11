@@ -7,7 +7,7 @@ use ReflectionClass;
 
 trait ClassWrapper
 {
-    private static $__gentryConstructionArguments = [];
+    private static $__gentryConstructionArguments;
 
     public function __construct()
     {
