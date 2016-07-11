@@ -280,7 +280,11 @@ class Test
                 <<<EOT
 public %1\$sfunction %2\$s(%3\$s) {
     self::__gentryLogMethodCall('%2\$s'); 
-    return call_user_func_array('parent::%2\$s', func_get_args());
+    \$args = [];
+    foreach (func_get_args() as &\$arg) {
+        \$args[] =& \$arg;
+    }
+    return call_user_func_array('parent::%2\$s', \$args);
 }
 
 EOT
