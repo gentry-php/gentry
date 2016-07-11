@@ -274,16 +274,13 @@ class Test
                     $argument .= ' = '
                         .$this->tostring($param->getDefaultValue());
                 }
-                $arguments["\$a$i"] = $argument;
+                $arguments["'a$i'"] = $argument;
             }
             $methods[] = sprintf(
                 <<<EOT
-public %1\$sfunction %2\$s(%3\$s) {
-    self::__gentryLogMethodCall('%2\$s'); 
-    \$args = [];
-    foreach (func_get_args() as &\$arg) {
-        \$args[] =& \$arg;
-    }
+public %1\$sfunction %2\$s(%3\$s%5\$s...\$args) {
+    self::__gentryLogMethodCall('%2\$s');
+    \$args = array_merge(compact(%4\$s), \$args);
     return call_user_func_array('parent::%2\$s', \$args);
 }
 
@@ -291,7 +288,9 @@ EOT
                 ,
                 $method->isStatic() ? 'static ' : '',
                 $method->name,
-                implode(', ', $arguments)
+                implode(', ', $arguments),
+                implode(', ', array_keys($arguments)),
+                $arguments ? ', ' : ''
             );
         }
         $methods = implode("\n", $methods);
