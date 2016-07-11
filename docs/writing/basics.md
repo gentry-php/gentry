@@ -150,6 +150,11 @@ public function bar(Foo $foo, Bar $bar)
 > Testing multiple related objects is referred to as an "integration test". See
 > the corresponding section in this manual for more information.
 
+Note that it is _not_ possible to inject an object of the same type twice; this
+causes a segmentation fault. In rare cases where this is needed ("pyramid
+structure") you can construct either of them manually using the `::resolve`
+static method.
+
 ## Passing parameters
 If a parameter is a type-hinted object, Gentry will instantiate that object for
 you. This is true of both the test method as well as anonymous functions
