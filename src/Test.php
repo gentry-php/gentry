@@ -90,7 +90,7 @@ class Test
                 $this->test->invokeArgs($this->target, $args) :
                 $runs = $this->test->invokeArgs($args);
         };
-        \Gentry\out("  * <blue>".array_shift($this->features));
+        out("  * <blue>".array_shift($this->features));
         ob_start();
         try {
            foreach ($invoke() as $result) {
@@ -147,7 +147,7 @@ class Test
             $expected = [
                 'result' => $res,
                 'thrown' => null,
-                'out' => $expect['out'].\Gentry\cleanOutput(ob_get_clean()),
+                'out' => $expect['out'].cleanOutput(ob_get_clean()),
             ];
             if ($res instanceof Exception) {
                 $expected['thrown'] = $res;
