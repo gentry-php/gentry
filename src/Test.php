@@ -278,10 +278,14 @@ class Test
             }
             $methods[] = sprintf(
                 <<<EOT
-public %1\$sfunction %2\$s(%3\$s%5\$s...\$args) {
+public %1\$sfunction %2\$s(%3\$s%4\$s...\$args) {
     self::__gentryLogMethodCall('%2\$s');
-    \$args = array_merge(compact(%4\$s), \$args);
-    return call_user_func_array('parent::%2\$s', \$args);
+    %5\$s
+    \$refargs = [];
+    array_walk(\$args, function (\$arg) use (&\$refargs) {
+        \$refargs[] = &\$arg;
+    });
+    return call_user_func_array('parent::%2\$s', \$refargs);
 }
 
 EOT
@@ -289,8 +293,9 @@ EOT
                 $method->isStatic() ? 'static ' : '',
                 $method->name,
                 implode(', ', $arguments),
-                implode(', ', array_keys($arguments)),
-                $arguments ? ', ' : ''
+                $arguments ? ', ' : '',
+                $arguments ? '$args = array_merge(compact('
+                    .implode(',', array_keys($arguments)).'), $args);' : ''
             );
         }
         $methods = implode("\n", $methods);
