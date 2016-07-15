@@ -12,7 +12,7 @@ use ReflectionMethod;
 use ReflectionException;
 use Closure;
 use zpt\anno\Annotations;
-use Kingconf;
+use Monomelodies\Kingconf;
 use Exception;
 use ErrorException;
 
