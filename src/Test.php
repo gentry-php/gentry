@@ -263,6 +263,9 @@ class Test
             }
             $arguments = [];
             foreach ($method->getParameters() as $i => $param) {
+                if ($param->isVariadic()) {
+                    continue;
+                }
                 $argument = "\$a$i";
                 if ($param->isPassedByReference()) {
                     $argument = "&$argument";
@@ -276,9 +279,10 @@ class Test
                 }
                 $arguments["'a$i'"] = $argument;
             }
+            $type = $method->getReturnType();
             $methods[] = sprintf(
                 <<<EOT
-public %1\$sfunction %2\$s(%3\$s%4\$s...\$args) {
+public %1\$sfunction %2\$s(%3\$s%4\$s...\$args)%6\$s {
     self::__gentryLogMethodCall('%2\$s');
     %5\$s
     \$refargs = [];
@@ -295,7 +299,8 @@ EOT
                 implode(', ', $arguments),
                 $arguments ? ', ' : '',
                 $arguments ? '$args = array_merge(compact('
-                    .implode(',', array_keys($arguments)).'), $args);' : ''
+                    .implode(',', array_keys($arguments)).'), $args);' : '',
+                isset($type) ? " : $type" : ''
             );
         }
         $methods = implode("\n", $methods);
