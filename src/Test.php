@@ -279,7 +279,7 @@ class Test
                 }
                 $arguments["'a$i'"] = $argument;
             }
-            $type = $method->getReturnType();
+            $returnType = $method->getReturnType();
             $methods[] = sprintf(
                 <<<EOT
 public %1\$sfunction %2\$s(%3\$s%4\$s...\$args)%6\$s {
@@ -300,7 +300,7 @@ EOT
                 $arguments ? ', ' : '',
                 $arguments ? '$args = array_merge(compact('
                     .implode(',', array_keys($arguments)).'), $args);' : '',
-                isset($type) ? " : $type" : ''
+                isset($returnType) ? " : $returnType" : ''
             );
         }
         $methods = implode("\n", $methods);
