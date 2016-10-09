@@ -281,7 +281,7 @@ class Test
             }
             $methods[] = sprintf(
                 <<<EOT
-public %1\$sfunction %2\$s(%3\$s) {
+public %1\$sfunction %2\$s(%3\$s) %4\$s{
     self::__gentryLogMethodCall('%2\$s');
     \$refargs = [];
     \$args = func_get_args();
@@ -295,11 +295,8 @@ EOT
                 ,
                 $method->isStatic() ? 'static ' : '',
                 $method->name,
-                implode(', ', $arguments)
-                /*
-                $arguments ? '$args = array_merge(compact('
-                    .implode(',', array_keys($arguments)).'), $args);' : ''
-                    */
+                implode(', ', $arguments),
+                $method->hasReturnType() ? ': '.$method->getReturnType() : ''
             );
         }
         $methods = implode("\n", $methods);
