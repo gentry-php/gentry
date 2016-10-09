@@ -75,7 +75,7 @@ class Test
             $failed++;
             return;
         }
-        if (isset($this->annotations['Incomplete']) && \Gentry\VERBOSE) {
+        if (isset($this->annotations['Incomplete']) && VERBOSE) {
             out("<blue>{$this->description}");
             out("<magenta>[INCOMPLETE]\n");
             return;
