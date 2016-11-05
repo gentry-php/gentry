@@ -288,18 +288,31 @@ class Test
 public %1\$sfunction %2\$s(%3\$s) %4\$s{
     \$refargs = [];
     \$args = func_get_args();
-    self::__gentryLogMethodCall(
-        '%2\$s',
-        isset(\$this->__gentryInstance) ? get_class(\$this->__gentryInstance) : null,
-        \$args
-    );
+    if (isset(\$this)) {
+        self::__gentryLogMethodCall(
+            '%2\$s',
+            \$this ?
+                (isset(\$this->__gentryInstance) ? get_class(\$this->__gentryInstance) : null) :
+                (isset(self::\$__gentryStaticInstance) ? get_class(self::\$__gentryStaticInstance) : null),
+            \$args
+        );
+    }
     array_walk(\$args, function (\$arg) use (&\$refargs) {
         \$refargs[] = &\$arg;
     });
-    if (isset(\$this->__gentryInstance)) {
-        return \$this->__gentryInstance->%2\$s(...\$refargs);
+    if (isset(\$this)) {
+        if (isset(\$this->__gentryInstance)) {
+            return \$this->__gentryInstance->%2\$s(...\$refargs);
+        } else {
+            return parent::%2\$s(...\$refargs);
+        }
     } else {
-        return parent::%2\$s(...\$refargs);
+        if (isset(self::\$__gentryStaticInstance)) {
+            \$static = self::\$__gentryStaticInstance;
+            return \$static::%2\$s(...\$refargs);
+        } else {
+            return parent::%2\$s(...\$refargs);
+        }
     }
 }
 
