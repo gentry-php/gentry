@@ -1,6 +1,6 @@
 <?php
 
-namespace Gentry\Gentry\Demo;
+namespace Gentry\Demo;
 
 class Integration
 {

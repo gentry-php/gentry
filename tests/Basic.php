@@ -1,9 +1,9 @@
 <?php
 
-namespace Gentry\Gentry\Tests;
+namespace Gentry\Tests;
 
-use Gentry\Gentry\Test;
-use Gentry\Gentry\Demo;
+use Gentry\Gentry;
+use Gentry\Demo;
 use stdClass;
 use ReflectionFunction;
 
@@ -16,7 +16,7 @@ class Basic
      * Test::run should successfully run a test, pipe the result and catch
      * trimmed output
      */
-    public function testClass(Test $test)
+    public function testClass(Gentry\Test $test)
     {
         $target = new stdClass;
         $target->test = true;

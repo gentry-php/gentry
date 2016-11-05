@@ -1,6 +1,6 @@
 <?php
 
-namespace Gentry\Gentry\Tests;
+namespace Gentry\Tests;
 
 /**
  * Command line test running
