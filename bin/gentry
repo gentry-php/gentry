@@ -235,38 +235,13 @@ if ($failed) {
 
 $uncovered = [];
 
-// Return an array of all possible combinations of variable types.
-function getPossibleCalls(ReflectionParameter ...$params) : array {
-    if (!count($params)) {
-        return [[]];
-    }
-    $options = [];
-    $param = array_shift($params);
-    $opts = [];
-    if (!$param->hasType()) {
-        $opts[] = 'mixed';
-    } else {
-        $opts[] = $param->getType()->__toString();
-    }
-    foreach (getPossibleCalls(...$params) as $sub) {
-        $options[] = array_merge($opts, $sub);
-    }
-    if ($param->isOptional()) {
-        $opts[0] = gettype($param->getDefaultValue());
-        foreach (getPossibleCalls(...$params) as $sub) {
-            $options[] = array_merge($opts, $sub);
-        }
-    }
-    return $options;
-};
-
 foreach ($sourcecode->sources as $file => $code) {
     if (!isset($coveredFeatures[$code[0]->name])) {
         $uncovered[$code[0]->name] = [];
     }
     foreach ($code[1] as $method) {
         if (!isset($coveredFeatures[$code[0]->name][$method->name])) {
-            $calls = getPossibleCalls(...$method->getParameters());
+            $calls = Test::getPossibleCalls(...$method->getParameters());
             $uncovered[$code[0]->name][$method->name] = $calls;
             continue;
         }
