@@ -18,20 +18,15 @@ class Logger
         return $instance;
     }
 
-    public function logFeature($type, $logged)
+    public function logFeature($class, $method, array $args)
     {
-        if (!isset($this->logged[$type])) {
-            $this->logged[$type] = [];
+        if (!isset($this->logged[$class])) {
+            $this->logged[$class] = [];
         }
-        switch ($type) {
-            case self::METHOD:
-                $class = $logged[0];
-                if (!isset($this->logged[$type][$class])) {
-                    $this->logged[$type][$class] = [];
-                }
-                $this->logged[$type][$class][$logged[1]] = $logged[1];
-                break;
+        if (!isset($this->logged[$class][$method])) {
+            $this->logged[$class][$method] = [];
         }
+        $this->logged[$class][$method][] = $args;
     }
 
     public function getLoggedFeatures()
