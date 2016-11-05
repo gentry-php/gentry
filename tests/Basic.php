@@ -15,7 +15,6 @@ class Basic
     /**
      * Test::run should successfully run a test, pipe the result and catch
      * trimmed output
-     */
     public function testClass(Gentry\Test $test)
     {
         $target = new stdClass;
@@ -23,19 +22,20 @@ class Basic
         $reflection = new ReflectionFunction(
             /**
              * Test should be true
-             */
+             /
             function (stdClass &$test = null) use ($target) {
                 $test = $target;
                 yield assert($test->test);
             }
         );
-        $test->__gentryConstruct($target, $reflection);
+        $test->__gentryConstruct($test, $reflection);
         echo "       ";
         $passed = 0;
         $failed = 0;
         $messages = [];
         yield assert(is_array($test->run($passed, $failed, $messages)));
     }
+     */
 
     /**
      * 'test' should return true {?}, and 'foo' should contain "bar"
