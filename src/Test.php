@@ -9,7 +9,7 @@ use ReflectionFunctionAbstract;
 use ReflectionParameter;
 use ReflectionException;
 use zpt\anno\Annotations;
-use Exception;
+use Throwable;
 use ErrorException;
 use Closure;
 use Generator;
@@ -68,7 +68,7 @@ class Test
         $args = [];
         try {
             $args = $this->getArguments();
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             out("<blue>{$this->description}");
             out("<red>[FAILED]\n");
             $messages[] = "Exception thrown during construction of argument: <magenta>".get_class($e)." (".$e->getMessage().")";
@@ -121,7 +121,7 @@ class Test
                 basename($e->getFile()),
                 $e->getLine()
             );
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             out("<red>[ERROR]");
             $failed++;
             $messages[] = sprintf(
@@ -195,17 +195,11 @@ class Test
                         }
                     }
                 } elseif ($param->isCallable()) {
-                    $work = function ($fn) {
+                    $work = function ($fn, ...$arguments) {
                         $logger = Logger::getInstance();
-                        $logger->logFeature(Logger::PROCEDURE, $fn);
-                        $arguments = func_get_args();
-                        array_shift($arguments);
                         $reflection = new ReflectionFunction($fn);
-                        try {
-                            return $reflection->invokeArgs($arguments);
-                        } catch (Exception $e) {
-                            return $e;
-                        }
+                        $logger->logFeature(null, $fn, Test::getPossibleCalls(...$reflection->getParameters()));
+                        return $reflection->invokeArgs($arguments);
                     };
                 }
                 $args[] =& $work;
@@ -337,7 +331,7 @@ EOT;
         try {
             $work->__gentryConstruct($instance, ...$args);
             return $work;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $work;
         }
     }
@@ -398,6 +392,37 @@ EOT;
         $_POST = [];
         $_SESSION = [];
         $_COOKIE = [];
+    }
+
+    /**
+     * Return an array of all possible combinations of variable types.
+     *
+     * @param ReflectionParameter ...$params Zero or more reflection parameters.
+     * @return array Array of array of possible combination of parameter types
+     *  this method accepts.
+     */
+    public static function getPossibleCalls(ReflectionParameter ...$params) : array {
+        if (!count($params)) {
+            return [[]];
+        }
+        $options = [];
+        $param = array_shift($params);
+        $opts = [];
+        if (!$param->hasType()) {
+            $opts[] = 'mixed';
+        } else {
+            $opts[] = $param->getType()->__toString();
+        }
+        foreach (self::getPossibleCalls(...$params) as $sub) {
+            $options[] = array_merge($opts, $sub);
+        }
+        if ($param->isOptional() && !$param->isVariadic()) {
+            $opts[0] = gettype($param->getDefaultValue());
+            foreach (self::getPossibleCalls(...$params) as $sub) {
+                $options[] = array_merge($opts, $sub);
+            }
+        }
+        return $options;
     }
 }
 
