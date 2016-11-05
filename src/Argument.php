@@ -43,6 +43,8 @@ class Argument
         $out .= '$'.$this->reflection->name;
         if ($default = $this->getDefault()) {
             $out .= " = $default";
+        } elseif (!$this->getType()) {
+            $out .= " = null";
         }
         return trim(preg_replace("@\s{2}@", ' ', $out));
     }
@@ -77,9 +79,7 @@ class Argument
         if ($this->reflection->isArray()) {
             return false;
         }
-        if (version_compare(phpversion(), '7.0', '>=')
-            and $type = $this->reflection->getType()
-        ) {
+        if ($type = $this->reflection->getType()) {
             return false;
         }
         if ($extracted = $this->extractParameterData()) {
