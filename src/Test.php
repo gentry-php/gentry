@@ -189,6 +189,7 @@ class Test
                             $type->newInstance();
                     } else {
                         if ($type->isFinal()) {
+                            $work = $type->newInstanceArgs(self::getConstructorArguments($type));
                         } else {
                             $work = self::createWrappedObject($type);
                         }
@@ -253,9 +254,11 @@ class Test
      * invocations and traps any exceptions.
      *
      * @param ReflectionClass $type A reflected class or object to wrap.
+     * @param mixed $instance An actual prepopulated instance of the class. This
+     *  is mainly used to wrap classes marked as "final".
      * @return object An anonymous, wrapped object.
      */
-    public static function createWrappedObject(ReflectionClass $type)
+    public static function createWrappedObject(ReflectionClass $type, $instance = null)
     {
         // This is nasty, but we need to dynamically extend the
         // original class to allow type hinting to work.
@@ -282,20 +285,28 @@ class Test
                 }
                 if ($param->isDefaultValueAvailable()) {
                     $argument .= ' = '
-                        .$this->tostring($param->getDefaultValue());
+                        .self::tostring($param->getDefaultValue());
                 }
                 $arguments["'a$i'"] = $argument;
             }
             $methods[] = sprintf(
                 <<<EOT
 public %1\$sfunction %2\$s(%3\$s) %4\$s{
-    self::__gentryLogMethodCall('%2\$s');
     \$refargs = [];
     \$args = func_get_args();
+    self::__gentryLogMethodCall(
+        '%2\$s',
+        isset(\$this->__gentryInstance) ? get_class(\$this->__gentryInstance) : null,
+        \$args
+    );
     array_walk(\$args, function (\$arg) use (&\$refargs) {
         \$refargs[] = &\$arg;
     });
-    return parent::%2\$s(...\$refargs);
+    if (isset(\$this->__gentryInstance)) {
+        return \$this->__gentryInstance->%2\$s(...\$refargs);
+    } else {
+        return parent::%2\$s(...\$refargs);
+    }
 }
 
 EOT
@@ -312,7 +323,7 @@ EOT
             $mod = "{ use {$type->name};";
         } elseif ($type->isInterface()) {
             $mod = "implements {$type->name} {";
-        } else {
+        } elseif (!$instance) {
             $mod = "extends {$type->name} {";
         }
         $definition = <<<EOT
@@ -324,7 +335,7 @@ EOT
 EOT;
         eval($definition);
         try {
-            $work->__gentryConstruct(...$args);
+            $work->__gentryConstruct($instance, ...$args);
             return $work;
         } catch (Exception $e) {
             return $work;
@@ -338,7 +349,7 @@ EOT;
      * @param mixed $value
      * @return string
      */
-    private function tostring($value)
+    private static function tostring($value)
     {
         if (!isset($value)) {
             return 'NULL';
@@ -362,7 +373,7 @@ EOT;
                 if ($i) {
                     $out .= ', ';
                 }
-                $out .= $key.' => '.$this->tostring($entry);
+                $out .= $key.' => '.self::tostring($entry);
                 $i++;
             }
             $out .= ']';
