@@ -9,6 +9,7 @@ use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
 use ReflectionClass;
 use ReflectionMethod;
+use ReflectionParameter;
 use ReflectionException;
 use Closure;
 use zpt\anno\Annotations;
@@ -197,17 +198,13 @@ foreach ($existing->tests as $classname => $file) {
 }
 out("\n");
 
-foreach (Logger::getInstance()->getLoggedFeatures() as $type => $features) {
-    if ($type == Logger::METHOD) {
-        foreach ($features as $target => $features) {
-            if (!isset($coveredFeatures[$target])) {
-                $coveredFeatures[$target] = [];
-            }
-            foreach ($features as $feature) {
-                if (!in_array($feature, $coveredFeatures[$target])) {
-                    $coveredFeatures[$target][] = $feature;
-                }
-            }
+foreach (Logger::getInstance()->getLoggedFeatures() as $target => $features) {
+    if (!isset($coveredFeatures[$target])) {
+        $coveredFeatures[$target] = [];
+    }
+    foreach ($features as $feature) {
+        if (!in_array($feature, $coveredFeatures[$target])) {
+            $coveredFeatures[$target][] = $feature;
         }
     }
 }
@@ -236,41 +233,64 @@ if ($failed) {
     }
 }
 
-$classes = 0;
-$methods = 0;
 $uncovered = [];
+
+// Return an array of all possible combinations of variable types.
+function getPossibleCalls(ReflectionParameter ...$params) : array {
+    if (!count($params)) {
+        return [[]];
+    }
+    $options = [];
+    $param = array_shift($params);
+    $opts = [];
+    if (!$param->hasType()) {
+        $opts[] = 'mixed';
+    } else {
+        $opts[] = $param->getType()->__toString();
+    }
+    foreach (getPossibleCalls(...$params) as $sub) {
+        $options[] = array_merge($opts, $sub);
+    }
+    if ($param->isOptional()) {
+        $opts[0] = gettype($param->getDefaultValue());
+        foreach (getPossibleCalls(...$params) as $sub) {
+            $options[] = array_merge($opts, $sub);
+        }
+    }
+    return $options;
+};
+
 foreach ($sourcecode->sources as $file => $code) {
     if (!isset($coveredFeatures[$code[0]->name])) {
-        $classes++;
-        $methods += count($code[1]);
-        $uncovered[$code[0]->name] = $code[1];
-    } else {
-        foreach ($code[1] as $method) {
-            if (!in_array($method->name, $coveredFeatures[$code[0]->name])) {
-                $methods++;
-                if (!isset($uncovered[$code[0]->name])) {
-                    $uncovered[$code[0]->name] = [];
-                }
-                $uncovered[$code[0]->name][] = $method;
+        $uncovered[$code[0]->name] = [];
+    }
+    foreach ($code[1] as $method) {
+        if (!isset($coveredFeatures[$code[0]->name][$method->name])) {
+            $calls = getPossibleCalls(...$method->getParameters());
+            $uncovered[$code[0]->name][$method->name] = $calls;
+            continue;
+        }
+        $uncovered[$code[0]->name][$method->name] = [];
+        foreach ($calls as $call) {
+            if (!in_array($call, $coveredFeatures[$code[0]->name][$method->name])) {
+                $uncovered[$code[0]->name][$method->name][] = $call;
             }
         }
     }
 }
 if (VERBOSE) {
     out("\n");
-    if ($classes) {
-        out(sprintf(
-            "<cyan>Missing %d class scenario%s.\n",
-            $classes,
-            $classes == 1 ? '' : 's'
-        ));
-    }
-    if ($methods) {
-        out(sprintf(
-            "<cyan>Missing (at least) %d method test%s.\n",
-            $methods,
-            $methods == 1 ? '' : 's'
-        ));
+    foreach ($uncovered as $class => $methods) {
+        foreach ($methods as $name => $calls) {
+            foreach ($calls as $call) {
+                out(sprintf(
+                    "<cyan>Missing test for %s::%s (%s).\n",
+                    $class,
+                    $name,
+                    $call ? implode(', ', $call) : 'void'
+                ));
+            }
+        }
     }
 }
 
@@ -287,13 +307,13 @@ $endit = function ($code) use ($start) {
     ));
     exit($code);
 };
-if ($classes || $methods) {
+if ($uncovered) {
     if (!$generate && VERBOSE) {
         out("<gray>Run with <magenta>-g<gray> flag to generate skeletons.\n");
         $endit($failed ? 1 : 0);
     }
 }
-if (!($classes || $methods) || !$generate) {
+if (!$uncovered || !$generate) {
     $endit($failed ? 1 : 0);
 }
 
