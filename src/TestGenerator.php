@@ -37,8 +37,8 @@ class TestGenerator
      */
     public function generate(ReflectionClass $class, array $methods)
     {
-        foreach ($methods as $method) {
-            $this->addFeature($class, $method);
+        foreach ($methods as $method => $calls) {
+            $this->addFeature($class, new ReflectionMethod($class->getName(), $method), $calls);
         }
     }
 
@@ -47,8 +47,9 @@ class TestGenerator
      *
      * @param string The reflection of the object or trait to test a feature on.
      * @param ReflectionMethod $method Reflection of the feature to test.
+     * @param array $calls Array of possible types of calls.
      */
-    private function addFeature(ReflectionClass $class, ReflectionMethod $method)
+    private function addFeature(ReflectionClass $class, ReflectionMethod $method, array $calls)
     {
         if (VERBOSE) {
             out("<gray> Adding feature <magenta>{$class->name}::{$method->name}\n");
@@ -56,28 +57,20 @@ class TestGenerator
         $md5 = md5(microtime());
         $tested = $method->name;
         $body = [];
+        $docblock = [];
         if ($class->isTrait()) {
-            $arguments[] = "\stdClass &\$test = null";
-            if (version_compare(phpversion(), '7.0', '>=')) {
-                $body[] = <<<EOT
-\$test = new class() extends \stdClass
-        {
-            use {$class->name};
-        };
+            $arguments[] = "\stdClass \$test = null";
+            $body[] = <<<EOT
+\$anon = new class () {
+    use {$class->name};
+};
+\$test = \Gentry\Gentry\Test::createWrappedObject(new \ReflectionClass(\$anon), \$anon);
 EOT;
-            } else {
-                $body[] = <<<EOT
-if (!class_exists('tmp_$md5')) {
-            eval("class tmp_$md5
-            {
-                use {$class->name};
-            }");
-        }
-        \$test = new \tmp_$md5;
+        } elseif ($class->isFinal()) {
+            $arguments[] = "{$class->name} \$test";
+            $body[] = <<<EOT
+\$test = \Gentry\Gentry\Test::createWrappedObject(new \ReflectionClass(\$test), \$test);
 EOT;
-            }
-        } elseif ($class->isAbstract()) {
-            $arguments[] = "{$class->name} &\$test = null";
         } else {
             $arguments[] = "{$class->name} \$test";
         }
@@ -85,54 +78,34 @@ EOT;
         foreach ($method->getParameters() as $param) {
             $arguments[] = new Argument($param, $fallback);
         }
-        $arguments = implode(', ', $arguments);
-        if (version_compare(phpversion(), '7.0', '>=')
-            and $type = $method->getReturnType()
-        ) {
-            $types = [$type->__toString()];
-        } elseif (preg_match(
-            "#@return\s+(.*?)\s+\.*?#ms",
-            $fallback,
-            $matches
-        )) {
-            $types = explode('|', $matches[1]);
-        }
-        if (isset($types) && $types) {
-            foreach ($types as $type) {
-                if ($type == 'boolean') {
-                    $type = 'bool';
-                }
-                if ($type == 'integer') {
-                    $type = 'int';
-                }
-                switch ($type) {
-                    case 'int':
-                    case 'float':
-                    case 'string':
-                    case 'array':
-                    case 'bool':
-                    case 'callable':
-                        $body[] = "yield 'is_$type' => true;";
-                        break;
-                    case 'mixed':
-                        $body[] = "yield 'isset' => true;";
-                        break;
-                    default:
-                        $body[] = "yield 'is_a' => '$type';";
+        foreach ($calls as $call) {
+            $docblock[] = "{$class->name}::{$tested}(".implode(', ', $call).") {?}";
+            $arglist = [];
+            foreach ($call as $idx => $p) {
+                if ($p == 'NULL') {
+                    $arglist[] = 'null';
+                } elseif (isset($arguments[$idx + 1])) {
+                    preg_match('@\$\w+@', "{$arguments[$idx + 1]}", $matches);
+                    $arglist[] = $matches[0];
+                } else {
+                    $arglist[] = $this->getDefaultForType($p);
                 }
             }
-        } else {
-            $body[] = "throw new \Exception(\"Incomplete test!\");";
+            $mt = $method->isStatic() ? '::' : '->';
+            $body[] = "yield assert(\$test$mt$tested(".implode(', ', $arglist)."));";
         }
+        $arguments = implode(', ', $arguments);
         $body = trim(implode("\n        ", $body));
+        $docblock = trim(implode("\n     * ", $docblock));
         $this->features[] = <<<EOT
     /**
      * [GENERATED] {0}::$tested
      *
-     * @Incomplete
+     * $docblock
      */
     public function gentry_$md5($arguments)
     {
+        throw new \Gentry\Gentry\IncompleteTestException("{$class->name}", "{$tested}");
         $body
     }
 EOT;
