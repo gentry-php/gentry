@@ -188,7 +188,10 @@ class Test
                             $param->getDefaultValue() :
                             $type->newInstance();
                     } else {
-                        $work = $this->createWrappedObject($param);
+                        if ($type->isFinal()) {
+                        } else {
+                            $work = self::createWrappedObject($type);
+                        }
                     }
                 } elseif ($param->isCallable()) {
                     $work = function ($fn) {
@@ -210,28 +213,16 @@ class Test
         return $args;
     }
 
-    /**
-     * Creates an anonymous object based on a reflection. The wrapped object
-     * proxies public methods to the actual implementation, logs their
-     * invocations and traps any exceptions.
-     *
-     * @param ReflectionParameter $param The parameter to reflect from.
-     * @return object An anonymous, wrapped object.
-     */
-    private function createWrappedObject(ReflectionParameter $param)
+    public static function getConstructorArguments(ReflectionClass $type)
     {
-        $type = $param->getClass();
-        // This is nasty, but we need to dynamically extend the
-        // original class to allow type hinting to work.
         $args = [];
-        $params = [];
         if ($constructor = $type->getConstructor()) {
             $params = $constructor->getParameters();
             foreach ($params as $param) {
                 if ($param->isDefaultValueAvailable()) {
                     $args[] = $param->getDefaultValue();
                 } elseif ($class = $param->getClass()) {
-                    $args[] = $this->createWrappedObject($param);
+                    $args[] = self::createWrappedObject($class);
                 } elseif ($ptype = $param->getType()) {
                     switch ("$ptype") {
                         case 'array':
@@ -253,6 +244,22 @@ class Test
                 }
             }
         }
+        return $args;
+    }
+
+    /**
+     * Creates an anonymous object based on a reflection. The wrapped object
+     * proxies public methods to the actual implementation, logs their
+     * invocations and traps any exceptions.
+     *
+     * @param ReflectionClass $type A reflected class or object to wrap.
+     * @return object An anonymous, wrapped object.
+     */
+    public static function createWrappedObject(ReflectionClass $type)
+    {
+        // This is nasty, but we need to dynamically extend the
+        // original class to allow type hinting to work.
+        $args = self::getConstructorArguments($type);
         $methods = [];
         foreach ($type->getMethods() as $method) {
             if ($method->name == '__construct') {
