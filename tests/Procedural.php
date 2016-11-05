@@ -3,6 +3,7 @@
 namespace Gentry\Tests;
 
 use SplFileInfo;
+use Generator;
 
 /**
  * Procedural function and code checking
@@ -12,9 +13,9 @@ class Procedural
     /**
      * Calling demo procedure with 42 returns 21.
      */
-    public function procedure(callable $function)
+    public function procedure(callable $function) : Generator
     {
-        yield assert($function('Gentry\Demo\procedure', 42) == 21);
+        yield assert($function('Gentry\Demo\procedure', 42) === 21);
     }
 
     /**
