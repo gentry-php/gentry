@@ -202,10 +202,8 @@ foreach (Logger::getInstance()->getLoggedFeatures() as $target => $features) {
     if (!isset($coveredFeatures[$target])) {
         $coveredFeatures[$target] = [];
     }
-    foreach ($features as $feature) {
-        if (!in_array($feature, $coveredFeatures[$target])) {
-            $coveredFeatures[$target][] = $feature;
-        }
+    foreach ($features as $method => $feature) {
+        $coveredFeatures[$target][$method] = $feature;
     }
 }
 if ($passed) {
