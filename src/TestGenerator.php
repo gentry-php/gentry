@@ -38,7 +38,9 @@ class TestGenerator
     public function generate(ReflectionClass $class, array $methods)
     {
         foreach ($methods as $method => $calls) {
-            $this->addFeature($class, new ReflectionMethod($class->getName(), $method), $calls);
+            if ($calls) {
+                $this->addFeature($class, new ReflectionMethod($class->getName(), $method), $calls);
+            }
         }
     }
 
