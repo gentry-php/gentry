@@ -4,6 +4,7 @@ namespace Gentry\Gentry;
 
 use Throwable;
 use ReflectionClass;
+use ReflectionMethod;
 
 trait ClassWrapper
 {
@@ -35,18 +36,25 @@ trait ClassWrapper
 
     public static function __gentryLogMethodCall($method, $class = null, array $args = [])
     {
-        static $logger;
-        if (!isset($logger)) {
-            $logger = Logger::getInstance();
-        }
+        static $logger, $reflection;
         if (!isset($class)) {
             $class = (new ReflectionClass(get_called_class()))
                 ->getParentClass()
                 ->name;
         }
+        if (!isset($logger)) {
+            $logger = Logger::getInstance();
+            $reflection = new ReflectionMethod($class, $method);
+        }
         $args = array_map(function ($arg) {
             return gettype($arg);
         }, $args);
+        $params = $reflection->getParameters();
+        if (count($params) > count($args)) {
+            for ($i = count($args); $i < count($params); $i++) {
+                $args[] = gettype($params[$i]->getDefaultValue());
+            }
+        }
         $logger->logFeature($class, $method, $args);
     }
 }
