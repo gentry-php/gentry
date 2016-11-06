@@ -36,16 +36,13 @@ trait ClassWrapper
 
     public static function __gentryLogMethodCall($method, $class = null, array $args = [])
     {
-        static $logger, $reflection;
         if (!isset($class)) {
             $class = (new ReflectionClass(get_called_class()))
                 ->getParentClass()
                 ->name;
         }
-        if (!isset($logger)) {
-            $logger = Logger::getInstance();
-            $reflection = new ReflectionMethod($class, $method);
-        }
+        $logger = Logger::getInstance();
+        $reflection = new ReflectionMethod($class, $method);
         $args = array_map(function ($arg) {
             return gettype($arg);
         }, $args);
