@@ -258,7 +258,13 @@ class Test
         // original class to allow type hinting to work.
         $args = self::getConstructorArguments($type);
         $methods = [];
-        foreach ($type->getMethods() as $method) {
+        foreach ($type->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+            if ($method->getDeclaringClass()->name != $type->name) {
+                continue;
+            }
+            if ($method->getFileName() != $type->getFileName()) {
+                continue;
+            }
             if ($method->name == '__construct') {
                 continue;
             }
