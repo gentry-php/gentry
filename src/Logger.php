@@ -26,7 +26,9 @@ class Logger
         if (!isset($this->logged[$class][$method])) {
             $this->logged[$class][$method] = [];
         }
-        $this->logged[$class][$method][] = $args;
+        if (!in_array($args, $this->logged[$class][$method])) {
+            $this->logged[$class][$method][] = $args;
+        }
     }
 
     public function getLoggedFeatures()
