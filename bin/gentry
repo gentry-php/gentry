@@ -241,8 +241,8 @@ foreach ($sourcecode->sources as $file => $code) {
         if ($code[0]->name != $method->getDeclaringClass()->name) {
             continue;
         }
+        $calls = Test::getPossibleCalls(...$method->getParameters());
         if (!isset($coveredFeatures[$code[0]->name][$method->name])) {
-            $calls = Test::getPossibleCalls(...$method->getParameters());
             $uncovered[$code[0]->name][$method->name] = $calls;
             continue;
         }
