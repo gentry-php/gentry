@@ -269,6 +269,34 @@ if (VERBOSE) {
         }
     }
 }
+out("\n");
+$total = 0;
+array_walk($coveredFeatures, function ($feature, $name1) use (&$total) {
+    array_walk($feature, function ($method, $name2) use (&$total, $name1) {
+        $total += count($method);
+    });
+});
+$totalU = 0;
+array_walk($uncovered, function ($feature, $name1) use (&$totalU) {
+    array_walk($feature, function ($method, $name2) use (&$totalU, $name1) {
+        $totalU += count($method);
+    });
+});
+if ($totalU == 0) {
+    $color = 'green';
+} elseif ($totalU > $total) {
+    $color = 'red';
+} else {
+    $color = 'orange';
+}
+out(sprintf(
+    "<blue>Code coverage: ~<%s>%d <blue>of <cyan>%s <%s>(%0.2f%%)\n",
+    $color,
+    $total,
+    $total + $totalU,
+    $color,
+    $total / ($total + $totalU) * 100
+));
 
 $endit = function ($code) use ($start) {
     try {
