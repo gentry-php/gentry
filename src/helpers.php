@@ -90,3 +90,12 @@ function cleanDocComment(Reflector $reflection, $strip_annotations = true)
     return $doccomment;
 }
 
+function getNormalisedType($type)
+{
+    switch ($type) {
+        case 'integer': return 'int';
+        case 'boolean': return 'bool';
+        default: return $type;
+    }
+}
+

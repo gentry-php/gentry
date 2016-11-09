@@ -44,12 +44,12 @@ trait ClassWrapper
         $logger = Logger::getInstance();
         $reflection = new ReflectionMethod($class, $method);
         $args = array_map(function ($arg) {
-            return gettype($arg);
+            return getNormalisedType(gettype($arg));
         }, $args);
         $params = $reflection->getParameters();
         if (count($params) > count($args)) {
             for ($i = count($args); $i < count($params); $i++) {
-                $args[] = gettype($params[$i]->getDefaultValue());
+                $args[] = getNormalisedType(gettype($params[$i]->getDefaultValue()));
             }
         }
         $logger->logFeature($class, $method, $args);

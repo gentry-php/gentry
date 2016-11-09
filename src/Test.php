@@ -436,7 +436,7 @@ EOT;
             $options[] = array_merge($opts, $sub);
         }
         if ($param->isOptional() && !$param->isVariadic()) {
-            $opts[0] = gettype($param->getDefaultValue());
+            $opts[0] = getNormalisedType(gettype($param->getDefaultValue()));
             foreach (self::getPossibleCalls(...$params) as $sub) {
                 $options[] = array_merge($opts, $sub);
             }
