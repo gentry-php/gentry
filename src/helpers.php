@@ -92,6 +92,10 @@ function cleanDocComment(Reflector $reflection, $strip_annotations = true)
 
 function getNormalisedType($type)
 {
+    if (is_object($type)) {
+        return get_class($type);
+    }
+    $type = gettype($type);
     switch ($type) {
         case 'integer': return 'int';
         case 'boolean': return 'bool';
