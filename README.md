@@ -1,5 +1,5 @@
 # Gentry
-A testing framework for PHP7+
+Test generation tools for PHP7+.
 
 Good programmers are lazy, but unfortunately that means that stuff like writing
 tests (boooooring) is often skipped. Please don't; it's important and oh so
@@ -21,41 +21,35 @@ Gentry was designed with three goals in mind:
   set to `1`.
 
 ## Installation
-
-### Composer (recommended)
 ```sh
-composer require --dev monomelodies/gentry
+composer require --dev gentry/gentry
 ```
 
 You can now run `vendor/bin/gentry`.
 
-### Manual
-Download or clone the repo. There's an executable in the `./bin` directory.
-
 ## Configuration
-Create a `Gentry.json` file in the root of your project. It uses the following
-options:
+Create a `Gentry.json` file in the root of your project. It accepts the
+following options:
 
 ```json
 {
     "src": "/path/to/src",
-    "tests": "/path/to/tests",
-    "bootstrap": "/path/to/bootstrap.php",
-    "ignore": "some.*?regex"
+    "test": "/path/to/testrunner/executable",
+    "ignore": "some.*?regex",
+    "bootstrap": "/path/to/file"
 }
 ```
 
 ### string|array `src` ###
-### string `tests` ###
-Both `src` and `tests` can be either absolute, or relative to the root - hence
-`"/path/to/root/src"` could be simplified to just `"src"`.
+Path(s) to your source files. Can be either absolute or relative to project
+root - hence`"/path/to/root/src"` could be simplified to just `"src"`. If you
+have multiple source paths you may define an array of strings.
 
-Directories are recursed. If Gentry detects that `tests` is inside `src`, it
-skips it for you (but seriously, don't do that).
+Directories are recursed automatically.
 
-Gentry supports multiple `src` directories, but only one `tests` directory. The
-simple reasoning is that it's not uncommon to place scripts in a `bin` directory
-outside of `src`, but still have them tested.
+### string `test` ###
+The command you use to run your (unit)tests for PHP normally (e.g.
+`vendor/bin/phpunit`).
 
 ### string|array `bootstrap` ###
 The path(s) to file(s) ("bootstrapper(s)") every piece of code in your
@@ -65,10 +59,6 @@ analysing your code and should do stuff like initialise an autoloader.
 
 You can also pass an array of files instead of a string. They will be prepended
 in order.
-
-`includePath` is parsed before `bootstrap`, so if you use them in conjunction
-you could use relative paths here. Otherwise, they will be relative to
-`get_cwd()`.
 
 > Caution: if `bootstrap`ped files reside inside `src`, they won't be ignored.
 > Gentry uses `require_once` of course, but if these files contain testable
@@ -80,43 +70,43 @@ mock objects you use in other tests :)
 ### string `ignore` ###
 A regular expression of classnames to ignore in the `"src"` path. Useful for
 automatically ignoring classtypes that are hard to test, e.g. controllers. You
-could also utilise this if your tests and sourcecode are mixed (but seriously,
-don't do that).
+could also utilise this if your tests and sourcecode are mixed in the same
+directory (some frameworks like that kind of thing).
 
-## Usage
+## CLI usage
 Now run Gentry from the command line and see what happens:
 
 ```sh
 vendor/bin/gentry
 ```
 
-It'll complain that it can't do anything yet. Which makes sense, we haven't
-written any tests yet!
+It will complain about zero code coverage, even if you already defined a bunch
+of tests. Wait, wut? Well, you _do_ need to tell Gentry what you've already
+written tests for.
 
-## Verbose mode
-If you'd like more info, run Gentry with the `-v` flag:
+In your tests, instead of simply creating/using stuff, you'll need to build a
+_wrapped entity_. Entities wrapped by Gentry are "Gentry aware". Don't worry
+about the rest of your tests; apart from logging features tested the wrapped
+entities are fully compatible. E.g. wrapping a `Foo` object will still pass
+`$foo instanceof Foo` type tests. (The only place where this would fail is if
+you actually use `get_class` and test for string equality - but that would be
+kind of stupid, right?)
 
-```sh
-vendor/bin/gentry -v
+To create wrapped entities, we use the `Gentry\Gentry\Wrapper` utility class.
+
+## Wrapping objects
+```php
+<?php
+
+// Instead of this...
+$foo = new Foo;
+// ...do this:
+$foo = Gentry\Gentry\Wrapper::createObject(Foo::class);
 ```
 
-In the default mode, only important messages are displayed. But verbose mode
-might be handy when something's going wrong for you, or if you simply want
-feedback about stuff like incomplete tests.
+If your object's constructor takes arguments, you can supply them as additional
+arguments to the `createObject` method.
 
-## Detecting the environment
-For a lot of testing, you'll need to detect whether or not to use a mock object
-(e.g. for database connections), or "the real thang". The simplest way is to
-check `getenv("GENTRY")` where needed. Gentry's executable sets that for you, so
-it's a sure-fire way of knowing you're in testing mode. Unless you're using that
-same environment variable yourself somewhere. But that would be silly.
+Try it in a class for one of your tests and watch the code coverage increase!
 
-## Generating missing tests
-Run Gentry with the `-g` flag to generate skeletons for missing tests for you:
-
-```sh
-vendor/bin/gentry -g
-```
-
-More on generating tests in the corresponding section of the manual.
 
