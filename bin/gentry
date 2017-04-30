@@ -17,6 +17,8 @@ use Monomelodies\Kingconf;
 use Exception;
 use ErrorException;
 
+const VERSION = "0.12.0";
+
 $start = microtime(true);
 
 if (!ini_get('date.timezone')) {
@@ -32,19 +34,9 @@ set_error_handler(function($errno, $errstr, $errfile, $errline, $errcontext) {
 });
 require __DIR__.'/../src/helpers.php';
 
-foreach ([
-    __DIR__.'/../../../autoload.php',
-    __DIR__.'/../../../vendor/autoload.php',
-    __DIR__.'/../../vendor/autoload.php',
-    __DIR__.'/../vendor/autoload.php',
-] as $file) {
-    if (file_exists($file)) {
-        break;
-    }
-    unset($file);
-}
+$file = getcwd().'/vendor/autoload.php';
 
-if (!isset($file)) {
+if (!file_exists($file)) {
     fwrite(STDERR, <<<EOT
 \033[1;31mError: \033[0mYou need to set up the project dependencies using the following commands:
 
@@ -72,21 +64,16 @@ putenv("GENTRY=1");
 $client = substr(md5(microtime(true)), 0, 6);
 putenv("GENTRY_CLIENT=$client");
 
-out("\n<magenta>Gentry 0.11.8 by Marijn Ophorst\n\n");
+out("\n<magenta>Gentry ".VERSION." by Marijn Ophorst\n\n");
 
 $config = 'Gentry.json';
 $verbose = false;
-$generate = false;
 foreach ($argv as $i => $arg) {
     if (!$i) {
         continue; // ignore self
     }
     if ($arg == '-v') {
         $verbose = true;
-    } elseif ($arg == '-g') {
-        $generate = true;
-    } elseif (preg_match('@--filter=(.*)@', $arg, $filter)) {
-        $filter = $filter[1];
     } else {
         $config = $arg;
     }
@@ -98,138 +85,28 @@ try {
     out("<red>Error: <reset> Config file $config not found or invalid.\n", STDERR);
     die(1);
 }
+$config->src = is_array($config->src) ? $config->src : [$config->src];
+
 if (isset($config->bootstrap)) {
     $bootstrap = is_array($config->bootstrap) ? $config->bootstrap : [$config->bootstrap];
     foreach ($bootstrap as $file) {
-        require $file;
+        require_once $file;
     }
 }
+
+out("<green>Running unit tests from <darkGray>{$config->test}<green>...\n");
+$shm_key = ftok(__FILE__, 't');
+$shm = shmop_open($shm_key, 'c', 0644, 1024 * 1024);
+exec($config->test);
+$coveredFeatures = unserialize(shmop_read($shm, 0, 1024 * 1024));
+shmop_delete($shm);
 
 $sourcecode = new Sourcecode($config);
-if (VERBOSE) {
-    out(sprintf(
-        "<gray>Found %d file%s with testable source code.\n",
-        count($sourcecode->sources),
-        count($sourcecode->sources) == 1 ? '' : 's'
-    ));
-}
-
-$existing = new Existing($config);
-if (VERBOSE) {
-    out(sprintf(
-        "<gray>Found %d previously defined test%s.\n",
-        count($existing->tests),
-        count($existing->tests) == 1 ? '' : 's'
-    ));
-}
-if (VERBOSE && $existing->tests) {
-    out(sprintf(
-        "<gray>Running existing unit test%...\n",
-        count($existing->tests == 1) ? '' : 's'
-    ));
-}
-
-$coveredFeatures = [];
-$notcovered = 0;
-$tested = 0;
-$passed = 0;
-$failed = 0;
-$messages = [];
-$incomplete = 0;
-foreach ($existing->tests as $classname => $file) {
-    $class = new $classname;
-    $reflection = new ReflectionClass($class);
-    $annotations = new Annotations($reflection);
-    $ok = false;
-    foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-        $anns = new Annotations($method);
-        if (!isset($anns['Incomplete'])) {
-            $ok = true;
-        } else {
-            $incomplete++;
-        }
-    }
-    if (!$ok && !VERBOSE) {
-        continue;
-    }
-    if ($reflection->getDocComment()) {
-        out("<darkBlue>".cleanDocComment($reflection)."\n");
-    }
-    foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-        if (isset($filter)
-            && !preg_match("@$filter@", "$classname::$method")
-        ) {
-            continue;
-        }
-        if ($method->name{0} == '_') {
-            continue;
-        }
-        $tested++;
-        $test = new Test($class, $method);
-        $annotations = new Annotations($method);
-        if (!isset($annotations['Incomplete'])) {
-            if (class_exists('Gentry\Cache\Pool')) {
-                Cache\Pool::getInstance()->clear();
-            }
-            if (method_exists($class, '__wakeup')) {
-                echo "  \033[1;30m* ";
-                echo "\033[0;37mInitialising...     ";
-                $steps = $class->__wakeup();
-                if ($steps) {
-                    $i = 0;
-                    $total = count($steps);
-                    while ($step = array_shift($steps)) {
-                        $step();
-                        ++$i;
-                        echo "\033[4D\033[1;30m".str_pad(round($i / $total * 100), 3, ' ', STR_PAD_LEFT).'%';
-                    }
-                }
-                echo "\033[24D\033[0m";
-            }
-        }
-        $args = $test->run($passed, $failed, $messages);
-        $features = $test->getTestedFeatures();
-
-        if (method_exists($class, '__sleep')) {
-            $class->__sleep();
-        }
-    }
-    unset($class);
-}
-out("\n");
-
-foreach (Logger::getInstance()->getLoggedFeatures() as $target => $features) {
-    if (!isset($coveredFeatures[$target])) {
-        $coveredFeatures[$target] = [];
-    }
-    foreach ($features as $method => $feature) {
-        $coveredFeatures[$target][$method] = $feature;
-    }
-}
-if ($passed) {
-    out(sprintf(
-        "<green>%d test%s passed.\n",
-        $passed,
-        $passed == 1 ? '' : 's'
-    ));
-}
-if ($incomplete) {
-    out(sprintf(
-        "<magenta>%d test%s marked as incomplete.\n",
-        $incomplete,
-        $incomplete == 1 ? '' : 's'
-    ), STDERR);
-}
-if ($failed) {
-    out(sprintf(
-        "<red>%d test%s failed!\n",
-        $failed,
-        $failed == 1 ? '' : 's'
-    ), STDERR);
-    foreach ($messages as $msg) {
-        out("$msg\n");
-    }
-}
+out(sprintf(
+    "<gray>Found %d file%s with testable source code.\n",
+    count($sourcecode->sources),
+    count($sourcecode->sources) == 1 ? '' : 's'
+));
 
 $uncovered = [];
 
@@ -298,6 +175,24 @@ out(sprintf(
     $total ? $total / ($total + $totalU) * 100 : 0
 ));
 
+if ($totalU) {
+    out("\n");
+    out("Attempt to generate missing tests? [Y/n] ");
+    $yesno = false;
+    while (!$yesno) {
+        fscanf(STDIN, '%s\n', $yesno);
+        if (!in_array($yesno, ['Y', 'n'])) {
+            out("\nPlease answer Y[es] or n[o]: ");
+            $yesno = false;
+        }
+    }
+    if ($yesno == 'n') {
+        out("\n<darkGray>Ok, suit yourself!\n\n");
+        die($totalU);
+    }
+}
+
+/*
 $endit = function ($code) use ($start) {
     try {
         @unlink(sys_get_temp_dir().'/'.getenv("GENTRY_CLIENT").'.cache');
@@ -333,4 +228,5 @@ foreach ($sourcecode->sources as $file => $code) {
     $generator->generate($code[0], $uncovered[$code[0]->name]);
 }
 $generator->write();
+*/
 
