@@ -27,33 +27,35 @@ class Sourcecode
     {
         $reflections = [];
         $sources = [];
-        foreach (new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($config->src),
-            RecursiveIteratorIterator::LEAVES_ONLY
-        ) as $file) {
-            if (!$this->isPhp($file)) {
-                continue;
-            }
-            if (!($reflection = $this->extractTestableClass($file))) {
-                continue;
-            }
-            $annotations = new Annotations($reflection);
-            if (isset($annotations['Untestable'])) {
-                continue;
-            }
-            $reflections[] = $reflection;
-            if ($reflection->inNamespace()) {
-                $namespace = explode('\\', $reflection->getNamespaceName());
-                while ($namespace) {
-                    $this->namespaces[] = implode('\\', $namespace);
-                    array_pop($namespace);
+        foreach ($config->src as $src) {
+            foreach (new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($src),
+                RecursiveIteratorIterator::LEAVES_ONLY
+            ) as $file) {
+                if (!$this->isPhp($file)) {
+                    continue;
+                }
+                if (!($reflection = $this->extractTestableClass($file))) {
+                    continue;
+                }
+                $annotations = new Annotations($reflection);
+                if (isset($annotations['Untestable'])) {
+                    continue;
+                }
+                $reflections[] = $reflection;
+                if ($reflection->inNamespace()) {
+                    $namespace = explode('\\', $reflection->getNamespaceName());
+                    while ($namespace) {
+                        $this->namespaces[] = implode('\\', $namespace);
+                        array_pop($namespace);
+                    }
                 }
             }
-        }
-        $this->namespaces = array_unique($this->namespaces);
-        foreach ($reflections as $reflection) {
-            if ($methods = $this->getTestableMethods($reflection)) {
-                $sources[$reflection->getFileName()] = [$reflection, $methods];
+            $this->namespaces = array_unique($this->namespaces);
+            foreach ($reflections as $reflection) {
+                if ($methods = $this->getTestableMethods($reflection)) {
+                    $sources[$reflection->getFileName()] = [$reflection, $methods];
+                }
             }
         }
         $this->sources = $sources;
