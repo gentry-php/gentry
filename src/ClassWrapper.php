@@ -6,10 +6,10 @@ use Throwable;
 use ReflectionClass;
 use ReflectionMethod;
 
+require_once 'helpers.php';
+
 trait ClassWrapper
 {
-    private $__gentryInstance;
-    private static $__gentryStaticInstance;
     private static $__gentryConstructionArguments;
 
     public function __construct()
@@ -21,10 +21,8 @@ trait ClassWrapper
         }
     }
 
-    public function __gentryConstruct($instance, ...$args)
+    public function __gentryConstruct(...$args)
     {
-        $this->__gentryInstance = $instance;
-        self::$__gentryStaticInstance = $instance;
         self::$__gentryConstructionArguments = $args;
         try {
             if (method_exists(get_parent_class($this), '__construct')) {
