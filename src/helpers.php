@@ -6,14 +6,10 @@ use Ansi;
 use Reflector;
 
 /**
- * Output $text to the specified $out, with added ANSI colours and the lines
- * intelligently wrapped.
+ * Output $text to the specified $out, with added ANSI colours.
  */
 function out($text, $out = STDOUT)
 {
-    static $col = 0;
-    static $indent = '';
-    static $output;
     if (!isset($output)) {
         $output = function ($text) use ($out) {
             fwrite($out, $text);
@@ -21,55 +17,8 @@ function out($text, $out = STDOUT)
     }
 
     $text = str_replace("\n", PHP_EOL, $text);
-    $endsWithNewline = substr($text, -1) == PHP_EOL;
-    if (substr($text, 0, 4) == '  * ') {
-        $indent = '  * ';
-        $text = substr($text, 4);
-    }
-    $text = Ansi::tagsToColors(rtrim($text));
-    $lines = [];
-    $line =& $lines[];
-    foreach (preg_split("@\s+@m", trim($text)) as $word) {
-        $len = strlen(cleanOutput($word));
-        if (!$len) {
-            if (strlen($word)) {
-                $output($word);
-            }
-            continue;
-        }
-        if ($len + strlen($indent) + $col > 80) {
-            if (!$col) {
-                // Extremely long word. Just let it be then and
-                // move to the next line.
-                $output("$indent$word\n", $out);
-                continue;
-            }
-            $output(PHP_EOL, $out);
-            $col = 0;
-            $indent = str_repeat(' ', strlen($indent));
-            $output($indent.$word, $out);
-            $col += strlen($indent) + $len;
-        } else {
-            if (!$col) {
-                $output($indent, $out);
-                $col += strlen($indent);
-                $indent = str_repeat(' ', strlen($indent));
-            }
-            $space = true;
-            if ($col == strlen($indent)
-                || preg_match('@^[:!,;\?\.]@', cleanOutput($word))
-            ) {
-                $space = false;
-            }
-            $output(($space ? ' ' : '').$word, $out);
-            $col += $len + 1;
-        }
-    }
-    if ($endsWithNewline) {
-        $output(PHP_EOL, $out);
-        $col = 0;
-        $indent = '';
-    }
+    $text = Ansi::tagsToColors($text);
+    fwrite($out, $text);
 }
 
 function cleanOutput($string)
