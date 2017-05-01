@@ -34,7 +34,7 @@ trait ClassWrapper
 
     public static function __gentryLogMethodCall($method, $class = null, array $args = [])
     {
-        if (!isset($class)) {
+        if (!$class) {
             $class = (new ReflectionClass(get_called_class()))
                 ->getParentClass()
                 ->name;
