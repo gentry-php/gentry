@@ -86,6 +86,7 @@ try {
     die(1);
 }
 $config->src = is_array($config->src) ? $config->src : [$config->src];
+$config->templates = $config->templates ?? [];
 
 if (isset($config->bootstrap)) {
     $bootstrap = is_array($config->bootstrap) ? $config->bootstrap : [$config->bootstrap];
@@ -174,6 +175,12 @@ out(sprintf(
     $color,
     $total ? $total / ($total + $totalU) * 100 : 0
 ));
+out("\n");
+out(sprintf(
+    "\n<magenta>Took %0.2f seconds, memory usage %4.2fMb.\n\n",
+    microtime(true) - $start,
+    memory_get_peak_usage(true) / 1048576
+));
 
 if ($totalU) {
     out("\n");
@@ -182,13 +189,22 @@ if ($totalU) {
     while (!$yesno) {
         fscanf(STDIN, '%s\n', $yesno);
         if (!in_array($yesno, ['Y', 'n'])) {
-            out("\nPlease answer Y[es] or n[o]: ");
+            out("Please answer Y[es] or n[o]: ");
             $yesno = false;
         }
     }
     if ($yesno == 'n') {
         out("\n<darkGray>Ok, suit yourself!\n\n");
-        die($totalU);
+    } else {
+        if (!$config->templates) {
+            out("\n<red>Error: no templates defined.\n\n");
+        } else {
+            $start = microtime(true);
+            foreach ($config->templates as $config) {
+                $generator = new TestGenerator($config);
+                $generator->generate($sourcecode->sources);
+            }
+        }
     }
 }
 
@@ -198,12 +214,6 @@ $endit = function ($code) use ($start) {
         @unlink(sys_get_temp_dir().'/'.getenv("GENTRY_CLIENT").'.cache');
     } catch (ErrorException $e) {
     }
-    out("\n");
-    out(sprintf(
-        "\n<magenta>Took %0.2f seconds, memory usage %4.2fMb.\n\n",
-        microtime(true) - $start,
-        memory_get_peak_usage(true) / 1048576
-    ));
     exit($code);
 };
 if ($uncovered) {
