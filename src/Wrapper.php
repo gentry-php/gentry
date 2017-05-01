@@ -23,7 +23,7 @@ class Wrapper
      * proxies public methods to the actual implementation, logs their
      * invocations and traps any exceptions.
      *
-     * @param mixed $object A class or object to wrap.
+     * @param mixed $object A class, object or trait to wrap.
      * @param mixed ...$args Arguments for use during construction.
      * @return object An anonymous, wrapped object.
      */
@@ -32,6 +32,17 @@ class Wrapper
         $type = new ReflectionClass($class);
         // This is nasty, but we need to dynamically extend the
         // original class to allow type hinting to work.
+        $mod = '{';
+        $pclass = 'get_parent_class($this)';
+        if ($type->isTrait()) {
+            $mod = "{ use {$type->name};";
+            $pclass = "{$type->name}::class";
+        } elseif ($type->isInterface()) {
+            $mod = "implements {$type->name} {";
+            $pclass = "{$type->name}::class";
+        } else {
+            $mod = "extends {$type->name} {";
+        }
         $methods = [];
         foreach ($type->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
             if ($method->getDeclaringClass()->name != $type->name) {
@@ -70,7 +81,7 @@ public %1\$sfunction %2\$s(%3\$s) %4\$s{
     \$refargs = [];
     \$args = func_get_args();
     if (isset(\$this)) {
-        self::__gentryLogMethodCall('%2\$s', get_parent_class(\$this), \$args);
+        self::__gentryLogMethodCall('%2\$s', $pclass, \$args);
     }
     array_walk(\$args, function (\$arg) use (&\$refargs) {
         \$refargs[] = &\$arg;
@@ -87,14 +98,6 @@ EOT
             );
         }
         $methods = implode("\n", $methods);
-        $mod = '{';
-        if ($type->isTrait()) {
-            $mod = "{ use {$type->name};";
-        } elseif ($type->isInterface()) {
-            $mod = "implements {$type->name} {";
-        } else {
-            $mod = "extends {$type->name} {";
-        }
         $definition = <<<EOT
 \$work = new class $mod
     use Gentry\Gentry\ClassWrapper;
