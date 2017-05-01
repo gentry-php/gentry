@@ -5,25 +5,26 @@ namespace Gentry\Gentry;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionParameter;
+use StdClass;
 
 /**
  * A test generation object. Normally, this is automatically called when running
- * the Gentry executable with the `-g`[enerate] flag.
+ * the Gentry executable.
  */
 class TestGenerator
 {
-    private $path;
+    private $config;
     private $name;
     private $features = [];
 
     /**
-     * Constructor. Pass the path to test files.
+     * Constructor. Pass the configuration object.
      *
-     * @param string $path The full path to the test files.
+     * @param StdClass $config
      */
-    public function __construct($path)
+    public function __construct(StdClass $config)
     {
-        $this->path = $path;
+        $this->config = $config;
         $this->name = "Gentry_".md5(time());
     }
 
