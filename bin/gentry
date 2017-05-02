@@ -99,7 +99,11 @@ out("<green>Running unit tests from <darkGray>{$config->test}<green>...\n");
 $shm_key = ftok(__FILE__, 't');
 $shm = shmop_open($shm_key, 'c', 0644, 1024 * 1024);
 exec($config->test);
-$coveredFeatures = unserialize(shmop_read($shm, 0, 1024 * 1024));
+try {
+    $coveredFeatures = unserialize(shmop_read($shm, 0, 1024 * 1024));
+} catch (ErrorException $e) {
+    $coveredFeatures = [];
+}
 shmop_delete($shm);
 
 $sourcecode = new Sourcecode($config);
