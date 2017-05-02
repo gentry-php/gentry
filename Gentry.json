@@ -1,5 +1,5 @@
 {
     "src": "./src",
-    "tests": "./tests",
+    "test": "vendor/bin/toast",
     "bootstrap": "demo/procedure.php"
 }
