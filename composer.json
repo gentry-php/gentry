@@ -29,5 +29,8 @@
             "Gentry\\Tests\\": "tests",
             "Gentry\\Demo\\": "demo"
         }
+    },
+    "require-dev": {
+        "toast-php/unit": "^1.1"
     }
 }
