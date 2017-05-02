@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "58bf5a97f5e3bee596cd34592bb1e2f2",
-    "content-hash": "a9f826be70e5de3aca17ab3acae650d5",
+    "hash": "0e0d3ad464c46b49190bb3847e333ab9",
+    "content-hash": "f854964a06bb10bc153f4439055f2507",
     "packages": [
         {
             "name": "monomelodies/kingconf",
@@ -193,7 +193,49 @@
             "time": "2013-05-29 02:35:23"
         }
     ],
-    "packages-dev": [],
+    "packages-dev": [
+        {
+            "name": "toast-php/unit",
+            "version": "1.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/toast-php/unit.git",
+                "reference": "a7243e2338e228564af4839593a577f7d4420525"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/toast-php/unit/zipball/a7243e2338e228564af4839593a577f7d4420525",
+                "reference": "a7243e2338e228564af4839593a577f7d4420525",
+                "shasum": ""
+            },
+            "require": {
+                "monomelodies/kingconf": "^1.1.0",
+                "php": ">=7",
+                "simoneast/simple-ansi-colors": "^1.0"
+            },
+            "bin": [
+                "bin/toast"
+            ],
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Toast\\Unit\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Marijn Ophorst",
+                    "email": "marijn@monomelodies.nl"
+                }
+            ],
+            "description": "Super-simple unit testing for PHP7",
+            "time": "2017-05-02 05:19:07"
+        }
+    ],
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": [],
