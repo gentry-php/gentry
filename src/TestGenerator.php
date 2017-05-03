@@ -6,6 +6,8 @@ use ReflectionClass;
 use ReflectionMethod;
 use ReflectionParameter;
 use StdClass;
+use Twig_Loader_Filesystem;
+use Twig_Environment;
 
 /**
  * A test generation object. Normally, this is automatically called when running
@@ -25,7 +27,8 @@ class TestGenerator
     public function __construct(StdClass $config)
     {
         $this->config = $config;
-        $this->name = "Gentry_".md5(time());
+        $loader = new Twig_Loader_Filesystem($this->config->src);
+        $this->twig = new Twig_Environment($loader, ['cache' => false]);
     }
 
     /**
@@ -35,14 +38,18 @@ class TestGenerator
      *  test.
      * @param array $methods Array of reflected methods to generate test
      *  skeletons for.
+     * @param array $uncovered Array of uncovered method calls.
      */
-    public function generate(ReflectionClass $class, array $methods)
+    public function generate(ReflectionClass $class, array $methods, array $uncovered)
     {
-        foreach ($methods as $method => $calls) {
-            if ($calls) {
-                $this->addFeature($class, new ReflectionMethod($class->getName(), $method), $calls);
+        $this->objectUnderTest = $class;
+        $this->features = [];
+        foreach ($methods as $method) {
+            if (isset($uncovered[$method->name])) {
+                $this->addFeature($class, $method, $uncovered[$method->name]);
             }
         }
+        var_dump($this->render());
     }
 
     /**
@@ -54,16 +61,29 @@ class TestGenerator
      */
     private function addFeature(ReflectionClass $class, ReflectionMethod $method, array $calls)
     {
-        if (VERBOSE) {
-            out("<gray> Adding feature <magenta>{$class->name}::{$method->name}\n");
-        }
-        $md5 = md5(microtime());
+        out("<gray> Adding tests for feature <magenta>{$class->name}::{$method->name}\n");
         $tested = $method->name;
+        $this->features[$method->name] = [];
+        foreach ($calls as $call) {
+            $arglist = [];
+            foreach ($call as $idx => $p) {
+                if ($p == 'NULL') {
+                    $arglist[] = 'null';
+                } elseif (isset($arguments[$idx + 1])) {
+                    preg_match('@\$\w+@', "{$arguments[$idx + 1]}", $matches);
+                    $arglist[] = $matches[0];
+                } else {
+                    $arglist[] = $this->getDefaultForType($p);
+                }
+            }
+            $mt = $method->isStatic() ? '::' : '->';
+        }
+        /*
         $body = [];
         $docblock = [];
         if ($class->isTrait()) {
             $arguments[] = "\stdClass \$test = null";
-            $body[] = <<<EOT
+            $BODY[] = <<<EOT
 \$anon = new class () {
     use {$class->name};
 };
@@ -83,18 +103,6 @@ EOT;
         }
         foreach ($calls as $call) {
             $docblock[] = "{$class->name}::{$tested}(".implode(', ', $call).") {?}";
-            $arglist = [];
-            foreach ($call as $idx => $p) {
-                if ($p == 'NULL') {
-                    $arglist[] = 'null';
-                } elseif (isset($arguments[$idx + 1])) {
-                    preg_match('@\$\w+@', "{$arguments[$idx + 1]}", $matches);
-                    $arglist[] = $matches[0];
-                } else {
-                    $arglist[] = $this->getDefaultForType($p);
-                }
-            }
-            $mt = $method->isStatic() ? '::' : '->';
             $body[] = "yield assert(\$test$mt$tested(".implode(', ', $arglist)."));";
         }
         $arguments = implode(', ', $arguments);
@@ -105,13 +113,21 @@ EOT;
      * [GENERATED] {0}::$tested
      *
      * $docblock
-     */
     public function gentry_$md5($arguments)
     {
         throw new \Gentry\Gentry\IncompleteTestException("{$class->name}", "{$tested}");
         $body
     }
 EOT;
+     */
+    }
+
+    private function render()
+    {
+        return $this->twig->render('template.html.twig', [
+            'namespace' => $this->config->namespace ?? null,
+            'objectUnderTest' => $this->objectUnderTest->name,
+        ]);
     }
 
     /**
@@ -119,6 +135,7 @@ EOT;
      */
     public function write()
     {
+        die();
         $file = "{$this->path}/{$this->name}.php";
         $code = <<<EOT
 <?php
