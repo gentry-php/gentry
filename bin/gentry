@@ -188,15 +188,7 @@ out(sprintf(
 
 if ($totalU) {
     out("\n");
-    out("Attempt to generate missing tests? [Y/n] ");
-    $yesno = false;
-    while (!$yesno) {
-        fscanf(STDIN, '%s\n', $yesno);
-        if (!in_array($yesno, ['Y', 'n'])) {
-            out("Please answer Y[es] or n[o]: ");
-            $yesno = false;
-        }
-    }
+    $yesno = ask("Attempt to generate missing tests? [Y/n] ", [true => 'Y', 'n']);
     if ($yesno == 'n') {
         out("\n<darkGray>Ok, suit yourself!\n\n");
     } else {
