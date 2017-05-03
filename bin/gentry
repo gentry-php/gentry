@@ -205,8 +205,12 @@ if ($totalU) {
         } else {
             $start = microtime(true);
             foreach ($config->templates as $config) {
-                $generator = new TestGenerator($config);
-                $generator->generate($sourcecode->sources);
+                $generator = new TestGenerator((object)$config);
+                foreach ($sourcecode->sources as $filename => $data) {
+                    if (isset($uncovered[$data[0]->name])) {
+                        $generator->generate($data[0], $data[1], $uncovered[$data[0]->name]);
+                    }
+                }
             }
         }
     }
