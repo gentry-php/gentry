@@ -52,3 +52,16 @@ function getNormalisedType($type)
     }
 }
 
+function ask($question, array $options)
+{
+    out($question);
+    fscanf(STDIN, '%s\n', $answer);
+    if ($answer === null) {
+        $answer = $options[true];
+    }
+    if (!in_array($answer, $options)) {
+        return ask($question, $options);
+    }
+    return $answer;
+}
+
