@@ -73,7 +73,8 @@ class TestGenerator
                     preg_match('@\$\w+@', "{$arguments[$idx + 1]}", $matches);
                     $arglist[] = $matches[0];
                 } else {
-                    $arglist[] = $this->getDefaultForType($p);
+                    //$arglist[] = $this->getDefaultForType($p);
+                    $arglist[] = 'null';
                 }
             }
             $mt = $method->isStatic() ? '::' : '->';
