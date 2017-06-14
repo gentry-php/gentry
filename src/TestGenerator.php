@@ -45,11 +45,11 @@ class TestGenerator
         $this->objectUnderTest = $class;
         $this->features = [];
         foreach ($methods as $method) {
-            if (isset($uncovered[$method->name])) {
+            if (isset($uncovered[$method->name]) && $uncovered[$method->name]) {
                 $this->addFeature($class, $method, $uncovered[$method->name]);
             }
         }
-        var_dump($this->render());
+//        var_dump($this->render());
     }
 
     /**
