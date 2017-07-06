@@ -199,7 +199,7 @@ if ($totalU) {
             foreach ($config->templates as $config) {
                 $generator = new TestGenerator((object)$config);
                 foreach ($sourcecode->sources as $filename => $data) {
-                    if (isset($uncovered[$data[0]->name])) {
+                    if (isset($uncovered[$data[0]->name]) && $uncovered[$data[0]->name]) {
                         $generator->generate($data[0], $data[1], $uncovered[$data[0]->name]);
                     }
                 }

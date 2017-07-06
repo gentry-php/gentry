@@ -425,21 +425,18 @@ EOT;
             return [[]];
         }
         $options = [];
-        $param = array_shift($params);
         $opts = [];
-        if (!$param->hasType()) {
-            $opts[] = 'mixed';
-        } else {
-            $opts[] = $param->getType()->__toString();
-        }
-        foreach (self::getPossibleCalls(...$params) as $sub) {
-            $options[] = array_merge($opts, $sub);
-        }
-        if ($param->isOptional() && !$param->isVariadic()) {
-            $opts[0] = getNormalisedType($param->getDefaultValue());
-            foreach (self::getPossibleCalls(...$params) as $sub) {
-                $options[] = array_merge($opts, $sub);
+        foreach ($params as $param) {
+            if (!$param->hasType()) {
+                $opts[] = 'mixed';
+            } else {
+                $opts[] = $param->getType()->__toString();
             }
+        }
+        $options[] = $opts;
+        $last = array_pop($params);
+        if ($last->isOptional() && !$last->isVariadic()) {
+            $options = array_merge($options, self::getPossibleCalls(...$params));
         }
         return $options;
     }
