@@ -106,12 +106,8 @@ EOT
 };
 EOT;
         eval($definition);
-        try {
-            $work->__gentryConstruct(...$args);
-            return $work;
-        } catch (Throwable $e) {
-            return $work;
-        }
+        $work->__gentryConstruct(...$args);
+        return $work;
     }
 
     public static function getConstructorArguments(ReflectionClass $type)
