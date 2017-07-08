@@ -63,7 +63,7 @@ class Generator
     {
         out("<gray> Adding tests for feature <magenta>{$class->name}::{$method->name}\n");
         $tested = $method->name;
-        $this->features[$method->name] = [];
+        $this->features[$method->name] = (object)['calls' => []];
         foreach ($calls as $call) {
             $arglist = [];
             foreach ($call as $idx => $p) {
@@ -73,54 +73,21 @@ class Generator
                     preg_match('@\$\w+@', "{$arguments[$idx + 1]}", $matches);
                     $arglist[] = $matches[0];
                 } else {
-                    //$arglist[] = $this->getDefaultForType($p);
-                    $arglist[] = 'null';
+                    $arglist[] = $this->getDefaultForType($p);
                 }
             }
             $mt = $method->isStatic() ? '::' : '->';
+            $expectedResult = 'true';
+            if ($method->hasReturnType()) {
+                $type = $method->getReturnType()->__toString();
+                $expectedResult = $this->getDefaultForType($type);
+            }
+            $this->features[$method->name]->calls[] = (object)[
+                'name' => $method->name,
+                'parameters' => implode(', ', $arglist),
+                'expectedResult' => $expectedResult,
+            ];
         }
-        /*
-        $body = [];
-        $docblock = [];
-        if ($class->isTrait()) {
-            $arguments[] = "\stdClass \$test = null";
-            $BODY[] = <<<EOT
-\$anon = new class () {
-    use {$class->name};
-};
-\$test = \Gentry\Gentry\Test::createWrappedObject(new \ReflectionClass(\$anon), \$anon);
-EOT;
-        } elseif ($class->isFinal()) {
-            $arguments[] = "{$class->name} \$test";
-            $body[] = <<<EOT
-\$test = \Gentry\Gentry\Test::createWrappedObject(new \ReflectionClass(\$test), \$test);
-EOT;
-        } else {
-            $arguments[] = "{$class->name} \$test";
-        }
-        $fallback = cleanDocComment($method, false);
-        foreach ($method->getParameters() as $param) {
-            $arguments[] = new Argument($param, $fallback);
-        }
-        foreach ($calls as $call) {
-            $docblock[] = "{$class->name}::{$tested}(".implode(', ', $call).") {?}";
-            $body[] = "yield assert(\$test$mt$tested(".implode(', ', $arglist)."));";
-        }
-        $arguments = implode(', ', $arguments);
-        $body = trim(implode("\n        ", $body));
-        $docblock = trim(implode("\n     * ", $docblock));
-        $this->features[] = <<<EOT
-    /**
-     * [GENERATED] {0}::$tested
-     *
-     * $docblock
-    public function gentry_$md5($arguments)
-    {
-        throw new \Gentry\Gentry\IncompleteTestException("{$class->name}", "{$tested}");
-        $body
-    }
-EOT;
-     */
     }
 
     private function render()
@@ -130,6 +97,19 @@ EOT;
             'objectUnderTest' => $this->objectUnderTest->name,
             'features' => $this->features,
         ]);
+    }
+
+    private function getDefaultForType(string $type)
+    {
+        switch ($type) {
+            case 'string': return "'blarps'";
+            case 'int': return '1';
+            case 'float': return '1.1';
+            case 'mixed': return "'MIXED'";
+            case 'callable': return 'function () {}';
+            case 'bool': return 'true';
+            default: return $type;
+        }
     }
 
     /**
