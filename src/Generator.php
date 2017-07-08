@@ -13,7 +13,7 @@ use Twig_Environment;
  * A test generation object. Normally, this is automatically called when running
  * the Gentry executable.
  */
-class TestGenerator
+class Generator
 {
     private $config;
     private $name;
