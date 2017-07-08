@@ -49,7 +49,7 @@ class TestGenerator
                 $this->addFeature($class, $method, $uncovered[$method->name]);
             }
         }
-//        var_dump($this->render());
+        var_dump($this->render());
     }
 
     /**
@@ -128,6 +128,7 @@ EOT;
         return $this->twig->render('template.html.twig', [
             'namespace' => $this->config->namespace ?? null,
             'objectUnderTest' => $this->objectUnderTest->name,
+            'features' => $this->features,
         ]);
     }
 
