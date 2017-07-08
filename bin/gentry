@@ -197,7 +197,7 @@ if ($totalU) {
         } else {
             $start = microtime(true);
             foreach ($config->templates as $config) {
-                $generator = new TestGenerator((object)$config);
+                $generator = new Generator((object)$config);
                 foreach ($sourcecode->sources as $filename => $data) {
                     if (isset($uncovered[$data[0]->name]) && $uncovered[$data[0]->name]) {
                         $generator->generate($data[0], $data[1], $uncovered[$data[0]->name]);
@@ -230,7 +230,7 @@ if (VERBOSE) {
     out("<gray>Generating test skeletons as requested...\n");
 }
 
-$generator = new TestGenerator($config->tests);
+$generator = new Generator($config->tests);
 foreach ($sourcecode->sources as $file => $code) {
     if (!isset($uncovered[$code[0]->name])) {
         continue;
