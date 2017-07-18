@@ -5,20 +5,9 @@ Good programmers are lazy, but unfortunately that means that stuff like writing
 tests (boooooring) is often skipped. Please don't; it's important and oh so
 handy once you have them in place.
 
-Gentry was designed with three goals in mind:
-
-1. To make writing tests _so_ easy even the worst slacker will bother;
-2. To alleviate writing boilerplate code by generating skeletons for you.
-3. Speed. You want to run tests before you push, so if they're slow that's
-   _annoying_.
-
-## Prerequisites
-- Make sure you have PHP7. Seriously, Gentry uses some new features so it'll
-  fail miserably on anything older.
-- Turn on assertions and configure them to throw `AssertionError` on failure.
-  See [this section in the
-  manual](http://php.net/manual/en/function.assert.php); both values should be
-  set to `1`.
+Gentry was designed to make writing tests _so_ easy even the worst slacker will
+bother, and to alleviate writing boilerplate code by generating skeletons for
+you.
 
 ## Installation
 ```sh
