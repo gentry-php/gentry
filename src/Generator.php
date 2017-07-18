@@ -16,7 +16,7 @@ use Twig_Environment;
 class Generator
 {
     private $config;
-    private $name;
+    private $objectUnserTest;
     private $features = [];
 
     /**
@@ -27,7 +27,7 @@ class Generator
     public function __construct(StdClass $config)
     {
         $this->config = $config;
-        $loader = new Twig_Loader_Filesystem($this->config->src);
+        $loader = new Twig_Loader_Filesystem($this->config->path);
         $this->twig = new Twig_Environment($loader, ['cache' => false]);
     }
 
@@ -49,7 +49,7 @@ class Generator
                 $this->addFeature($class, $method, $uncovered[$method->name]);
             }
         }
-        var_dump($this->render());
+        $this->write();
     }
 
     /**
@@ -90,7 +90,34 @@ class Generator
         }
     }
 
-    private function render()
+    /**
+     * Actually write the generated stubs to file. If a file by the name of the
+     * feature already exists, a number is appended.
+     */
+    public function write()
+    {
+        $i = 0;
+        while (true) {
+            $file = sprintf(
+                '%s/%s%s.php',
+                $this->config->output,
+                $this->normalize($this->objectUnderTest->getName()),
+                $i ? ".$i" : ''
+            );
+            if (!file_exists($file)) {
+                break;
+            }
+            ++$i;
+        }
+        file_put_contents($file, $this->render());
+    }
+
+    /**
+     * Renders the testing code according to the supplied template.
+     *
+     * @return string
+     */
+    private function render() : string
     {
         return $this->twig->render('template.html.twig', [
             'namespace' => $this->config->namespace ?? null,
@@ -99,7 +126,13 @@ class Generator
         ]);
     }
 
-    private function getDefaultForType(string $type)
+    /**
+     * Get a string representation of a default value for a given type.
+     *
+     * @param string $type
+     * @return string
+     */
+    private function getDefaultForType(string $type) : string
     {
         switch ($type) {
             case 'string': return "'blarps'";
@@ -113,24 +146,14 @@ class Generator
     }
 
     /**
-     * Actually write the generated stubs to a randomized file.
+     * Normalize the given string for use in the filesystem.
+     *
+     * @param string $name An object's name.
+     * @return string
      */
-    public function write()
+    private function normalize(string $name) : string
     {
-        die();
-        $file = "{$this->path}/{$this->name}.php";
-        $code = <<<EOT
-<?php
-
-class %s
-{
-%s
-}
-
-
-EOT;
-        $code = sprintf($code, $this->name, implode("\n\n", $this->features));
-        file_put_contents($file, $code);
+        return strtolower(str_replace('\\', '_', $name));
     }
 }
 
