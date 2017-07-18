@@ -196,8 +196,8 @@ if ($totalU) {
             out("\n<red>Error: no templates defined.\n\n");
         } else {
             $start = microtime(true);
-            foreach ($config->templates as $config) {
-                $generator = new Generator((object)$config);
+            foreach ($config->templates as $template) {
+                $generator = new Generator((object)$template);
                 foreach ($sourcecode->sources as $filename => $data) {
                     if (isset($uncovered[$data[0]->name]) && $uncovered[$data[0]->name]) {
                         $generator->generate($data[0], $data[1], $uncovered[$data[0]->name]);
