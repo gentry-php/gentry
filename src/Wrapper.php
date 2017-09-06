@@ -35,7 +35,15 @@ class Wrapper
         $mod = '{';
         $pclass = 'get_parent_class($this)';
         if ($type->isTrait()) {
-            $mod = "{ use {$type->name};";
+            $mod = "{ use {$type->name} {\n";
+            $aliases = [];
+            $i = 0;
+            foreach ($type->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+                ++$i;
+                $aliases[$method->name] = "__gentryAlias$i";
+                $mod .= "{$type->name}::{$method->name} as __gentryAlias$i;\n";
+            }
+            $mod .= "}\n";
             $pclass = "{$type->name}::class";
         } elseif ($type->isInterface()) {
             $mod = "implements {$type->name} {";
@@ -75,8 +83,32 @@ class Wrapper
                 }
                 $arguments["'a$i'"] = $argument;
             }
-            $methods[] = sprintf(
-                <<<EOT
+            if ($type->isTrait()) {
+                $methods[] = sprintf(
+                    <<<EOT
+public %1\$sfunction %2\$s(%3\$s) %4\$s{
+    \$refargs = [];
+    \$args = func_get_args();
+    if (isset(\$this)) {
+        self::__gentryLogMethodCall('%2\$s', $pclass, \$args);
+    }
+    array_walk(\$args, function (\$arg) use (&\$refargs) {
+        \$refargs[] = &\$arg;
+    });
+    return %5\$s%2\$s(...\$refargs);
+}
+
+EOT
+                    ,
+                    $method->isStatic() ? 'static ' : '',
+                    $aliases[$method->name],
+                    implode(', ', $arguments),
+                    $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '').' '.$method->getReturnType() : '',
+                    $method->isStatic() ? 'self::' : '$this->'
+                );
+            } else {
+                $methods[] = sprintf(
+                    <<<EOT
 public %1\$sfunction %2\$s(%3\$s) %4\$s{
     \$refargs = [];
     \$args = func_get_args();
@@ -90,12 +122,13 @@ public %1\$sfunction %2\$s(%3\$s) %4\$s{
 }
 
 EOT
-                ,
-                $method->isStatic() ? 'static ' : '',
-                $method->name,
-                implode(', ', $arguments),
-                $method->hasReturnType() ? ': '.$method->getReturnType() : ''
-            );
+                    ,
+                    $method->isStatic() ? 'static ' : '',
+                    $method->name,
+                    implode(', ', $arguments),
+                    $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '').' '.$method->getReturnType() : ''
+                );
+            }
         }
         $methods = implode("\n", $methods);
         $definition = <<<EOT
