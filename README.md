@@ -117,10 +117,10 @@ especially important here: `"files"` and `"template"`.
 Regular expression defining which files should be handled by this template
 handler. Defaults to `"@\.php$@"`.
 
-### string `src` ###
+### string `path` ###
 Path (usually relative to `getcwd()`) to your test template. Gentry templates
 are written in [Twig](https://twig.sensiolabs.org/), so it will normally be
-something in the form `/path/to/template.html.twig`.
+something in the form `/path/to/templates`.
 
 All other keys are simply passed to the template and exposed as variables. E.g.
 it is common for templates to support (optional) namespacing; this would be done
@@ -143,7 +143,7 @@ Next we configure it:
     //...
     templates: [
         {
-            "template": "vendor/gentry/toast/template.html.twig"
+            "path": "vendor/gentry/toast"
         }
     ]
 }
