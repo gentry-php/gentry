@@ -141,8 +141,11 @@ class Generator
             case 'mixed': return "'MIXED'";
             case 'callable': return 'function () {}';
             case 'bool': return 'true';
-            default: return $type;
         }
+        if (class_exists($type)) {
+            return "$type::class";
+        }
+        return $type;
     }
 
     /**
