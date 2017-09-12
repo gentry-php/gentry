@@ -143,6 +143,36 @@ EOT;
         return $work;
     }
 
+    /**
+     * "Extends" an existing object based on reflection. The resulting object is
+     * wrapped (like with `createObject`), but all properties are preserved.
+     *
+     * @param object $object
+     * @return object
+     */
+    public static function extendObject($object)
+    {
+        $new = self::createObject($object);
+        $reflection = new ReflectionClass($object);
+        $newReflection = new ReflectionClass($new);
+        foreach ($reflection->getProperties() as $prop) {
+            $name = $prop->getName();
+            try {
+                $newProp = $newReflection->getProperty($name);
+                $prop->setAccessible(true);
+                $newProp->setAccessible(true);
+                if ($prop->isStatic()) {
+                    $newProp->setValue($prop->getValue());
+                } else {
+                    $newProp->setValue($new, $prop->getValue($object));
+                }
+            } catch (ReflectionException $e) {
+            } catch (Throwable $e) {
+            }
+        }
+        return $new;
+    }
+
     public static function getConstructorArguments(ReflectionClass $type)
     {
         $args = [];
