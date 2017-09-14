@@ -118,7 +118,7 @@ public %1\$sfunction %2\$s(%3\$s) %4\$s{
     array_walk(\$args, function (\$arg) use (&\$refargs) {
         \$refargs[] = &\$arg;
     });
-    return parent::%2\$s(...\$refargs);
+    %5\$sparent::%2\$s(...\$refargs);
 }
 
 EOT
@@ -126,7 +126,8 @@ EOT
                     $method->isStatic() ? 'static ' : '',
                     $method->name,
                     implode(', ', $arguments),
-                    $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '').' '.$method->getReturnType() : ''
+                    $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '').' '.$method->getReturnType() : '',
+                    $method->getReturnType()->__toString() == 'void' ? '' : 'return '
                 );
             }
         }
