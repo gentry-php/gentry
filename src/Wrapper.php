@@ -127,7 +127,7 @@ EOT
                     $method->name,
                     implode(', ', $arguments),
                     $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '').' '.$method->getReturnType() : '',
-                    $method->getReturnType()->__toString() == 'void' ? '' : 'return '
+                    $method->hasReturnType() && $method->getReturnType()->__toString() == 'void' ? '' : 'return '
                 );
             }
         }
