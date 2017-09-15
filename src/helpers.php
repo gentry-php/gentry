@@ -4,6 +4,7 @@ namespace Gentry\Gentry;
 
 use Ansi;
 use Reflector;
+use ReflectionParameter;
 
 /**
  * Output $text to the specified $out, with added ANSI colours.
@@ -63,5 +64,34 @@ function ask($question, array $options)
         return ask($question, $options);
     }
     return $answer;
+}
+
+/**
+ * Return an array of all possible combinations of variable types.
+ *
+ * @param ReflectionParameter ...$params Zero or more reflection parameters.
+ * @return array Array of array of possible combination of parameter types
+ *  this method accepts.
+ */
+function getPossibleCalls(ReflectionParameter ...$params) : array
+{
+    if (!count($params)) {
+        return [[]];
+    }
+    $options = [];
+    $opts = [];
+    foreach ($params as $param) {
+        if (!$param->hasType()) {
+            $opts[] = 'mixed';
+        } else {
+            $opts[] = $param->getType()->__toString();
+        }
+    }
+    $options[] = $opts;
+    $last = array_pop($params);
+    if ($last->isOptional() && !$last->isVariadic()) {
+        $options = array_merge($options, getPossibleCalls(...$params));
+    }
+    return $options;
 }
 
