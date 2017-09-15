@@ -44,12 +44,6 @@ trait ClassWrapper
         $args = array_map(function ($arg) {
             return getNormalisedType($arg);
         }, $args);
-        $params = $reflection->getParameters();
-        if (count($params) > count($args)) {
-            for ($i = count($args); $i < count($params); $i++) {
-                $args[] = getNormalisedType($params[$i]->getDefaultValue());
-            }
-        }
         $logger->logFeature($class, $method, $args);
     }
 }
