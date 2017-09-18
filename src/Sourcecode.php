@@ -35,6 +35,11 @@ class Sourcecode
                 if (!$this->isPhp($file)) {
                     continue;
                 }
+                foreach ($config->ignore ?? [] as $ignore) {
+                    if (preg_match("@$ignore@", $file)) {
+                        continue 2;
+                    }
+                }
                 if (!($reflection = $this->extractTestableClass($file))) {
                     continue;
                 }
