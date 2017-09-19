@@ -15,6 +15,9 @@ use Twig_Environment;
  */
 class Generator
 {
+    const AS_INSTANCE = 1;
+    const AS_RETURNCHECK = 2;
+
     private $config;
     private $objectUnserTest;
     private $features = [];
@@ -76,15 +79,16 @@ class Generator
                     preg_match('@\$\w+@', "{$arguments[$idx + 1]}", $matches);
                     $arglist[] = $matches[0];
                 } else {
-                    $arglist[] = $this->getDefaultForType($p);
+                    $arglist[] = $this->getDefaultForType($p, self::AS_INSTANCE);
                 }
             }
             $mt = $method->isStatic() ? '::' : '->';
             $expectedResult = 'true';
             if ($method->hasReturnType()) {
                 $type = $method->getReturnType()->__toString();
-                $expectedResult = $this->getDefaultForType($type);
+                $expectedResult = $this->getDefaultForType($type, self::AS_RETURNCHECK);
             }
+
             $this->features[$method->name]->calls[] = (object)[
                 'name' => $method->name,
                 'parameters' => implode(', ', $arglist),
@@ -138,22 +142,43 @@ class Generator
      * Get a string representation of a default value for a given type.
      *
      * @param string $type
+     * @param int $mode
      * @return string
      */
-    private function getDefaultForType(string $type) : string
+    private function getDefaultForType(string $type, int $mode = 0) : string
     {
+        $isClass = false;
         switch ($type) {
-            case 'string': return "'blarps'";
-            case 'int': return '1';
-            case 'float': return '1.1';
-            case 'mixed': return "'MIXED'";
-            case 'callable': return 'function () {}';
-            case 'bool': return 'true';
+            case 'string': $value = "'blarps'"; break;
+            case 'int': $value = '1'; break;
+            case 'float': $value = '1.1'; break;
+            case 'mixed': $value = "'MIXED'"; break;
+            case 'callable': $value = 'function () {}'; break;
+            case 'bool': $value = 'true'; break;
+            case 'array': $value = '[]'; break;
+            default:
+                if (class_exists($type)) {
+                    $isClass = true;
+                }
+                $value = $type;
         }
-        if (class_exists($type)) {
-            return "$type::class";
+        switch ($mode) {
+            case self::AS_INSTANCE:
+                if ($isClass) {
+                    return "new $type";
+                }
+            case self::AS_RETURNCHECK:
+                if ($isClass) {
+                    return "\$result instanceof $value";
+                } elseif ($value === 'array') {
+                    return "is_array(\$result)";
+                } elseif ($value == 'callable') {
+                    return "is_callable(\$result)";
+                } else {
+                    return "\$result === $value";
+                }
+            default: return $type;
         }
-        return $type;
     }
 
     /**
