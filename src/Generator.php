@@ -23,6 +23,7 @@ class Generator
      * Constructor. Pass the configuration object.
      *
      * @param StdClass $config
+     * @return void
      */
     public function __construct(StdClass $config)
     {
@@ -39,8 +40,9 @@ class Generator
      * @param array $methods Array of reflected methods to generate test
      *  skeletons for.
      * @param array $uncovered Array of uncovered method calls.
+     * @return void
      */
-    public function generate(ReflectionClass $class, array $methods, array $uncovered)
+    public function generate(ReflectionClass $class, array $methods, array $uncovered) : void
     {
         $this->objectUnderTest = $class;
         $this->features = [];
@@ -58,8 +60,9 @@ class Generator
      * @param string The reflection of the object or trait to test a feature on.
      * @param ReflectionMethod $method Reflection of the feature to test.
      * @param array $calls Array of possible types of calls.
+     * @return void
      */
-    private function addFeature(ReflectionClass $class, ReflectionMethod $method, array $calls)
+    private function addFeature(ReflectionClass $class, ReflectionMethod $method, array $calls) : void
     {
         out("<gray> Adding tests for feature <magenta>{$class->name}::{$method->name}\n");
         $tested = $method->name;
@@ -93,9 +96,14 @@ class Generator
     /**
      * Actually write the generated stubs to file. If a file by the name of the
      * feature already exists, a number is appended.
+     *
+     * @return void
      */
-    public function write()
+    public function write() : void
     {
+        if (!$this->features) {
+            return;
+        }
         $i = 0;
         while (true) {
             $file = sprintf(
