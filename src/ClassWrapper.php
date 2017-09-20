@@ -32,7 +32,7 @@ trait ClassWrapper
         }
     }        
 
-    public static function __gentryLogMethodCall($method, $class = null, array $args = [])
+    public static function __gentryLogMethodCall(string $method, string $class = null, array $args = []) : void
     {
         if (!$class) {
             $class = (new ReflectionClass(get_called_class()))
