@@ -41,9 +41,9 @@ trait ClassWrapper
         }
         $logger = Logger::getInstance();
         $reflection = new ReflectionMethod($class, $method);
-        $args = array_map(function ($arg) {
-            return getNormalisedType($arg);
-        }, $args);
+        array_walk($args, function (&$arg, $i) use ($reflection) {
+            $arg = getNormalisedType($arg, $reflection->getParameters()[$i]);
+        });
         $logger->logFeature($class, $method, $args);
     }
 }
