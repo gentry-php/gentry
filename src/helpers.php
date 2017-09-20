@@ -58,6 +58,7 @@ function getNormalisedType($type, ReflectionParameter $param = null) : string
     switch ($type) {
         case 'integer': return 'int';
         case 'boolean': return 'bool';
+        case 'double': return 'float';
         default: return $type;
     }
 }
