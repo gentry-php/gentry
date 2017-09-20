@@ -89,7 +89,8 @@ class Sourcecode
     {
         $filename = realpath($file);
         $code = file_get_contents($filename);
-        $code = preg_replace("@/\*\*.*?\*/@ms", '', $code);
+        $code = preg_replace("@/\*.*?\*/@ms", '', $code);
+        $code = preg_replace("@//.*?$@ms", '', $code);
         $ns = '';
         if (preg_match("@namespace ((\w|\\\\)+)@", $code, $match)) {
             $ns = $match[1].'\\';
