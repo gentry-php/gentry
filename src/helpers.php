@@ -45,6 +45,9 @@ function cleanDocComment(Reflector $reflection, bool $strip_annotations = true) 
 
 function getNormalisedType($type, ReflectionParameter $param = null) : string
 {
+    if (is_callable($type)) {
+        return 'callable';
+    }
     if (is_object($type)) {
         if (isset($param) and $compare = $param->getType()) {
             $compare = $compare->__toString();
