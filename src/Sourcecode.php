@@ -139,7 +139,7 @@ class Sourcecode
      *
      * The last condition prevents potentially testable methods from external
      * sources (most likely the `vendor` directory) to be included (it should be
-     * assumet they have their own set of tests).
+     * assumed they have their own set of tests).
      *
      * @param ReflectionClass $reflection Reflected class to check methods on.
      * @return array|null An array of testable ReflectionMethods, or null if
