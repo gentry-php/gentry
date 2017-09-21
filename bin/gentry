@@ -167,9 +167,11 @@ array_walk($uncovered, function ($feature, $name1) use (&$totalU) {
 if ($totalU == 0) {
     $color = 'green';
 } elseif ($totalU > $total) {
-    $color = 'red';
+    $color = 'darkRed';
+} elseif ($total > $totalU / 2) {
+    $color = 'darkGreen';
 } else {
-    $color = 'orange';
+    $color = 'red';
 }
 out(sprintf(
     "<blue>Code coverage: ~<%s>%d <blue>of <cyan>%s <%s>(%0.2f%%)\n",
