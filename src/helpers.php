@@ -8,8 +8,11 @@ use ReflectionParameter;
 
 /**
  * Output $text to the specified $out, with added ANSI colours.
+ *
+ * @param string $text
+ * @param resource $out
  */
-function out($text, $out = STDOUT)
+function out(string $text, $out = STDOUT)
 {
     if (!isset($output)) {
         $output = function ($text) use ($out) {
@@ -22,12 +25,12 @@ function out($text, $out = STDOUT)
     fwrite($out, $text);
 }
 
-function cleanOutput($string)
+function cleanOutput(string $string) : string
 {
     return preg_replace('@\\033\[[\d;]*m@m', '', rtrim($string));
 }
 
-function cleanDocComment(Reflector $reflection, $strip_annotations = true)
+function cleanDocComment(Reflector $reflection, bool $strip_annotations = true) : string
 {
     $doccomment = $reflection->getDocComment();
     $doccomment = preg_replace("@^/\*\*@", '', $doccomment);
@@ -40,20 +43,30 @@ function cleanDocComment(Reflector $reflection, $strip_annotations = true)
     return $doccomment;
 }
 
-function getNormalisedType($type)
+function getNormalisedType($type, ReflectionParameter $param = null) : string
 {
+    if (is_callable($type)) {
+        return 'callable';
+    }
     if (is_object($type)) {
+        if (isset($param) and $compare = $param->getType()) {
+            $compare = $compare->__toString();
+            if ($type instanceof $compare) {
+                return $compare;
+            }
+        }
         return get_class($type);
     }
     $type = gettype($type);
     switch ($type) {
         case 'integer': return 'int';
         case 'boolean': return 'bool';
+        case 'double': return 'float';
         default: return $type;
     }
 }
 
-function ask($question, array $options)
+function ask(string $question, array $options) : string
 {
     out($question);
     fscanf(STDIN, '%s\n', $answer);

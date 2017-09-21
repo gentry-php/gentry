@@ -32,7 +32,7 @@ trait ClassWrapper
         }
     }        
 
-    public static function __gentryLogMethodCall($method, $class = null, array $args = [])
+    public static function __gentryLogMethodCall(string $method, string $class = null, array $args = []) : void
     {
         if (!$class) {
             $class = (new ReflectionClass(get_called_class()))
@@ -41,9 +41,9 @@ trait ClassWrapper
         }
         $logger = Logger::getInstance();
         $reflection = new ReflectionMethod($class, $method);
-        $args = array_map(function ($arg) {
-            return getNormalisedType($arg);
-        }, $args);
+        array_walk($args, function (&$arg, $i) use ($reflection) {
+            $arg = getNormalisedType($arg, $reflection->getParameters()[$i]);
+        });
         $logger->logFeature($class, $method, $args);
     }
 }
