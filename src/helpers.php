@@ -4,7 +4,9 @@ namespace Gentry\Gentry;
 
 use Ansi;
 use Reflector;
+use ReflectionFunctionAbstract;
 use ReflectionParameter;
+use zpt\anno\Annotations;
 
 /**
  * Output $text to the specified $out, with added ANSI colours.
@@ -82,20 +84,31 @@ function ask(string $question, array $options) : string
 /**
  * Return an array of all possible combinations of variable types.
  *
+ * @param ReflectionFunctionAbstract $fn The reflected function. Needed to
+ *  extract doccoments for non-typehinted arguments.
  * @param ReflectionParameter ...$params Zero or more reflection parameters.
  * @return array Array of array of possible combination of parameter types
  *  this method accepts.
  */
-function getPossibleCalls(ReflectionParameter ...$params) : array
+function getPossibleCalls(ReflectionFunctionAbstract $fn, ReflectionParameter ...$params) : array
 {
     if (!count($params)) {
         return [[]];
     }
     $options = [];
     $opts = [];
-    foreach ($params as $param) {
+    $annotations = new Annotations($fn);
+    foreach ($params as $i => $param) {
         if (!$param->hasType()) {
-            $opts[] = 'mixed';
+            if (isset($annotations['param'][$i])) {
+                if (is_string($annotations['param']) && $i === 0) {
+                    $opts[] = extractTypeFromAnnotation($annotations['param']);
+                } else {
+                    $opts[] = extractTypeFromAnnotation($annotations['param'][$i]);
+                }
+            } else {
+                $opts[] = 'mixed';
+            }
         } else {
             $opts[] = $param->getType()->__toString();
         }
@@ -103,8 +116,16 @@ function getPossibleCalls(ReflectionParameter ...$params) : array
     $options[] = $opts;
     $last = array_pop($params);
     if ($last->isOptional() && !$last->isVariadic()) {
-        $options = array_merge($options, getPossibleCalls(...$params));
+        $options = array_merge($options, getPossibleCalls($fn, ...$params));
     }
     return $options;
+}
+
+function extractTypeFromAnnotation(string $annotation) : string
+{
+    if (!preg_match('@^([\w\\|]+)\s@', $annotation, $match)) {
+        return 'mixed';
+    }
+    return $match[1];
 }
 
