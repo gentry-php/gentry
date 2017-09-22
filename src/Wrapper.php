@@ -265,36 +265,5 @@ EOT;
         $_SESSION = [];
         $_COOKIE = [];
     }
-
-    /**
-     * Return an array of all possible combinations of variable types.
-     *
-     * @param ReflectionParameter ...$params Zero or more reflection parameters.
-     * @return array Array of array of possible combination of parameter types
-     *  this method accepts.
-     */
-    public static function getPossibleCalls(ReflectionParameter ...$params) : array {
-        if (!count($params)) {
-            return [[]];
-        }
-        $options = [];
-        $param = array_shift($params);
-        $opts = [];
-        if (!$param->hasType()) {
-            $opts[] = 'mixed';
-        } else {
-            $opts[] = $param->getType()->__toString();
-        }
-        foreach (self::getPossibleCalls(...$params) as $sub) {
-            $options[] = array_merge($opts, $sub);
-        }
-        if ($param->isOptional() && !$param->isVariadic()) {
-            $opts[0] = getNormalisedType($param->getDefaultValue());
-            foreach (self::getPossibleCalls(...$params) as $sub) {
-                $options[] = array_merge($opts, $sub);
-            }
-        }
-        return $options;
-    }
 }
 
