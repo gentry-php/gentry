@@ -13,7 +13,8 @@
         "php": ">=7.1",
         "zeptech/annotations": "^1.0.0",
         "monomelodies/kingconf": "^1.1.0",
-        "simoneast/simple-ansi-colors": "^1.0"
+        "simoneast/simple-ansi-colors": "^1.0",
+        "monomelodies/reflex": "^0.2.0"
     },
     "bin": [
         "bin/gentry"
