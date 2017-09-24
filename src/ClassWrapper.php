@@ -3,8 +3,8 @@
 namespace Gentry\Gentry;
 
 use Throwable;
-use ReflectionClass;
-use ReflectionMethod;
+use Monomelodies\Reflex\ReflectionClass;
+use Monomelodies\Reflex\ReflectionMethod;
 
 require_once 'helpers.php';
 
