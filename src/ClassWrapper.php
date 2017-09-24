@@ -3,8 +3,8 @@
 namespace Gentry\Gentry;
 
 use Throwable;
-use ReflectionClass;
-use ReflectionMethod;
+use Monomelodies\Reflex\ReflectionClass;
+use Monomelodies\Reflex\ReflectionMethod;
 
 require_once 'helpers.php';
 
@@ -42,7 +42,7 @@ trait ClassWrapper
         $logger = Logger::getInstance();
         $reflection = new ReflectionMethod($class, $method);
         array_walk($args, function (&$arg, $i) use ($reflection) {
-            $arg = getNormalisedType($arg, $reflection->getParameters()[$i]);
+            $arg = $reflection->getParameters()[$i]->getNormalisedType($arg);
         });
         $logger->logFeature($class, $method, $args);
     }

@@ -45,29 +45,6 @@ function cleanDocComment(Reflector $reflection, bool $strip_annotations = true) 
     return $doccomment;
 }
 
-function getNormalisedType($type, ReflectionParameter $param = null) : string
-{
-    if (is_callable($type)) {
-        return 'callable';
-    }
-    if (is_object($type)) {
-        if (isset($param) and $compare = $param->getType()) {
-            $compare = $compare->__toString();
-            if ($type instanceof $compare) {
-                return $compare;
-            }
-        }
-        return get_class($type);
-    }
-    $type = gettype($type);
-    switch ($type) {
-        case 'integer': return 'int';
-        case 'boolean': return 'bool';
-        case 'double': return 'float';
-        default: return $type;
-    }
-}
-
 function ask(string $question, array $options) : string
 {
     out($question);
@@ -79,53 +56,5 @@ function ask(string $question, array $options) : string
         return ask($question, $options);
     }
     return $answer;
-}
-
-/**
- * Return an array of all possible combinations of variable types.
- *
- * @param ReflectionFunctionAbstract $fn The reflected function. Needed to
- *  extract doccoments for non-typehinted arguments.
- * @param ReflectionParameter ...$params Zero or more reflection parameters.
- * @return array Array of array of possible combination of parameter types
- *  this method accepts.
- */
-function getPossibleCalls(ReflectionFunctionAbstract $fn, ReflectionParameter ...$params) : array
-{
-    if (!count($params)) {
-        return [[]];
-    }
-    $options = [];
-    $opts = [];
-    $annotations = new Annotations($fn);
-    foreach ($params as $i => $param) {
-        if (!$param->hasType()) {
-            if (isset($annotations['param'][$i])) {
-                if (is_string($annotations['param']) && $i === 0) {
-                    $opts[] = extractTypeFromAnnotation($annotations['param']);
-                } else {
-                    $opts[] = extractTypeFromAnnotation($annotations['param'][$i]);
-                }
-            } else {
-                $opts[] = 'mixed';
-            }
-        } else {
-            $opts[] = $param->getType()->__toString();
-        }
-    }
-    $options[] = $opts;
-    $last = array_pop($params);
-    if ($last->isOptional() && !$last->isVariadic()) {
-        $options = array_merge($options, getPossibleCalls($fn, ...$params));
-    }
-    return $options;
-}
-
-function extractTypeFromAnnotation(string $annotation) : string
-{
-    if (!preg_match('@^([\w\\|]+)\s@', $annotation, $match)) {
-        return 'mixed';
-    }
-    return $match[1];
 }
 

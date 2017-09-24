@@ -8,7 +8,6 @@ use Ansi;
 use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
 use ReflectionClass;
-use ReflectionMethod;
 use ReflectionParameter;
 use ReflectionException;
 use Closure;
@@ -123,7 +122,7 @@ foreach ($sourcecode->sources as $file => $code) {
         if ($code[0]->name != $method->getDeclaringClass()->name) {
             continue;
         }
-        $calls = getPossibleCalls($method, ...$method->getParameters());
+        $calls = $method->getPossibleCalls(...$method->getParameters());
         if (!isset($coveredFeatures[$code[0]->name][$method->name])) {
             $uncovered[$code[0]->name][$method->name] = $calls;
             continue;
