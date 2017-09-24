@@ -32,6 +32,6 @@
         }
     },
     "require-dev": {
-        "toast-php/unit": "^1.1"
+        "toast/unit": "^1.3"
     }
 }
