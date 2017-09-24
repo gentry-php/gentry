@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "0050c060bee42b1e31e9db585b159d9b",
-    "content-hash": "27dcb98597fbd1e0f1a4155ff33cf66c",
+    "hash": "adcfbbd34ac7af2484e4b6b42dfdd6a1",
+    "content-hash": "bdd7c9554b33e0a6d465822decc315ec",
     "packages": [
         {
             "name": "monomelodies/kingconf",
@@ -59,20 +59,21 @@
         },
         {
             "name": "monomelodies/reflex",
-            "version": "0.2.0",
+            "version": "0.2.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/monomelodies/reflex.git",
-                "reference": "37bff5bbabcbfed856df7861e0752d89c96e1f79"
+                "reference": "23149ec98bb2a08cdd2b47ae291700d2e14b5ec1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/monomelodies/reflex/zipball/37bff5bbabcbfed856df7861e0752d89c96e1f79",
-                "reference": "37bff5bbabcbfed856df7861e0752d89c96e1f79",
+                "url": "https://api.github.com/repos/monomelodies/reflex/zipball/23149ec98bb2a08cdd2b47ae291700d2e14b5ec1",
+                "reference": "23149ec98bb2a08cdd2b47ae291700d2e14b5ec1",
                 "shasum": ""
             },
             "require": {
-                "php": ">=7"
+                "php": ">=7",
+                "zeptech/annotations": "^1.1"
             },
             "require-dev": {
                 "toast/unit": "^1.3"
@@ -95,7 +96,7 @@
                 }
             ],
             "description": "Reflection utilities for PHP7+",
-            "time": "2017-09-24 14:14:33"
+            "time": "2017-09-24 15:25:01"
         },
         {
             "name": "simoneast/simple-ansi-colors",
@@ -241,17 +242,17 @@
     ],
     "packages-dev": [
         {
-            "name": "toast-php/unit",
-            "version": "1.1.1",
+            "name": "toast/unit",
+            "version": "1.3.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/toast-php/unit.git",
-                "reference": "a044f22d1c0aac5bf9d7646adeb50357642a83a7"
+                "reference": "4d9076bcb36a90ecc53b4a750a9f929c10194510"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/toast-php/unit/zipball/a044f22d1c0aac5bf9d7646adeb50357642a83a7",
-                "reference": "a044f22d1c0aac5bf9d7646adeb50357642a83a7",
+                "url": "https://api.github.com/repos/toast-php/unit/zipball/4d9076bcb36a90ecc53b4a750a9f929c10194510",
+                "reference": "4d9076bcb36a90ecc53b4a750a9f929c10194510",
                 "shasum": ""
             },
             "require": {
@@ -279,7 +280,7 @@
                 }
             ],
             "description": "Super-simple unit testing for PHP7",
-            "time": "2017-05-02 13:33:10"
+            "time": "2017-09-17 16:24:17"
         }
     ],
     "aliases": [],
