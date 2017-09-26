@@ -85,7 +85,7 @@ class Wrapper
             }
             $methods[] = sprintf(
                 <<<EOT
-public %1\$sfunction %2\$s(%3\$s) %4\$s{
+public %1\$sfunction %7\$s%2\$s(%3\$s) %4\$s{
     \$refargs = [];
     \$args = func_get_args();
     if (isset(\$this)) {
@@ -100,11 +100,12 @@ public %1\$sfunction %2\$s(%3\$s) %4\$s{
 EOT
                 ,
                 $method->isStatic() ? 'static ' : '',
-                $aliases[$method->name],
+                $type->isTrait() ? $aliases[$method->name] : $method->name,
                 implode(', ', $arguments),
-                $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '').' '.$method->getReturnType() : '',
-                $type->isTrait() ? ($method->isStatic() ? 'self::' : '$this->') : 'parent',
-                $method->hasReturnType() && $method->getReturnType()->__toString() == 'void' ? 'return ' : ''
+                $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '').' '.$method->getReturnType().' ' : '',
+                $type->isTrait() ? ($method->isStatic() ? 'self::' : '$this->') : 'parent::',
+                $method->hasReturnType() && $method->getReturnType()->__toString() == 'void' ? '' : 'return ',
+                $method->returnsReference() ? '&' : ''
             );
         }
         $methods = implode("\n", $methods);
