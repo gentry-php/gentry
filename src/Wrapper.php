@@ -83,9 +83,8 @@ class Wrapper
                 }
                 $arguments["'a$i'"] = $argument;
             }
-            if ($type->isTrait()) {
-                $methods[] = sprintf(
-                    <<<EOT
+            $methods[] = sprintf(
+                <<<EOT
 public %1\$sfunction %2\$s(%3\$s) %4\$s{
     \$refargs = [];
     \$args = func_get_args();
@@ -99,38 +98,14 @@ public %1\$sfunction %2\$s(%3\$s) %4\$s{
 }
 
 EOT
-                    ,
-                    $method->isStatic() ? 'static ' : '',
-                    $aliases[$method->name],
-                    implode(', ', $arguments),
-                    $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '').' '.$method->getReturnType() : '',
-                    $method->isStatic() ? 'self::' : '$this->',
-                    $method->hasReturnType() && $method->getReturnType()->__toString() == 'void' ? 'return ' : ''
-                );
-            } else {
-                $methods[] = sprintf(
-                    <<<EOT
-public %1\$sfunction %2\$s(%3\$s) %4\$s{
-    \$refargs = [];
-    \$args = func_get_args();
-    if (isset(\$this)) {
-        self::__gentryLogMethodCall('%2\$s', $pclass, \$args);
-    }
-    array_walk(\$args, function (\$arg) use (&\$refargs) {
-        \$refargs[] = &\$arg;
-    });
-    %5\$sparent::%2\$s(...\$refargs);
-}
-
-EOT
-                    ,
-                    $method->isStatic() ? 'static ' : '',
-                    $method->name,
-                    implode(', ', $arguments),
-                    $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '').' '.$method->getReturnType() : '',
-                    $method->hasReturnType() && $method->getReturnType()->__toString() == 'void' ? '' : 'return '
-                );
-            }
+                ,
+                $method->isStatic() ? 'static ' : '',
+                $aliases[$method->name],
+                implode(', ', $arguments),
+                $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '').' '.$method->getReturnType() : '',
+                $type->isTrait() ? ($method->isStatic() ? 'self::' : '$this->') : 'parent',
+                $method->hasReturnType() && $method->getReturnType()->__toString() == 'void' ? 'return ' : ''
+            );
         }
         $methods = implode("\n", $methods);
         $definition = <<<EOT
