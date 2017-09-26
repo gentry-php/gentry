@@ -95,7 +95,7 @@ public %1\$sfunction %2\$s(%3\$s) %4\$s{
     array_walk(\$args, function (\$arg) use (&\$refargs) {
         \$refargs[] = &\$arg;
     });
-    return %5\$s%2\$s(...\$refargs);
+    %6\$s%5\$s%2\$s(...\$refargs);
 }
 
 EOT
@@ -104,7 +104,8 @@ EOT
                     $aliases[$method->name],
                     implode(', ', $arguments),
                     $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '').' '.$method->getReturnType() : '',
-                    $method->isStatic() ? 'self::' : '$this->'
+                    $method->isStatic() ? 'self::' : '$this->',
+                    $method->hasReturnType() && $method->getReturnType()->__toString() == 'void' ? 'return ' : ''
                 );
             } else {
                 $methods[] = sprintf(
