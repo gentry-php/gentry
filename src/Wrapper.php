@@ -20,8 +20,8 @@ class Wrapper
 {
     /**
      * Creates an anonymous object based on a reflection. The wrapped object
-     * proxies public methods to the actual implementation, logs their
-     * invocations and traps any exceptions.
+     * proxies public methods to the actual implementation and logs their
+     * invocations.
      *
      * @param mixed $object A class, object or trait to wrap.
      * @param mixed ...$args Arguments for use during construction.
@@ -83,10 +83,9 @@ class Wrapper
                 }
                 $arguments["'a$i'"] = $argument;
             }
-            if ($type->isTrait()) {
-                $methods[] = sprintf(
-                    <<<EOT
-public %1\$sfunction %2\$s(%3\$s) %4\$s{
+            $methods[] = sprintf(
+                <<<EOT
+public %1\$sfunction %7\$s%2\$s(%3\$s) %4\$s{
     \$refargs = [];
     \$args = func_get_args();
     if (isset(\$this)) {
@@ -99,38 +98,15 @@ public %1\$sfunction %2\$s(%3\$s) %4\$s{
 }
 
 EOT
-                    ,
-                    $method->isStatic() ? 'static ' : '',
-                    $aliases[$method->name],
-                    implode(', ', $arguments),
-                    $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '').' '.$method->getReturnType() : '',
-                    $method->isStatic() ? 'self::' : '$this->',
-                    $method->hasReturnType() && $method->getReturnType()->__toString() == 'void' ? 'return ' : ''
-                );
-            } else {
-                $methods[] = sprintf(
-                    <<<EOT
-public %1\$sfunction %2\$s(%3\$s) %4\$s{
-    \$refargs = [];
-    \$args = func_get_args();
-    if (isset(\$this)) {
-        self::__gentryLogMethodCall('%2\$s', $pclass, \$args);
-    }
-    array_walk(\$args, function (\$arg) use (&\$refargs) {
-        \$refargs[] = &\$arg;
-    });
-    %5\$sparent::%2\$s(...\$refargs);
-}
-
-EOT
-                    ,
-                    $method->isStatic() ? 'static ' : '',
-                    $method->name,
-                    implode(', ', $arguments),
-                    $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '').' '.$method->getReturnType() : '',
-                    $method->hasReturnType() && $method->getReturnType()->__toString() == 'void' ? '' : 'return '
-                );
-            }
+                ,
+                $method->isStatic() ? 'static ' : '',
+                $type->isTrait() ? $aliases[$method->name] : $method->name,
+                implode(', ', $arguments),
+                $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '').' '.$method->getReturnType().' ' : '',
+                $type->isTrait() ? ($method->isStatic() ? 'self::' : '$this->') : 'parent::',
+                $method->hasReturnType() && $method->getReturnType()->__toString() == 'void' ? '' : 'return ',
+                $method->returnsReference() ? '&' : ''
+            );
         }
         $methods = implode("\n", $methods);
         $definition = <<<EOT
