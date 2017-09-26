@@ -20,8 +20,8 @@ class Wrapper
 {
     /**
      * Creates an anonymous object based on a reflection. The wrapped object
-     * proxies public methods to the actual implementation, logs their
-     * invocations and traps any exceptions.
+     * proxies public methods to the actual implementation and logs their
+     * invocations.
      *
      * @param mixed $object A class, object or trait to wrap.
      * @param mixed ...$args Arguments for use during construction.
