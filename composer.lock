@@ -59,16 +59,16 @@
         },
         {
             "name": "monomelodies/reflex",
-            "version": "0.2.5",
+            "version": "0.2.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/monomelodies/reflex.git",
-                "reference": "2c8a434052393b2e402b8be99ac0bbfd79e0f63b"
+                "reference": "5f9cbb6737381bbb33bf1f4c6f6bf6951037e692"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/monomelodies/reflex/zipball/2c8a434052393b2e402b8be99ac0bbfd79e0f63b",
-                "reference": "2c8a434052393b2e402b8be99ac0bbfd79e0f63b",
+                "url": "https://api.github.com/repos/monomelodies/reflex/zipball/5f9cbb6737381bbb33bf1f4c6f6bf6951037e692",
+                "reference": "5f9cbb6737381bbb33bf1f4c6f6bf6951037e692",
                 "shasum": ""
             },
             "require": {
@@ -96,7 +96,7 @@
                 }
             ],
             "description": "Reflection utilities for PHP7+",
-            "time": "2017-09-24 16:48:12"
+            "time": "2017-09-27 06:54:28"
         },
         {
             "name": "simoneast/simple-ansi-colors",
