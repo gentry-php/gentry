@@ -16,7 +16,7 @@ use Monomelodies\Kingconf;
 use Exception;
 use ErrorException;
 
-const VERSION = "0.12.2";
+const VERSION = "0.12.5";
 
 $start = microtime(true);
 
