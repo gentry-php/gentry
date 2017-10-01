@@ -19,15 +19,19 @@ use AssertionError;
 class Wrapper
 {
     /**
-     * Creates an anonymous object based on a reflection. The wrapped object
+     * Wraps an anonymous object based on a reflection. The wrapped object
      * proxies public methods to the actual implementation and logs their
      * invocations.
      *
-     * @param mixed $object A class, object or trait to wrap.
-     * @param mixed ...$args Arguments for use during construction.
+     * Note that the constructor is not called; hence you'll usually use the
+     * `createObject` method instead of calling this directly.
+     *
+     * @param mixed $class A class, object or trait to wrap.
+     * @param bool $isInstance True if we need to wrap an extension of an actual
+     *  instance (it uses slightly diffrent trait methods).
      * @return object An anonymous, wrapped object.
      */
-    public static function createObject($class, ...$args)
+    public static function wrapObject($class)
     {
         $type = new ReflectionClass($class);
         // This is nasty, but we need to dynamically extend the
@@ -94,7 +98,11 @@ public %1\$sfunction %7\$s%2\$s(%3\$s) %4\$s{
     array_walk(\$args, function (\$arg) use (&\$refargs) {
         \$refargs[] = &\$arg;
     });
-    %6\$s%5\$s%2\$s(...\$refargs);
+    if (isset(\$this, \$this->__gentryInheritedObject)) {
+        %6\$s\$this->__gentryInheritedObject->%2\$s(...\$refargs);
+    } else {
+        %6\$s%5\$s%2\$s(...\$refargs);
+    }
 }
 
 EOT
@@ -109,14 +117,29 @@ EOT
             );
         }
         $methods = implode("\n", $methods);
+        $wrapper = is_object($class) ? 'InstanceWrapper' : 'ClassWrapper';
         $definition = <<<EOT
 \$work = new class $mod
-    use Gentry\Gentry\ClassWrapper;
+    use Gentry\Gentry\\$wrapper;
 
     $methods
 };
 EOT;
         eval($definition);
+        return $work;
+    }
+
+    /**
+     * Creates an anonymous object based on a reflection.
+     *
+     * @param mixed $class A class, object or trait to wrap.
+     * @param mixed ...$args Arguments for use during construction.
+     * @return object An anonymous, wrapped object.
+     * @see Wrapper::wrapObject
+     */
+    public static function createObject($class, ...$args)
+    {
+        $work = self::wrapObject($class, ...$args);
         $work->__gentryConstruct(...$args);
         return $work;
     }
@@ -126,28 +149,24 @@ EOT;
      * wrapped (like with `createObject`), but all properties are preserved.
      *
      * @param object $object
+     * @param mixed ...$args Arguments used during construction.
      * @return object
+     * @see Wrapper::wrapObject
      */
-    public static function extendObject($object)
+    public static function extendObject($object, ...$args)
     {
-        $new = self::createObject($object);
+        $new = self::wrapObject($object);
         $reflection = new ReflectionClass($object);
-        $newReflection = new ReflectionClass($new);
         foreach ($reflection->getProperties() as $prop) {
             $name = $prop->getName();
             try {
-                $newProp = $newReflection->getProperty($name);
                 $prop->setAccessible(true);
-                $newProp->setAccessible(true);
-                if ($prop->isStatic()) {
-                    $newProp->setValue($prop->getValue());
-                } else {
-                    $newProp->setValue($new, $prop->getValue($object));
-                }
+                ValueStore::set($prop);
             } catch (ReflectionException $e) {
             } catch (Throwable $e) {
             }
         }
+        $new->__gentryConstructFromInheritedObject($object, ...$args);
         return $new;
     }
 
