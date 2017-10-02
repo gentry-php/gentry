@@ -165,7 +165,9 @@ class Generator
         switch ($mode) {
             case self::AS_INSTANCE:
                 if ($isClass) {
-                    return "new $type";
+                    return "new $value";
+                } else {
+                    return $value;
                 }
             case self::AS_RETURNCHECK:
                 if ($isClass) {
