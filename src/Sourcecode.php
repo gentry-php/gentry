@@ -22,6 +22,7 @@ class Sourcecode
      * Constructor.
      *
      * @param stdClass $config Configuration as read from Gentry.json.
+     * @return void
      */
     public function __construct(stdClass $config)
     {
@@ -72,7 +73,7 @@ class Sourcecode
      * @param SplFileInfo $file The file to check.
      * @return bool
      */
-    protected function isPhp(SplFileInfo $file)
+    protected function isPhp(SplFileInfo $file) : bool
     {
         return $file->isFile() && substr($file->getFilename(), -4) == '.php';
     }
@@ -85,7 +86,7 @@ class Sourcecode
      * @return ReflectionClass|null A reflection of the found class, or null on
      *  failure.
      */
-    protected function extractTestableClass(SplFileInfo $file)
+    protected function extractTestableClass(SplFileInfo $file) :? ReflectionClass
     {
         $filename = realpath($file);
         $code = file_get_contents($filename);
@@ -145,7 +146,7 @@ class Sourcecode
      * @return array|null An array of testable ReflectionMethods, or null if
      *  nothing could be found.
      */
-    protected function getTestableMethods(ReflectionClass $reflection)
+    protected function getTestableMethods(ReflectionClass $reflection) :? array
     {
         $methods = [];
         $source = file_get_contents($reflection->getFileName());
