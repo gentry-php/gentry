@@ -19,6 +19,7 @@ class Existing
      * Constructor.
      *
      * @param stdClass $config Configuration as read from Gentry.json
+     * @return void
      */
     public function __construct(stdClass $config)
     {
