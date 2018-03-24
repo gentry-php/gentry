@@ -31,7 +31,7 @@ class Wrapper
      *  instance (it uses slightly diffrent trait methods).
      * @return object An anonymous, wrapped object.
      */
-    public static function wrapObject($class)
+    public static function wrapObject($class) : object
     {
         $type = new ReflectionClass($class);
         // This is nasty, but we need to dynamically extend the
@@ -137,7 +137,7 @@ EOT;
      * @return object An anonymous, wrapped object.
      * @see Wrapper::wrapObject
      */
-    public static function createObject($class, ...$args)
+    public static function createObject($class, ...$args) : object
     {
         $work = self::wrapObject($class, ...$args);
         $work->__gentryConstruct(...$args);
@@ -153,7 +153,7 @@ EOT;
      * @return object
      * @see Wrapper::wrapObject
      */
-    public static function extendObject($object, ...$args)
+    public static function extendObject(object $object, ...$args) : object
     {
         $new = self::wrapObject($object);
         $reflection = new ReflectionClass($object);
@@ -211,7 +211,7 @@ EOT;
      * @param mixed $value
      * @return string
      */
-    private static function tostring($value)
+    private static function tostring($value) : string
     {
         if (!isset($value)) {
             return 'NULL';
@@ -253,8 +253,10 @@ EOT;
     /**
      * Resets all "superglobals" to empty arrays (except $GLOBAL itself). To be
      * called when needed from your `__wakeup` method.
+     *
+     * @return void
      */
-    public static function resetAllSuperglobals()
+    public static function resetAllSuperglobals() : void
     {
         $_GET = [];
         $_POST = [];
