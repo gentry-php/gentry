@@ -9,9 +9,15 @@ class Logger
     const METHOD = 'method';
     const PROCEDURE = 'procedure';
 
+    /** @var array */
     private $logged = [];
 
-    public static function getInstance()
+    /**
+     * The Logger is implemented as a singleton.
+     *
+     * @return Gentry\Gentry\Logger
+     */
+    public static function getInstance() : Logger
     {
         static $instance;
         if (!isset($instance)) {
@@ -20,7 +26,16 @@ class Logger
         return $instance;
     }
 
-    public function logFeature($class, $method, array $args)
+    /**
+     * Log a feature.
+     *
+     * @param string $class
+     * @param string $method
+     * @param array $args Arguments used as types, so Gentry can check the
+     *  various types of calls (e.g. with/without optional arguments).
+     * @return void
+     */
+    public function logFeature(string $class, string $method, array $args) : void
     {
         if (!isset($this->logged[$class])) {
             $this->logged[$class] = [];
@@ -33,12 +48,22 @@ class Logger
         }
     }
 
-    public function getLoggedFeatures()
+    /**
+     * Returns hash of logged features.
+     *
+     * @return array
+     */
+    public function getLoggedFeatures() : array
     {
         return $this->logged;
     }
 
-    public function __destruct()
+    /**
+     * On destruction, cleanup the "global" log.
+     *
+     * @return void
+     */
+    public function __destruct() : void
     {
         try {
             $shm_key = ftok(realpath(__DIR__.'/../bin').'/gentry', 't');
