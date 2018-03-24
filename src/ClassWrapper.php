@@ -8,6 +8,10 @@ use Monomelodies\Reflex\ReflectionMethod;
 
 require_once 'helpers.php';
 
+/**
+ * Trait to make classes "analyzable" internally. Typically one would call
+ * `Gentry\Gentry\Wrapper::wrapObject` or the like.
+ */
 trait ClassWrapper
 {
     /**
