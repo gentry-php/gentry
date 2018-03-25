@@ -139,6 +139,7 @@ EOT
     $methods
 };
 EOT;
+        eval($definition);
         return $work;
     }
 
@@ -152,7 +153,7 @@ EOT;
      */
     public static function createObject($class, ...$args) : object
     {
-        $work = self::wrapObject($class, ...$args);
+        $work = self::wrapObject($class);
         $work->__gentryConstruct(...$args);
         return $work;
     }
