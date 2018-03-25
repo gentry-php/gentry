@@ -15,17 +15,6 @@ require_once 'helpers.php';
 trait ClassWrapper
 {
     /**
-     * Fake constructor. The actual construction is postponed and handled by the
-     * `ClassWrapper::__gentryConstruct` delegate.
-     *
-     * @param mixed ...$args
-     * @return void
-     */
-    public function __construct(...$args)
-    {
-    }
-
-    /**
      * Constructor delegate.
      *
      * @param mixed ...$args
