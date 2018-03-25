@@ -129,7 +129,7 @@ class Sourcecode
      * - It is public;
      * - It's not annotated with @Untestable;
      * - It's not an internal PHP method;
-     * - Its name doesn't start with `_`.
+     * - Its name doesn't start with `_`, with the exception of `__invoke`.
      *
      * For inherited methods, the method is considered testable addionally when:
      * - The parent class itself is abstract;
@@ -182,7 +182,7 @@ class Sourcecode
                 // Method comes from a trait; these we skip for now.
                 continue;
             }
-            if ($method->name{0} == '_') {
+            if ($method->name{0} == '_' && $method->name != '__invoke') {
                 // Assume we never want to test these "private" or magic
                 // methods.
                 continue;
