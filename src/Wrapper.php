@@ -31,7 +31,7 @@ class Wrapper
      *  instance (it uses slightly diffrent trait methods).
      * @return object An anonymous, wrapped object.
      */
-    public static function wrapObject($class)
+    public static function wrapObject($class) : object
     {
         $type = new ReflectionClass($class);
         // This is nasty, but we need to dynamically extend the
@@ -57,17 +57,16 @@ class Wrapper
         }
         $methods = [];
         foreach ($type->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-            if ($method->getDeclaringClass()->name != $type->name) {
-                continue;
-            }
-            if ($method->getFileName() != $type->getFileName()) {
-                continue;
-            }
-            if ($method->name == '__construct') {
-                continue;
-            }
-            if ($method->isFinal()) {
-                continue;
+            if ($method->name != '__construct') {
+                if ($method->getDeclaringClass()->name != $type->name) {
+                    continue;
+                }
+                if ($method->getFileName() != $type->getFileName()) {
+                    continue;
+                }
+                if ($method->isFinal()) {
+                    continue;
+                }
             }
             $arguments = [];
             foreach ($method->getParameters() as $i => $param) {
@@ -87,8 +86,22 @@ class Wrapper
                 }
                 $arguments["'a$i'"] = $argument;
             }
-            $methods[] = sprintf(
-                <<<EOT
+            if ($method->name == '__construct') {
+                foreach ($arguments as &$argument) {
+                    $argument = preg_replace('@ =.*?$@', '', $argument).' = null';
+                }
+                $methods[] = sprintf(
+                    <<<EOT
+public function __construct(%1\$s) {
+}
+
+EOT
+                    ,
+                    implode(',', $arguments)
+                );
+            } else {
+                $methods[] = sprintf(
+                    <<<EOT
 public %1\$sfunction %7\$s%2\$s(%3\$s) %4\$s{
     \$refargs = [];
     \$args = func_get_args();
@@ -106,15 +119,16 @@ public %1\$sfunction %7\$s%2\$s(%3\$s) %4\$s{
 }
 
 EOT
-                ,
-                $method->isStatic() ? 'static ' : '',
-                $type->isTrait() ? $aliases[$method->name] : $method->name,
-                implode(', ', $arguments),
-                $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '').' '.$method->getReturnType().' ' : '',
-                $type->isTrait() ? ($method->isStatic() ? 'self::' : '$this->') : 'parent::',
-                $method->hasReturnType() && $method->getReturnType()->__toString() == 'void' ? '' : 'return ',
-                $method->returnsReference() ? '&' : ''
-            );
+                    ,
+                    $method->isStatic() ? 'static ' : '',
+                    $type->isTrait() ? $aliases[$method->name] : $method->name,
+                    implode(', ', $arguments),
+                    $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '').' '.$method->getReturnType().' ' : '',
+                    $type->isTrait() ? ($method->isStatic() ? 'self::' : '$this->') : 'parent::',
+                    $method->hasReturnType() && $method->getReturnType()->__toString() == 'void' ? '' : 'return ',
+                    $method->returnsReference() ? '&' : ''
+                );
+            }
         }
         $methods = implode("\n", $methods);
         $wrapper = is_object($class) ? 'InstanceWrapper' : 'ClassWrapper';
@@ -137,9 +151,9 @@ EOT;
      * @return object An anonymous, wrapped object.
      * @see Wrapper::wrapObject
      */
-    public static function createObject($class, ...$args)
+    public static function createObject($class, ...$args) : object
     {
-        $work = self::wrapObject($class, ...$args);
+        $work = self::wrapObject($class);
         $work->__gentryConstruct(...$args);
         return $work;
     }
@@ -153,7 +167,7 @@ EOT;
      * @return object
      * @see Wrapper::wrapObject
      */
-    public static function extendObject($object, ...$args)
+    public static function extendObject(object $object, ...$args) : object
     {
         $new = self::wrapObject($object);
         $reflection = new ReflectionClass($object);
@@ -211,7 +225,7 @@ EOT;
      * @param mixed $value
      * @return string
      */
-    private static function tostring($value)
+    private static function tostring($value) : string
     {
         if (!isset($value)) {
             return 'NULL';
@@ -253,8 +267,10 @@ EOT;
     /**
      * Resets all "superglobals" to empty arrays (except $GLOBAL itself). To be
      * called when needed from your `__wakeup` method.
+     *
+     * @return void
      */
-    public static function resetAllSuperglobals()
+    public static function resetAllSuperglobals() : void
     {
         $_GET = [];
         $_POST = [];
