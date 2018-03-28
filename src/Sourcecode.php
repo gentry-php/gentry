@@ -156,7 +156,7 @@ class Sourcecode
                 if ($declaring->inNamespace() && !in_array($declaring->getNamespaceName(), $this->namespaces)) {
                     continue;
                 }
-                if (!in_array($method, $this->getTestableMethods($declaring) ?: [])) {
+                if (!in_array($method, $this->getTestableMethods($declaring) ?? [])) {
                     continue;
                 }
             } elseif (strpos($source, "function {$method->name}(") === false) {
