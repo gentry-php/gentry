@@ -29,24 +29,13 @@ abstract class Formatter
         fwrite($out, $text);
     }
 
-    public static function cleanOutput(string $string) : string
-    {
-        return preg_replace('@\\033\[[\d;]*m@m', '', rtrim($string));
-    }
-
-    public static function cleanDocComment(Reflector $reflection, bool $strip_annotations = true) : string
-    {
-        $doccomment = $reflection->getDocComment();
-        $doccomment = preg_replace("@^/\*\*@", '', $doccomment);
-        $doccomment = preg_replace("@\*/$@m", '', $doccomment);
-        if ($strip_annotations) {
-            $doccomment = preg_replace("/^\s*\*\s*@\w+.*?$/m", '', $doccomment);
-        }
-        $doccomment = preg_replace("@^\s*\*\s*@m", '', $doccomment);
-        $doccomment = trim(preg_replace("@\s{2,}@", ' ', $doccomment));
-        return $doccomment;
-    }
-
+    /**
+     * Output `$question` to STDOUT and wait for an answer.
+     *
+     * @param string $question
+     * @param array $options Array of valid options, e.g. `['Y', 'n']`
+     * @return string The selected answer
+     */
     public static function ask(string $question, array $options) : string
     {
         self::out($question);
