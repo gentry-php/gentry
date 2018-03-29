@@ -61,7 +61,7 @@ putenv("GENTRY=1");
 $client = substr(md5(microtime(true)), 0, 6);
 putenv("GENTRY_CLIENT=$client");
 
-out("\n<magenta>Gentry ".VERSION." by Marijn Ophorst\n\n");
+Formatter::out("\n<magenta>Gentry ".VERSION." by Marijn Ophorst\n\n");
 
 $config = 'Gentry.json';
 $verbose = false;
@@ -79,7 +79,7 @@ define('Gentry\Gentry\VERBOSE', $verbose);
 try {
     $config = (object)(array)(new Kingconf\Config($config));
 } catch (Kingconf\Exception $e) {
-    out("<red>Error: <reset> Config file $config not found or invalid.\n", STDERR);
+    Formatter::out("<red>Error: <reset> Config file $config not found or invalid.\n", STDERR);
     die(1);
 }
 $config->src = is_array($config->src) ? $config->src : [$config->src];
@@ -92,7 +92,7 @@ if (isset($config->bootstrap)) {
     }
 }
 
-out("<green>Running unit tests from <darkGray>{$config->test}<green>...\n");
+Formatter::out("<green>Running unit tests from <darkGray>{$config->test}<green>...\n");
 $shm_key = ftok(__FILE__, 't');
 $shm = shmop_open($shm_key, 'c', 0644, 1024 * 1024);
 exec($config->test);
@@ -104,7 +104,7 @@ try {
 shmop_delete($shm);
 
 $sourcecode = new Sourcecode($config);
-out(sprintf(
+Formatter::out(sprintf(
     "<gray>Found %d file%s with testable source code.\n",
     count($sourcecode->sources),
     count($sourcecode->sources) == 1 ? '' : 's'
@@ -134,11 +134,11 @@ foreach ($sourcecode->sources as $file => $code) {
     }
 }
 if (VERBOSE) {
-    out("\n");
+    Formatter::out("\n");
     foreach ($uncovered as $class => $methods) {
         foreach ($methods as $name => $calls) {
             foreach ($calls as $call) {
-                out(sprintf(
+                Formatter::out(sprintf(
                     "<cyan>Missing test for %s::%s (%s).\n",
                     $class,
                     $name,
@@ -148,7 +148,7 @@ if (VERBOSE) {
         }
     }
 }
-out("\n");
+Formatter::out("\n");
 $total = 0;
 array_walk($coveredFeatures, function ($feature, $name1) use (&$total) {
     array_walk($feature, function ($method, $name2) use (&$total, $name1) {
@@ -170,7 +170,7 @@ if ($totalU == 0) {
 } else {
     $color = 'red';
 }
-out(sprintf(
+Formatter::out(sprintf(
     "<blue>Code coverage: ~<%s>%d <blue>of <cyan>%s <%s>(%0.2f%%)\n",
     $color,
     $total,
@@ -178,21 +178,21 @@ out(sprintf(
     $color,
     $total ? $total / ($total + $totalU) * 100 : 0
 ));
-out("\n");
-out(sprintf(
+Formatter::out("\n");
+Formatter::out(sprintf(
     "\n<magenta>Took %0.2f seconds, memory usage %4.2fMb.\n\n",
     microtime(true) - $start,
     memory_get_peak_usage(true) / 1048576
 ));
 
 if ($totalU) {
-    out("\n");
+    Formatter::out("\n");
     $yesno = ask("Attempt to generate missing tests? [Y/n] ", [true => 'Y', 'n']);
     if ($yesno == 'n') {
-        out("\n<darkGray>Ok, suit yourself!\n\n");
+        Formatter::out("\n<darkGray>Ok, suit yourself!\n\n");
     } else {
         if (!$config->templates) {
-            out("\n<red>Error: no templates defined.\n\n");
+            Formatter::out("\n<red>Error: no templates defined.\n\n");
         } else {
             $start = microtime(true);
             foreach ($config->templates as $template) {
@@ -206,36 +206,4 @@ if ($totalU) {
         }
     }
 }
-
-/*
-$endit = function ($code) use ($start) {
-    try {
-        @unlink(sys_get_temp_dir().'/'.getenv("GENTRY_CLIENT").'.cache');
-    } catch (ErrorException $e) {
-    }
-    exit($code);
-};
-if ($uncovered) {
-    if (!$generate && VERBOSE) {
-        out("<gray>Run with <magenta>-g<gray> flag to generate skeletons.\n");
-        $endit($failed ? 1 : 0);
-    }
-}
-if (!$uncovered || !$generate) {
-    $endit($failed ? 1 : 0);
-}
-
-if (VERBOSE) {
-    out("<gray>Generating test skeletons as requested...\n");
-}
-
-$generator = new Generator($config->tests);
-foreach ($sourcecode->sources as $file => $code) {
-    if (!isset($uncovered[$code[0]->name])) {
-        continue;
-    }
-    $generator->generate($code[0], $uncovered[$code[0]->name]);
-}
-$generator->write();
-*/
 
