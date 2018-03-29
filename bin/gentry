@@ -187,7 +187,7 @@ Formatter::out(sprintf(
 
 if ($totalU) {
     Formatter::out("\n");
-    $yesno = ask("Attempt to generate missing tests? [Y/n] ", [true => 'Y', 'n']);
+    $yesno = Formatter::ask("Attempt to generate missing tests? [Y/n] ", [true => 'Y', 'n']);
     if ($yesno == 'n') {
         Formatter::out("\n<darkGray>Ok, suit yourself!\n\n");
     } else {
