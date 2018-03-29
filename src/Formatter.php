@@ -49,13 +49,13 @@ abstract class Formatter
 
     public static function ask(string $question, array $options) : string
     {
-        out($question);
+        self::out($question);
         fscanf(STDIN, '%s\n', $answer);
         if ($answer === null) {
             $answer = $options[true];
         }
         if (!in_array($answer, $options)) {
-            return ask($question, $options);
+            return self::ask($question, $options);
         }
         return $answer;
     }
