@@ -29,10 +29,7 @@ class Sourcecode
         $reflections = [];
         $sources = [];
         foreach ($config->src as $src) {
-            foreach (new RecursiveIteratorIterator(
-                new RecursiveDirectoryIterator($src),
-                RecursiveIteratorIterator::LEAVES_ONLY
-            ) as $file) {
+            foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($src), RecursiveIteratorIterator::LEAVES_ONLY) as $file) {
                 if (!$this->isPhp($file)) {
                     continue;
                 }
@@ -102,17 +99,10 @@ class Sourcecode
         } else {
             return null;
         }
-        if (!(preg_match_all(
-            "@(?<!private|protected)\s*function\s+(\w+)\s*\(@",
-            $code,
-            $matches,
-            PREG_SET_ORDER
-        ))) {
+        if (!(preg_match_all("@(?<!private|protected)\s*function\s+(\w+)\s*\(@", $code, $matches, PREG_SET_ORDER))) {
             return null;
         }
-        if (isset($config->ignore)
-            && preg_match("@{$config->ignore}@", "$ns$class")
-        ) {
+        if (isset($config->ignore) && preg_match("@{$config->ignore}@", "$ns$class")) {
             return null;
         }
         $reflection = new ReflectionClass("$ns$class");
@@ -163,19 +153,10 @@ class Sourcecode
                 if (!$declaring->isAbstract()) {
                     continue;
                 }
-                if ($declaring->inNamespace()
-                    && !in_array(
-                        $declaring->getNamespaceName(),
-                        $this->namespaces
-                    )
-                ) {
+                if ($declaring->inNamespace() && !in_array($declaring->getNamespaceName(), $this->namespaces)) {
                     continue;
                 }
-
-                if (!in_array(
-                    $method,
-                    $this->getTestableMethods($declaring) ?: []
-                )) {
+                if (!in_array($method, $this->getTestableMethods($declaring) ?? [])) {
                     continue;
                 }
             } elseif (strpos($source, "function {$method->name}(") === false) {

@@ -67,7 +67,7 @@ class Generator
      */
     private function addFeature(ReflectionClass $class, ReflectionMethod $method, array $calls) : void
     {
-        out("<gray> Adding tests for feature <magenta>{$class->name}::{$method->name}\n");
+        Formatter::out("<gray> Adding tests for feature <magenta>{$class->name}::{$method->name}\n");
         $tested = $method->name;
         $this->features[$method->name] = (object)['calls' => []];
         foreach ($calls as $call) {
@@ -88,7 +88,6 @@ class Generator
                 $type = $method->getReturnType()->__toString();
                 $expectedResult = $this->getDefaultForType($type, self::AS_RETURNCHECK);
             }
-
             $this->features[$method->name]->calls[] = (object)[
                 'name' => $method->name,
                 'parameters' => implode(', ', $arglist),
@@ -110,12 +109,7 @@ class Generator
         }
         $i = 0;
         while (true) {
-            $file = sprintf(
-                '%s/%s%s.php',
-                $this->config->output,
-                $this->normalize($this->objectUnderTest->getName()),
-                $i ? ".$i" : ''
-            );
+            $file = sprintf('%s/%s%s.php', $this->config->output, $this->normalize($this->objectUnderTest->getName()), $i ? ".$i" : '');
             if (!file_exists($file)) {
                 break;
             }

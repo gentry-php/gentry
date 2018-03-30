@@ -24,10 +24,7 @@ class Existing
     public function __construct(stdClass $config)
     {
         $tests = [];
-        foreach (new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($config->tests),
-            RecursiveIteratorIterator::LEAVES_ONLY
-        ) as $file) {
+        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($config->tests), RecursiveIteratorIterator::LEAVES_ONLY) as $file) {
             if ($file->isFile() && substr($file->getFilename(), -4) == '.php') {
                 $filename = realpath($file);
                 $code = file_get_contents($filename);
@@ -45,7 +42,7 @@ class Existing
                             $tests[$class] = $filename;
                         }
                     } catch (ReflectionException $e) {
-                        out("<magenta>Warning: <gray>".$e->getMessage()."\n");
+                        Formatter::out("<magenta>Warning: <gray>".$e->getMessage()."\n");
                     }
                 }
             }
