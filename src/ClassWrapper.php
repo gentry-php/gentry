@@ -47,8 +47,20 @@ trait ClassWrapper
         }
         $logger = Logger::getInstance();
         $reflection = new ReflectionMethod($class, $method);
-        array_walk($args, function (&$arg, $i) use ($reflection) {
-            $arg = $reflection->getParameters()[$i]->getNormalisedType($arg);
+        $parameters = $reflection->getParameters();
+        array_walk($args, function (&$arg, $i) use ($reflection, $parameters) {
+            if (isset($parameters[$i])) {
+                $arg = $parameters[$i]->getNormalisedType($arg);
+            } else {
+                $j = $i;
+                $arg = 'unknown';
+                while ($j > 0) {
+                    if (isset($parameters[--$j])) {
+                        $arg = $parameters[$j]->getNormalisedType($arg);
+                        break;
+                    }
+                }
+            }
         });
         $logger->logFeature($class, $method, $args);
     }
