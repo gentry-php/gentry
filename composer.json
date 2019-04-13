@@ -15,7 +15,8 @@
         "monomelodies/kingconf": "^1.1.0",
         "simoneast/simple-ansi-colors": "^1.0",
         "monomelodies/reflex": "^0.2.0",
-        "twig/twig": ">=1.0"
+        "twig/twig": ">=1.0",
+        "codger/php": "^0.5.1"
     },
     "bin": [
         "bin/gentry"
