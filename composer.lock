@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2d5c406db0b5d37f64f0510b5e417718",
+    "content-hash": "ef40b5568a9fa8e6c186c9811195cff4",
     "packages": [
         {
             "name": "codger/generate",
-            "version": "0.6.15",
+            "version": "0.7.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/codger-php/generate.git",
-                "reference": "89dd3bd074cef53cf85b1470c0b96b4167825416"
+                "reference": "88195e6df14aa3d725ed64d34e029a92c2f16088"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/codger-php/generate/zipball/89dd3bd074cef53cf85b1470c0b96b4167825416",
-                "reference": "89dd3bd074cef53cf85b1470c0b96b4167825416",
+                "url": "https://api.github.com/repos/codger-php/generate/zipball/88195e6df14aa3d725ed64d34e029a92c2f16088",
+                "reference": "88195e6df14aa3d725ed64d34e029a92c2f16088",
                 "shasum": ""
             },
             "require": {
@@ -50,24 +50,24 @@
                 }
             ],
             "description": "Code generator, base framework",
-            "time": "2019-04-13T15:18:33+00:00"
+            "time": "2019-08-15T08:15:26+00:00"
         },
         {
             "name": "codger/php",
-            "version": "0.6.0",
+            "version": "0.7.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/codger-php/php.git",
-                "reference": "525e1c44d1a25af0efa7e9c6a857dcac6d9d2032"
+                "reference": "6ce353ce5dad9d5393e0d24cb114aedc2ee10057"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/codger-php/php/zipball/525e1c44d1a25af0efa7e9c6a857dcac6d9d2032",
-                "reference": "525e1c44d1a25af0efa7e9c6a857dcac6d9d2032",
+                "url": "https://api.github.com/repos/codger-php/php/zipball/6ce353ce5dad9d5393e0d24cb114aedc2ee10057",
+                "reference": "6ce353ce5dad9d5393e0d24cb114aedc2ee10057",
                 "shasum": ""
             },
             "require": {
-                "codger/generate": "^0.6.0",
+                "codger/generate": "^0.7.0",
                 "composer/composer": "^1.7"
             },
             "require-dev": {
@@ -92,7 +92,7 @@
                 }
             ],
             "description": "Codger code generator, PHP templates",
-            "time": "2019-04-14T12:25:39+00:00"
+            "time": "2019-08-15T08:18:24+00:00"
         },
         {
             "name": "composer/ca-bundle",
@@ -514,20 +514,20 @@
         },
         {
             "name": "monomelodies/reflex",
-            "version": "0.3.0",
+            "version": "0.3.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/monomelodies/reflex.git",
-                "reference": "7105c4c0945b5ab8b4a5d4b91c653eb513947e17"
+                "reference": "7d6ccf141dea483e9b42ea0b4ca7c43a3b3ddf75"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/monomelodies/reflex/zipball/7105c4c0945b5ab8b4a5d4b91c653eb513947e17",
-                "reference": "7105c4c0945b5ab8b4a5d4b91c653eb513947e17",
+                "url": "https://api.github.com/repos/monomelodies/reflex/zipball/7d6ccf141dea483e9b42ea0b4ca7c43a3b3ddf75",
+                "reference": "7d6ccf141dea483e9b42ea0b4ca7c43a3b3ddf75",
                 "shasum": ""
             },
             "require": {
-                "php": ">=7",
+                "php": ">=7.3",
                 "zeptech/annotations": "^1.1"
             },
             "require-dev": {
@@ -551,7 +551,7 @@
                 }
             ],
             "description": "Reflection utilities for PHP7+",
-            "time": "2019-08-18T07:48:23+00:00"
+            "time": "2019-08-18T12:20:25+00:00"
         },
         {
             "name": "psr/container",
