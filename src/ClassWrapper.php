@@ -50,13 +50,13 @@ trait ClassWrapper
         $parameters = $reflection->getParameters();
         array_walk($args, function (&$arg, $i) use ($reflection, $parameters) {
             if (isset($parameters[$i])) {
-                $arg = $parameters[$i]->getNormalisedType($arg);
+                $arg = $parameters[$i]->getNormalisedType() ?? 'unknown';
             } else {
                 $j = $i;
                 $arg = 'unknown';
                 while ($j > 0) {
                     if (isset($parameters[--$j])) {
-                        $arg = $parameters[$j]->getNormalisedType($arg);
+                        $arg = $parameters[$j]->getNormalisedType($arg) ?? 'unknown';
                         break;
                     }
                 }
