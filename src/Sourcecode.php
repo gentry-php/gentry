@@ -94,7 +94,6 @@ class Sourcecode
             $ns = $match[1].'\\';
         }
         $class = '';
-        var_dump(preg_match("@(class|trait)[ \t]+(\w+)@", $code, $match));
         if (preg_match("@(class|trait)[ \t]+(\w+)@", $code, $match)) {
             $class = $match[2];
         } else {
