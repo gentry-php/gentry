@@ -150,6 +150,7 @@ class Generator
             case 'callable': $value = 'function () {}'; break;
             case 'bool': $value = 'true'; break;
             case 'array': $value = '[]'; break;
+            case 'void': $value = 'null'; break;
             default:
                 if (class_exists($type)) {
                     $isClass = true;
