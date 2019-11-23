@@ -105,11 +105,7 @@ class Sourcecode
         if (isset($config->ignore) && preg_match("@{$config->ignore}@", "$ns$class")) {
             return null;
         }
-        $reflection = new ReflectionClass("$ns$class");
-        if ($reflection->isAbstract()) {
-            return null;
-        }
-        return $reflection;
+        return new ReflectionClass("$ns$class");
     }
 
     /**
