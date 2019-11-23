@@ -82,7 +82,6 @@ class Generator
                     $arglist[] = $this->getDefaultForType($p, self::AS_INSTANCE);
                 }
             }
-            $mt = $method->isStatic() ? '::' : '->';
             $expectedResult = 'true';
             if ($method->hasReturnType()) {
                 $type = $method->getReturnType()->__toString();
@@ -92,6 +91,7 @@ class Generator
                 'name' => $method->name,
                 'parameters' => implode(', ', $arglist),
                 'expectedResult' => $expectedResult,
+                'isStatic' => $method->isStatic(),
             ];
         }
     }
