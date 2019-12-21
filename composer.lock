@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3bd7fa4ebc233ed204883a909ddb89b4",
+    "content-hash": "c18f9409f1ba8f9792c3792df2661bc7",
     "packages": [
         {
             "name": "codger/generate",
@@ -1504,21 +1504,21 @@
     "packages-dev": [
         {
             "name": "toast/unit",
-            "version": "1.3.7",
+            "version": "2.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/toast-php/unit.git",
-                "reference": "1c002347ad21e3b92e35282579c6574ca866e449"
+                "reference": "3b992a32c895fd0eafd1a10335ec9a32004e39ac"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/toast-php/unit/zipball/1c002347ad21e3b92e35282579c6574ca866e449",
-                "reference": "1c002347ad21e3b92e35282579c6574ca866e449",
+                "url": "https://api.github.com/repos/toast-php/unit/zipball/3b992a32c895fd0eafd1a10335ec9a32004e39ac",
+                "reference": "3b992a32c895fd0eafd1a10335ec9a32004e39ac",
                 "shasum": ""
             },
             "require": {
                 "monomelodies/kingconf": "^1.1.0",
-                "php": ">=7",
+                "php": ">=7.2",
                 "simoneast/simple-ansi-colors": "^1.0"
             },
             "bin": [
@@ -1541,7 +1541,7 @@
                 }
             ],
             "description": "Super-simple unit testing for PHP7",
-            "time": "2018-08-03T12:39:46+00:00"
+            "time": "2019-12-21T13:50:00+00:00"
         }
     ],
     "aliases": [],
