@@ -4,28 +4,29 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "77190e4897b9f3e0173a78e01660d72e",
+    "content-hash": "3bd7fa4ebc233ed204883a909ddb89b4",
     "packages": [
         {
             "name": "codger/generate",
-            "version": "0.7.2",
+            "version": "0.8.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/codger-php/generate.git",
-                "reference": "32a60f83bba63ee0ea80049f91d74766b67fb221"
+                "reference": "e26336e40d0028e9f965d928401dc491d3f45398"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/codger-php/generate/zipball/32a60f83bba63ee0ea80049f91d74766b67fb221",
-                "reference": "32a60f83bba63ee0ea80049f91d74766b67fb221",
+                "url": "https://api.github.com/repos/codger-php/generate/zipball/e26336e40d0028e9f965d928401dc491d3f45398",
+                "reference": "e26336e40d0028e9f965d928401dc491d3f45398",
                 "shasum": ""
             },
             "require": {
+                "monolyth/cliff": "^0.5.1",
                 "php": ">=7.3",
                 "twig/twig": "^2.7"
             },
             "require-dev": {
-                "toast/unit": "^1.3"
+                "toast/unit": "^2.0"
             },
             "bin": [
                 "bin/codger"
@@ -48,28 +49,28 @@
                 }
             ],
             "description": "Code generator, base framework",
-            "time": "2019-10-05T16:16:03+00:00"
+            "time": "2019-12-21T13:11:58+00:00"
         },
         {
             "name": "codger/php",
-            "version": "0.7.4",
+            "version": "0.8.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/codger-php/php.git",
-                "reference": "d532a67994796259bd3ff28ce683169175d70999"
+                "reference": "c8b0cf5230247bf1b116c54fd1e2a4ad37d95c4e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/codger-php/php/zipball/d532a67994796259bd3ff28ce683169175d70999",
-                "reference": "d532a67994796259bd3ff28ce683169175d70999",
+                "url": "https://api.github.com/repos/codger-php/php/zipball/c8b0cf5230247bf1b116c54fd1e2a4ad37d95c4e",
+                "reference": "c8b0cf5230247bf1b116c54fd1e2a4ad37d95c4e",
                 "shasum": ""
             },
             "require": {
-                "codger/generate": "^0.7.0",
+                "codger/generate": "^0.8.1",
                 "composer/composer": "^1.7"
             },
             "require-dev": {
-                "toast/unit": "^1.3"
+                "toast/unit": "^2.0"
             },
             "type": "library",
             "autoload": {
@@ -88,7 +89,7 @@
                 }
             ],
             "description": "Codger code generator, PHP templates",
-            "time": "2019-10-05T16:20:55+00:00"
+            "time": "2019-12-21T13:43:06+00:00"
         },
         {
             "name": "composer/ca-bundle",
@@ -457,6 +458,52 @@
                 "schema"
             ],
             "time": "2019-09-25T14:49:45+00:00"
+        },
+        {
+            "name": "monolyth/cliff",
+            "version": "0.5.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/monolyth-php/cliff.git",
+                "reference": "22fd051995911186117454976db8ef9dd06d80bb"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/monolyth-php/cliff/zipball/22fd051995911186117454976db8ef9dd06d80bb",
+                "reference": "22fd051995911186117454976db8ef9dd06d80bb",
+                "shasum": ""
+            },
+            "require": {
+                "monomelodies/reflex": "^0.3.0",
+                "php": ">=7.3",
+                "ulrichsg/getopt-php": "^3.2",
+                "zeptech/annotations": "^1.1"
+            },
+            "require-dev": {
+                "toast/unit": "^2.0"
+            },
+            "bin": [
+                "bin/cliff"
+            ],
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Monolyth\\Cliff\\": "./src",
+                    "Monolyth\\Cliff\\Demo\\": "./demo"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Marijn Ophorst",
+                    "email": "marijn@monomelodies.nl"
+                }
+            ],
+            "description": "Command line interface for Monolyth unframework",
+            "time": "2019-12-21T07:37:35+00:00"
         },
         {
             "name": "monomelodies/kingconf",
@@ -1366,6 +1413,52 @@
                 "templating"
             ],
             "time": "2019-11-11T16:52:09+00:00"
+        },
+        {
+            "name": "ulrichsg/getopt-php",
+            "version": "v3.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/getopt-php/getopt-php.git",
+                "reference": "373c478d4251a6ad2d42585ab51d58e950713c03"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/getopt-php/getopt-php/zipball/373c478d4251a6ad2d42585ab51d58e950713c03",
+                "reference": "373c478d4251a6ad2d42585ab51d58e950713c03",
+                "shasum": ""
+            },
+            "require": {
+                "ext-mbstring": "*",
+                "php": ">=5.4.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^4.8",
+                "squizlabs/php_codesniffer": "^2.7"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "GetOpt\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Ulrich Schmidt-Goertz",
+                    "email": "ulrich@schmidt-goertz.de"
+                },
+                {
+                    "name": "Thomas Flori",
+                    "email": "thflori@gmail.com"
+                }
+            ],
+            "description": "Command line arguments parser for PHP 5.4 - 7.3",
+            "homepage": "http://getopt-php.github.io/getopt-php",
+            "time": "2019-11-06T06:20:03+00:00"
         },
         {
             "name": "zeptech/annotations",
