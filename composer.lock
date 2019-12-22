@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c18f9409f1ba8f9792c3792df2661bc7",
+    "content-hash": "0aa3bded6b9b30588e50904867a3a9f2",
     "packages": [
         {
             "name": "codger/generate",
@@ -53,16 +53,16 @@
         },
         {
             "name": "codger/php",
-            "version": "0.8.1",
+            "version": "0.9.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/codger-php/php.git",
-                "reference": "c8b0cf5230247bf1b116c54fd1e2a4ad37d95c4e"
+                "reference": "74ebef773f4e5a2aad3627e3f24d634d1b5709c1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/codger-php/php/zipball/c8b0cf5230247bf1b116c54fd1e2a4ad37d95c4e",
-                "reference": "c8b0cf5230247bf1b116c54fd1e2a4ad37d95c4e",
+                "url": "https://api.github.com/repos/codger-php/php/zipball/74ebef773f4e5a2aad3627e3f24d634d1b5709c1",
+                "reference": "74ebef773f4e5a2aad3627e3f24d634d1b5709c1",
                 "shasum": ""
             },
             "require": {
@@ -89,7 +89,7 @@
                 }
             ],
             "description": "Codger code generator, PHP templates",
-            "time": "2019-12-21T13:43:06+00:00"
+            "time": "2019-12-22T09:39:28+00:00"
         },
         {
             "name": "composer/ca-bundle",
