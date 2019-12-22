@@ -16,7 +16,7 @@
         "simoneast/simple-ansi-colors": "^1.0",
         "monomelodies/reflex": "^0.3.0",
         "twig/twig": ">=1.0",
-        "codger/php": "^0.8.0",
+        "codger/php": "^0.9.0",
         "monolyth/cliff": "^0.5.4"
     },
     "bin": [
