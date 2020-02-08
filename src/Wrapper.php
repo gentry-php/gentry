@@ -27,8 +27,6 @@ class Wrapper
      * `createObject` method instead of calling this directly.
      *
      * @param mixed $class A class, object or trait to wrap.
-     * @param bool $isInstance True if we need to wrap an extension of an actual
-     *  instance (it uses slightly diffrent trait methods).
      * @return object An anonymous, wrapped object.
      */
     public static function wrapObject($class) : object
