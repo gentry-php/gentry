@@ -5,9 +5,8 @@ namespace Gentry\Gentry;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionParameter;
-use StdClass;
-use Twig_Loader_Filesystem;
-use Twig_Environment;
+use stdClass;
+use Twig\{ Loader\FilesystemLoader, Environment };
 
 /**
  * A test generation object. Normally, this is automatically called when running
@@ -15,24 +14,32 @@ use Twig_Environment;
  */
 class Generator
 {
+    /** @var int */
     const AS_INSTANCE = 1;
+
+    /** @var int */
     const AS_RETURNCHECK = 2;
 
+    /** @var stdClass */
     private $config;
-    private $objectUnserTest;
+
+    /** @var ReflectionClass */
+    private $objectUnderTest;
+
+    /** @var stdClass[] */
     private $features = [];
 
     /**
      * Constructor. Pass the configuration object.
      *
-     * @param StdClass $config
+     * @param stdClass $config
      * @return void
      */
-    public function __construct(StdClass $config)
+    public function __construct(stdClass $config)
     {
         $this->config = $config;
-        $loader = new Twig_Loader_Filesystem($this->config->path);
-        $this->twig = new Twig_Environment($loader, ['cache' => false]);
+        $loader = new FilesystemLoader($this->config->path);
+        $this->twig = new Environment($loader, ['cache' => false]);
     }
 
     /**
