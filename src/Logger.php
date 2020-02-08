@@ -6,10 +6,7 @@ use ErrorException;
 
 class Logger
 {
-    const METHOD = 'method';
-    const PROCEDURE = 'procedure';
-
-    /** @var array */
+    /** @var array[] */
     private $logged = [];
 
     /**
