@@ -123,7 +123,7 @@ EOT
                     implode(', ', $arguments),
                     $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '').' '.$method->getReturnType().' ' : '',
                     $type->isTrait() ? ($method->isStatic() ? 'self::' : '$this->') : 'parent::',
-                    $method->hasReturnType() && $method->getReturnType()->__toString() == 'void' ? '' : 'return ',
+                    $method->hasReturnType() && $method->getReturnType()->getName() == 'void' ? '' : 'return ',
                     $method->returnsReference() ? '&' : ''
                 );
             }
