@@ -76,7 +76,9 @@ class Wrapper
                     $argument = "...$argument";
                 }
                 if ($argtype = $param->getType()) {
-                    $argtype = $argtype->getName();
+                    if ((float)phpversion() >= 7.4) {
+                        $argtype = $argtype->getName();
+                    }
                     $argument = "$argtype $argument";
                 }
                 if ($param->isDefaultValueAvailable()) {
@@ -99,6 +101,12 @@ EOT
                     implode(',', $arguments)
                 );
             } else {
+                $returntype = $method->getReturnType();
+                if ((float)phpversion() >= 7.4) {
+                    $returntype = $returntype->getName();
+                } else {
+                    $returnType = "$returnType";
+                }
                 $methods[] = sprintf(
                     <<<EOT
 public %1\$sfunction %7\$s%2\$s(%3\$s) %4\$s{
@@ -122,9 +130,9 @@ EOT
                     $method->isStatic() ? 'static ' : '',
                     $type->isTrait() ? $aliases[$method->name] : $method->name,
                     implode(', ', $arguments),
-                    $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '').' '.$method->getReturnType()->getName().' ' : '',
+                    $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '')." $returnType " : '',
                     $type->isTrait() ? ($method->isStatic() ? 'self::' : '$this->') : 'parent::',
-                    $method->hasReturnType() && $method->getReturnType()->getName() == 'void' ? '' : 'return ',
+                    $method->hasReturnType() && $returnType == 'void' ? '' : 'return ',
                     $method->returnsReference() ? '&' : ''
                 );
             }
