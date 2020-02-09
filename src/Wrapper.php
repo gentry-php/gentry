@@ -76,6 +76,7 @@ class Wrapper
                     $argument = "...$argument";
                 }
                 if ($argtype = $param->getType()) {
+                    $argtype = $argtype->getName();
                     $argument = "$argtype $argument";
                 }
                 if ($param->isDefaultValueAvailable()) {
@@ -121,7 +122,7 @@ EOT
                     $method->isStatic() ? 'static ' : '',
                     $type->isTrait() ? $aliases[$method->name] : $method->name,
                     implode(', ', $arguments),
-                    $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '').' '.$method->getReturnType().' ' : '',
+                    $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '').' '.$method->getReturnType()->getName().' ' : '',
                     $type->isTrait() ? ($method->isStatic() ? 'self::' : '$this->') : 'parent::',
                     $method->hasReturnType() && $method->getReturnType()->getName() == 'void' ? '' : 'return ',
                     $method->returnsReference() ? '&' : ''
