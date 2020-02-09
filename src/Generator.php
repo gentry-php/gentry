@@ -91,7 +91,7 @@ class Generator
             }
             $expectedResult = 'true';
             if ($method->hasReturnType()) {
-                $type = $method->getReturnType()->__toString();
+                $type = $method->getReturnType()->getName();
                 $expectedResult = $this->getDefaultForType($type, self::AS_RETURNCHECK);
             }
             $this->features[$method->name]->calls[] = (object)[
