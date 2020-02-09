@@ -101,9 +101,9 @@ EOT
                     implode(',', $arguments)
                 );
             } else {
-                $returntype = $method->getReturnType();
+                $returnType = $method->getReturnType();
                 if ((float)phpversion() >= 7.4) {
-                    $returntype = $returntype->getName();
+                    $returnType = $returnType->getName();
                 } else {
                     $returnType = "$returnType";
                 }
