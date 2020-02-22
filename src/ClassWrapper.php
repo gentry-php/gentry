@@ -20,11 +20,8 @@ trait ClassWrapper
      */
     public function __gentryConstruct(...$args) : void
     {
-        try {
-            if (method_exists(get_parent_class($this), '__construct')) {
-                parent::__construct(...$args);
-            }
-        } catch (Throwable $e) {
+        if (method_exists(get_parent_class($this), '__construct')) {
+            parent::__construct(...$args);
         }
     }        
 
