@@ -2,7 +2,6 @@
 
 namespace Gentry\Gentry;
 
-use Throwable;
 use Monomelodies\Reflex\ReflectionClass;
 use Monomelodies\Reflex\ReflectionMethod;
 
