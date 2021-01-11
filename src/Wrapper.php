@@ -102,10 +102,12 @@ EOT
                 );
             } else {
                 $returnType = $method->getReturnType();
-                if ((float)phpversion() >= 7.4) {
-                    $returnType = $returnType->getName();
-                } else {
-                    $returnType = "$returnType";
+                if (isset($returnType)) {
+                    if ((float)phpversion() >= 7.4) {
+                        $returnType = $returnType->getName();
+                    } else {
+                        $returnType = "$returnType";
+                    }
                 }
                 $methods[] = sprintf(
                     <<<EOT
