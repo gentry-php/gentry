@@ -159,7 +159,7 @@ class Sourcecode
                 // Method comes from a trait; these we skip for now.
                 continue;
             }
-            if ($method->name{0} == '_' && $method->name != '__invoke') {
+            if ($method->name[0] == '_' && $method->name != '__invoke') {
                 // Assume we never want to test these "private" or magic
                 // methods.
                 continue;
