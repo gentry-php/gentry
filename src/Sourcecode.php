@@ -7,7 +7,6 @@ use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
 use Monomelodies\Reflex\ReflectionClass;
 use Monomelodies\Reflex\ReflectionMethod;
-use zpt\anno\Annotations;
 use SplFileInfo;
 
 /**
