@@ -7,7 +7,6 @@ use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
 use ReflectionClass;
 use ReflectionException;
-use zpt\anno\Annotations;
 
 /**
  * Repository gathering all existing tests in specified directory. You can
@@ -37,7 +36,6 @@ class Existing
                     $class = "$ns{$match[1]}";
                     try {
                         $reflection = new ReflectionClass($class);
-                        $annotations = new Annotations($class);
                         if (!$reflection->isAbstract()) {
                             $tests[$class] = $filename;
                         }
