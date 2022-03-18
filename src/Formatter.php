@@ -6,7 +6,6 @@ use Ansi;
 use Reflector;
 use ReflectionFunctionAbstract;
 use ReflectionParameter;
-use zpt\anno\Annotations;
 
 abstract class Formatter
 {
