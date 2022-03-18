@@ -41,8 +41,8 @@ class Sourcecode
                 if (!($reflection = $this->extractTestableClass($file))) {
                     continue;
                 }
-                $annotations = new Annotations($reflection);
-                if (isset($annotations['Untestable'])) {
+                $attributes = $reflection->getAttributes(Untestable::class);
+                if ($attributes) {
                     continue;
                 }
                 $reflections[] = $reflection;
@@ -137,8 +137,8 @@ class Sourcecode
         $methods = [];
         $source = file_get_contents($reflection->getFileName());
         foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-            $annotations = new Annotations($method);
-            if (isset($annotations['Untestable'])) {
+            $attributes = $method->getAttributes(Untestable::class);
+            if ($attributes) {
                 continue;
             }
             if ($method->isInternal()) {
