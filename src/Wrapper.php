@@ -131,7 +131,7 @@ EOT
                     $method->isStatic() ? 'static ' : '',
                     $type->isTrait() ? $aliases[$method->name] : $method->name,
                     implode(', ', $arguments),
-                    $method->hasReturnType() ? ':'.($method->getReturnType()->allowsNull() ? '?' : '')." $returnType " : '',
+                    $method->hasReturnType() ? ':'.($returnType != 'mixed' && $method->getReturnType()->allowsNull() ? '?' : '')." $returnType " : '',
                     $type->isTrait() ? ($method->isStatic() ? 'self::' : '$this->') : 'parent::',
                     $method->hasReturnType() && $returnType == 'void' ? '' : 'return ',
                     $method->returnsReference() ? '&' : ''
