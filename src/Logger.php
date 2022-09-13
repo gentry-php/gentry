@@ -24,15 +24,15 @@ class Logger
     /**
      * Log a feature.
      *
-     * @param object $object
+     * @param object|string $object
      * @param string $method
      * @param array $args Arguments used as types, so Gentry can check the
      *  various types of calls (e.g. with/without optional arguments).
      * @return void
      */
-    public function logFeature(object $object, string $method, array $args) : void
+    public function logFeature(object|string $object, string $method, array $args) : void
     {
-        $class = get_class($object);
+        $class = is_object($object) ? get_class($object) : $object;
         $reflection = new ReflectionMethod($object, $method);
         $parameters = $reflection->getParameters();
         array_walk($args, function (&$arg, $i) use ($reflection, $parameters) {
