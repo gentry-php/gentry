@@ -1,5 +1,5 @@
 # Gentry
-Test generation tools for PHP7+.
+Test generation tools for PHP8+.
 
 Good programmers are lazy, but unfortunately that means that stuff like writing
 tests (boooooring) is often skipped. Please don't; it's important and oh so
@@ -32,8 +32,8 @@ following options:
 
 ### string|array `src` ###
 Path(s) to your source files. Can be either absolute or relative to project
-root - hence`"/path/to/root/src"` could be simplified to just `"src"`. If you
-have multiple source paths you may define an array of strings.
+root - hence`"/path/to/src"` could be simplified to just `"src"`. If you have
+multiple source paths you may define an array of strings.
 
 Directories are recursed automatically.
 
@@ -79,12 +79,7 @@ written tests for.
 
 ## Modifying existing tests for Gentry compatibility
 In your tests, instead of simply creating/using stuff, you'll need to build a
-_wrapped entity_. Entities wrapped by Gentry are "Gentry aware". Don't worry
-about the rest of your tests; apart from logging features tested the wrapped
-entities are fully compatible. E.g. wrapping a `Foo` object will still pass
-`$foo instanceof Foo` type tests. (The only place where this would fail is if
-you actually use `get_class` and test for string equality - but that would be
-kind of stupid, right?)
+_wrapped entity_. Entities wrapped by Gentry are "Gentry aware".
 
 To create wrapped entities, we use the `Gentry\Gentry\Wrapper` utility class.
 
@@ -92,16 +87,26 @@ To create wrapped entities, we use the `Gentry\Gentry\Wrapper` utility class.
 ```php
 <?php
 
-// Instead of this...
-$foo = new Foo;
-// ...do this:
-$foo = Gentry\Gentry\Wrapper::createObject(Foo::class);
+function myTest()
+{
+    // Instead of this...
+    $foo = new Foo;
+    // ...do this:
+    $foo = new Gentry\Gentry\Wrapper(new Foo);
+
+    // or however your testing framework asserts stuff...
+    assert($foo->someMethod() === true);
+}
 ```
 
-If your object's constructor takes arguments, you can supply them as additional
-arguments to the `createObject` method.
+Try it in one of your tests and watch the code coverage increase!
 
-Try it in a class for one of your tests and watch the code coverage increase!
+All method calls are proxied to the original object, so just do whatever you
+wanted to do as when `$foo` was actually an instance of `Foo`. The only thing
+you _cannot_ do is pass it to other methods that actually expect a `Foo`. But
+that would be silly testing anyway; if you're testing `Bar::someOtherMethod`
+you're not testing `Foo`, so that should be its own test (where `Bar` is wrapped
+instead). Keep it clean, folks!
 
 ## Generating tests
 Notice how Gentry at the end of the examination phase offered to generate the
@@ -128,9 +133,9 @@ via a `namespace` key (e.g. `{"namespace":"Foo\\MyTests"}`).
 
 ## Example using Toast
 Let's show an example of generating tests for the [Toast test
-runner](https://packagist.org/packages/toast-php/runner) (since that's what I
-usually choose ;)). Gentry offers a pre-built template for this! Install it
-first:
+runner](https://packagist.org/packages/toast/unit) (since that's what I
+usually choose - I wrote it, after all ;)). Gentry offers a pre-built template
+for this! Install it first:
 
 ```sh
 composer require --dev gentry/toast
@@ -151,4 +156,8 @@ Next we configure it:
 
 That's all! Well, unless you want a namespace of course, but Toast tests consist
 of lambdas so it's generally not needed.
+
+The test file names are guesstimated based on the class names; you'll probably
+want to do some regrouping to keep things organized. But hey, at least you can
+copy/paste the boilerplate!
 
