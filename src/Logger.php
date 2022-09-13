@@ -3,6 +3,7 @@
 namespace Gentry\Gentry;
 
 use ErrorException;
+use Monomelodies\Reflex\ReflectionMethod;
 
 class Logger
 {
@@ -16,21 +17,38 @@ class Logger
      */
     public static function getInstance() : Logger
     {
-        static $instance = new static;
+        static $instance = new Logger;
         return $instance;
     }
 
     /**
      * Log a feature.
      *
-     * @param string $class
+     * @param object $object
      * @param string $method
      * @param array $args Arguments used as types, so Gentry can check the
      *  various types of calls (e.g. with/without optional arguments).
      * @return void
      */
-    public function logFeature(string $class, string $method, array $args) : void
+    public function logFeature(object $object, string $method, array $args) : void
     {
+        $class = get_class($object);
+        $reflection = new ReflectionMethod($object, $method);
+        $parameters = $reflection->getParameters();
+        array_walk($args, function (&$arg, $i) use ($reflection, $parameters) {
+            if (isset($parameters[$i])) {
+                $arg = $parameters[$i]->getNormalisedType() ?? 'unknown';
+            } else {
+                $j = $i;
+                $arg = 'unknown';
+                while ($j > 0) {
+                    if (isset($parameters[--$j])) {
+                        $arg = $parameters[$j]->getNormalisedType($arg) ?? 'unknown';
+                        break;
+                    }
+                }
+            }
+        });
         if (!isset($this->logged[$class])) {
             $this->logged[$class] = [];
         }
