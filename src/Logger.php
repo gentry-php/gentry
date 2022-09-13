@@ -16,10 +16,7 @@ class Logger
      */
     public static function getInstance() : Logger
     {
-        static $instance;
-        if (!isset($instance)) {
-            $instance = new static;
-        }
+        static $instance = new static;
         return $instance;
     }
 
