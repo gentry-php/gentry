@@ -13,8 +13,7 @@ class Foo
 return function () : Generator {
     /** Test if we can wrap a class and log method calls */
     yield function () {
-        $class = Wrapper::createObject(Foo::class);
-        assert($class instanceof Foo);
+        $class = new Wrapper(new Foo);
         $class->bar(1, false, '2', function () {});
         $logged = Logger::getInstance()->getLoggedFeatures();
         assert(isset($logged['Foo']));
