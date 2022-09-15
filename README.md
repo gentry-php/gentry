@@ -101,12 +101,16 @@ function myTest()
 
 Try it in one of your tests and watch the code coverage increase!
 
-All method calls are proxied to the original object, so just do whatever you
-wanted to do as when `$foo` was actually an instance of `Foo`. The only thing
-you _cannot_ do is pass it to other methods that actually expect a `Foo`. But
-that would be silly testing anyway; if you're testing `Bar::someOtherMethod`
-you're not testing `Foo`, so that should be its own test (where `Bar` is wrapped
-instead). Keep it clean, folks!
+All method calls and properties are proxied to the original object, so just do
+whatever you wanted to do as when `$foo` was actually an instance of `Foo`. The
+only thing you _cannot_ do is pass it to other methods that actually expect a
+`Foo`. But that would be silly testing anyway; if you're testing
+`Bar::someOtherMethod` you're not testing `Foo`, so that should be its own test
+(where `Bar` is wrapped instead). Keep it clean, folks!
+
+Note: the proxying of methods/properties extends to inaccessible ones, using
+reflection. This is because you might want to test if some internal state was
+set correctly. But, normally one would only need to test public stuff.
 
 ## Generating tests
 Notice how Gentry at the end of the examination phase offered to generate the
