@@ -33,7 +33,7 @@ class Logger
     public function logFeature(object|string $object, string $method, array $args) : void
     {
         $class = is_object($object) ? get_class($object) : $object;
-        $reflection = new ReflectionMethod($object, $method);
+        $reflection = new ReflectionMethod($class, $method);
         $parameters = $reflection->getParameters();
         array_walk($args, function (&$arg, $i) use ($reflection, $parameters) {
             if (isset($parameters[$i])) {
