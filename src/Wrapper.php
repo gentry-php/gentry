@@ -24,9 +24,19 @@ class Wrapper
             throw new MethodDoesNotExistException($this->wrapped, $method);
         }
         $logger->logFeature($this->wrapped, $method, $args);
-        $reflectionMethod->setAccessible(true);
+        $arguments = [];
+        foreach ($reflectionMethod->getParameters() as $i => $parameter) {
+            if (!isset($args[$i])) {
+                break;
+            }
+            if ($parameter->isPassedByReference()) {
+                $arguments[] =& $args[$i];
+            } else {
+                $arguments[] = $args[$i];
+            }
+        }
         try {
-            return $reflectionMethod->invoke($this->wrapped, ...$args);
+            return $reflectionMethod->invoke($this->wrapped, ...$arguments);
         } catch (ReflectionException $e) {
             throw new MethodCouldNotBeInvokedException($this->wrapped, $method);
         }
