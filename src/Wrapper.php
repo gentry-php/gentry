@@ -36,7 +36,7 @@ class Wrapper
             }
         }
         try {
-            return $reflectionMethod->invoke($this->wrapped, ...$arguments);
+            return $reflectionMethod->invokeArgs($this->wrapped, $arguments);
         } catch (ReflectionException $e) {
             throw new MethodCouldNotBeInvokedException($this->wrapped, $method);
         }
