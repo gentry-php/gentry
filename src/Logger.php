@@ -78,7 +78,7 @@ class Logger
     public function __destruct()
     {
         try {
-            $shm_key = ftok(realpath(__DIR__.'/../bin').'/gentry', 't');
+            $shm_key = ftok(realpath(__DIR__).'/Command.php', 't');
             $shm = shmop_open($shm_key, 'w', 0644, 1024 * 1024);
             shmop_write($shm, serialize($this->logged), 0);
             shmop_close($shm);
