@@ -16,7 +16,7 @@ use Monomelodies\Kingconf;
 use Exception;
 use ErrorException;
 
-const VERSION = "0.14.5";
+const VERSION = "0.16.0";
 
 $start = microtime(true);
 
@@ -111,7 +111,6 @@ Formatter::out(sprintf(
 ));
 
 $uncovered = [];
-
 foreach ($sourcecode->sources as $file => $code) {
     if (!isset($coveredFeatures[$code[0]->name])) {
         $uncovered[$code[0]->name] = [];
