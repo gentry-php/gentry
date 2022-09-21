@@ -71,7 +71,7 @@ class Logger
     }
 
     /**
-     * On destruction, cleanup the "global" log.
+     * On destruction, write logged features to a shared memory block.
      *
      * @return void
      */
