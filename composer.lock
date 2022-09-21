@@ -570,16 +570,16 @@
         },
         {
             "name": "monolyth/cliff",
-            "version": "0.7.4",
+            "version": "0.7.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/monolyth-php/cliff.git",
-                "reference": "4ee5237ad2534c2e1f415d50860088ea55572776"
+                "reference": "0268d970eedf6c9fbcaf2a8532cbb0b6015d8ff4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/monolyth-php/cliff/zipball/4ee5237ad2534c2e1f415d50860088ea55572776",
-                "reference": "4ee5237ad2534c2e1f415d50860088ea55572776",
+                "url": "https://api.github.com/repos/monolyth-php/cliff/zipball/0268d970eedf6c9fbcaf2a8532cbb0b6015d8ff4",
+                "reference": "0268d970eedf6c9fbcaf2a8532cbb0b6015d8ff4",
                 "shasum": ""
             },
             "require": {
@@ -613,9 +613,9 @@
             "description": "Command line interface for Monolyth unframework",
             "support": {
                 "issues": "https://github.com/monolyth-php/cliff/issues",
-                "source": "https://github.com/monolyth-php/cliff/tree/0.7.4"
+                "source": "https://github.com/monolyth-php/cliff/tree/0.7.6"
             },
-            "time": "2022-07-07T12:25:13+00:00"
+            "time": "2022-09-12T13:26:40+00:00"
         },
         {
             "name": "monomelodies/kingconf",
@@ -2300,5 +2300,5 @@
         "php": ">=8.1"
     },
     "platform-dev": [],
-    "plugin-api-version": "2.2.0"
+    "plugin-api-version": "2.3.0"
 }
