@@ -23,29 +23,60 @@ class Command extends Cliff\Command
 
     public bool $verbose = false;
 
+    private stdClass $config;
+
+    private array $coveredFeatures;
+
+    private array $uncoveredFeatures;
+
     public function __invoke()
     {
+        Formatter::out("\n<magenta>Gentry ".self::VERSION." by Marijn Ophorst\n\n");
         if (!ini_get('date.timezone')) {
             ini_set('date.timezone', 'UTC');
         }
         $start = microtime(true);
 
-        Formatter::out("\n<magenta>Gentry ".self::VERSION." by Marijn Ophorst\n\n");
+        $this
+            ->checkConfigFile()
+            ->runUnitTests()
+            ->analyzeSourcecode()
+            ->showMissingTests()
+            ->showSummary()
+            ;
+    }
 
-        $config = $this->checkConfigFile();
-
-        Formatter::out("<green>Running unit tests from <darkGray>{$config->test}<green>...\n");
-        $shm_key = ftok(__FILE__, 't');
-        $shm = shmop_open($shm_key, 'c', 0644, 1024 * 1024);
-        exec($config->test);
+    private function checkConfigFile() : self
+    {
+        $config = 'Gentry.json';
         try {
-            $coveredFeatures = unserialize(shmop_read($shm, 0, 1024 * 1024));
-        } catch (ErrorException $e) {
-            $coveredFeatures = [];
+            $this->config = (object)(array)(new Kingconf\Config($config));
+        } catch (Kingconf\Exception $e) {
+            Formatter::out("<red>Error: <reset> Config file $config not found or invalid.\n", STDERR);
+            die(1);
         }
-        shmop_delete($shm);
+        $this->config->src = is_array($this->config->src) ? $this->config->src : [$this->config->src];
+        $this->config->templates = $this->config->templates ?? [];
+        if (isset($this->config->bootstrap)) {
+            $bootstrap = is_array($this->config->bootstrap) ? $this->config->bootstrap : [$this->config->bootstrap];
+            foreach ($bootstrap as $file) {
+                require_once $file;
+            }
+        }
+        return $this;
+    }
 
-        $sourcecode = new Sourcecode($config);
+    private function runUnitTests() : self
+    {
+        Formatter::out("<green>Running unit tests from <darkGray>{$this->config->test}<green>...\n");
+        exec($this->config->test);
+        $this->coveredFeatures = unserialize(Logger::read());
+        return $this;
+    }
+
+    private function analyzeSourcecode() : self
+    {
+        $sourcecode = new Sourcecode($this->config);
         Formatter::out(sprintf(
             "<gray>Found %d file%s with testable source code.\n",
             count($sourcecode->sources),
@@ -74,9 +105,15 @@ class Command extends Cliff\Command
                 }
             }
         }
-        if (VERBOSE) {
+        $this->uncoveredFeatures = $uncovered;
+        return $this;
+    }
+
+    private function showMissingTests() : self
+    {
+        if ($this->verbose) {
             Formatter::out("\n");
-            foreach ($uncovered as $class => $methods) {
+            foreach ($this->uncoveredFeatures as $class => $methods) {
                 foreach ($methods as $name => $calls) {
                     foreach ($calls as $call) {
                         Formatter::out(sprintf(
@@ -90,14 +127,19 @@ class Command extends Cliff\Command
             }
         }
         Formatter::out("\n");
+        return $this;
+    }
+    
+    private function showSummary() : void
+    {
         $total = 0;
-        array_walk($coveredFeatures, function ($feature, $name1) use (&$total) {
+        array_walk($this->coveredFeatures, function ($feature, $name1) use (&$total) {
             array_walk($feature, function ($method, $name2) use (&$total, $name1) {
                 $total += count($method);
             });
         });
         $totalU = 0;
-        array_walk($uncovered, function ($feature, $name1) use (&$totalU) {
+        array_walk($this->uncoveredFeatures, function ($feature, $name1) use (&$totalU) {
             array_walk($feature, function ($method, $name2) use (&$totalU, $name1) {
                 $totalU += count($method);
             });
@@ -122,52 +164,35 @@ class Command extends Cliff\Command
         Formatter::out("\n");
         Formatter::out(sprintf(
             "\n<magenta>Took %0.2f seconds, memory usage %4.2fMb.\n\n",
-            microtime(true) - $start,
+            microtime(true) - $this->start,
             memory_get_peak_usage(true) / 1048576
         ));
-
         if ($totalU) {
             Formatter::out("\n");
             $yesno = Formatter::ask("Attempt to generate missing tests? [Y/n] ", [true => 'Y', 'n']);
             if ($yesno == 'n') {
                 Formatter::out("\n<darkGray>Ok, suit yourself!\n\n");
             } else {
-                if (!$config->templates) {
-                    Formatter::out("\n<red>Error: no templates defined.\n\n");
-                } else {
-                    $start = microtime(true);
-                    foreach ($config->templates as $template) {
-                        $generator = new Generator((object)$template);
-                        foreach ($sourcecode->sources as $filename => $data) {
-                            if (isset($uncovered[$data[0]->name]) && $uncovered[$data[0]->name]) {
-                                $generator->generate($data[0], $data[1], $uncovered[$data[0]->name]);
-                            }
-                        }
-                    }
-                }
+                $this->generateTests();
             }
         }
     }
 
-    private function checkConfigFile() : stdClass
+    private function generateTests() : void
     {
-        $config = 'Gentry.json';
-        define('Gentry\Gentry\VERBOSE', $this->verbose);
-        try {
-            $config = (object)(array)(new Kingconf\Config($config));
-        } catch (Kingconf\Exception $e) {
-            Formatter::out("<red>Error: <reset> Config file $config not found or invalid.\n", STDERR);
-            die(1);
-        }
-        $config->src = is_array($config->src) ? $config->src : [$config->src];
-        $config->templates = $config->templates ?? [];
-        if (isset($config->bootstrap)) {
-            $bootstrap = is_array($config->bootstrap) ? $config->bootstrap : [$config->bootstrap];
-            foreach ($bootstrap as $file) {
-                require_once $file;
+        if (!$config->templates) {
+            Formatter::out("\n<red>Error: no templates defined.\n\n");
+        } else {
+            $start = microtime(true);
+            foreach ($config->templates as $template) {
+                $generator = new Generator((object)$template);
+                foreach ($sourcecode->sources as $filename => $data) {
+                    if (isset($uncovered[$data[0]->name]) && $uncovered[$data[0]->name]) {
+                        $generator->generate($data[0], $data[1], $uncovered[$data[0]->name]);
+                    }
+                }
             }
         }
-        return $config;
     }
 }
 
