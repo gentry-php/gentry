@@ -29,13 +29,15 @@ class Command extends Cliff\Command
 
     private array $uncoveredFeatures;
 
+    private float $start;
+
     public function __invoke()
     {
         Formatter::out("\n<magenta>Gentry ".self::VERSION." by Marijn Ophorst\n\n");
         if (!ini_get('date.timezone')) {
             ini_set('date.timezone', 'UTC');
         }
-        $start = microtime(true);
+        $this->start = microtime(true);
 
         $this
             ->checkConfigFile()
@@ -183,7 +185,6 @@ class Command extends Cliff\Command
         if (!$config->templates) {
             Formatter::out("\n<red>Error: no templates defined.\n\n");
         } else {
-            $start = microtime(true);
             foreach ($config->templates as $template) {
                 $generator = new Generator((object)$template);
                 foreach ($sourcecode->sources as $filename => $data) {
