@@ -104,7 +104,6 @@ class Logger
     {
         $shm = self::getShmHandle();
         shmop_write($shm, $data, 0);
-        shmop_close($shm);
     }
 
     /**
@@ -116,7 +115,7 @@ class Logger
     private static function getShmHandle() : Shmop
     {
         $shm_key = ftok(realpath(__FILE__), 't');
-        $shm = shmop_open($shm_key, 'w', 0644, 1024 * 1024);
+        $shm = shmop_open($shm_key, 'c', 0644, 1024 * 1024);
         if ($shm) {
             return $shm;
         } else {
