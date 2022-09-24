@@ -87,7 +87,7 @@ class Command extends Cliff\Command
 
         $uncovered = [];
         foreach ($sourcecode->sources as $file => $code) {
-            if (!isset($coveredFeatures[$code[0]->name])) {
+            if (!isset($this->coveredFeatures[$code[0]->name])) {
                 $uncovered[$code[0]->name] = [];
             }
             foreach ($code[1] as $method) {
@@ -95,19 +95,20 @@ class Command extends Cliff\Command
                     continue;
                 }
                 $calls = $method->getPossibleCalls(...$method->getParameters());
-                if (!isset($coveredFeatures[$code[0]->name][$method->name])) {
+                if (!isset($this->coveredFeatures[$code[0]->name][$method->name])) {
                     $uncovered[$code[0]->name][$method->name] = $calls;
                     continue;
                 }
                 $uncovered[$code[0]->name][$method->name] = [];
                 foreach ($calls as $call) {
-                    if (!in_array($call, $coveredFeatures[$code[0]->name][$method->name])) {
+                    if (!in_array($call, $this->coveredFeatures[$code[0]->name][$method->name])) {
                         $uncovered[$code[0]->name][$method->name][] = $call;
                     }
                 }
             }
         }
-        $this->uncoveredFeatures = $uncovered;
+        array_walk($uncovered, fn (&$calls) => $calls = array_filter($calls, fn ($untested) => count($untested) > 0));
+        $this->uncoveredFeatures = array_filter($uncovered, fn ($calls) => count($calls) > 0);
         return $this;
     }
 
@@ -135,14 +136,14 @@ class Command extends Cliff\Command
     private function showSummary() : void
     {
         $total = 0;
-        array_walk($this->coveredFeatures, function ($feature, $name1) use (&$total) {
-            array_walk($feature, function ($method, $name2) use (&$total, $name1) {
+        array_walk($this->coveredFeatures, function ($feature) use (&$total) {
+            array_walk($feature, function ($method) use (&$total) {
                 $total += count($method);
             });
         });
         $totalU = 0;
-        array_walk($this->uncoveredFeatures, function ($feature, $name1) use (&$totalU) {
-            array_walk($feature, function ($method, $name2) use (&$totalU, $name1) {
+        array_walk($this->uncoveredFeatures, function ($feature) use (&$totalU) {
+            array_walk($feature, function ($method) use (&$totalU) {
                 $totalU += count($method);
             });
         });
