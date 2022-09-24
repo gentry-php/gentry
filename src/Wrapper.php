@@ -17,13 +17,15 @@ class Wrapper
 
     public function __call(string $method, array $args) : mixed
     {
-        $logger = Logger::getInstance();
         try {
             $reflectionMethod = new ReflectionMethod($this->wrapped, $method);
         } catch (ReflectionException $e) {
             throw new MethodDoesNotExistException($this->wrapped, $method);
         }
-        $logger->logFeature($this->wrapped, $method, $args);
+        $attributes = $reflectionMethod->getAttributes(Untestable::class);
+        if (!$attributes) {
+            Logger::getInstance()->logFeature($this->wrapped, $method, $args);
+        }
         $arguments = [];
         foreach ($reflectionMethod->getParameters() as $i => $parameter) {
             if (!isset($args[$i])) {
