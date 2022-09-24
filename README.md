@@ -110,7 +110,7 @@ only thing you _cannot_ do is pass it to other methods that actually expect a
 
 Note: the proxying of methods/properties extends to inaccessible ones, using
 reflection. This is because you might want to test if some internal state was
-set correctly. But, normally one would only need to test public stuff.
+set correctly. But, ideally one would only need to test public stuff.
 
 ## Generating tests
 Notice how Gentry at the end of the examination phase offered to generate the
