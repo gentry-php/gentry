@@ -230,7 +230,7 @@ EOT
         if (!$this->config->generator) {
             Formatter::out("\n<red>Error: no generator defined.\n\n");
         } else {
-            $class = $this->config->generator;
+            $class = $this->config->generator.'\Generator';
             $generator = new $class($this->config);
             foreach ($this->sourcecode->sources as $filename => $data) {
                 if (isset($this->uncoveredFeatures[$data[0]->name]) && $this->uncoveredFeatures[$data[0]->name]) {
