@@ -16,12 +16,20 @@ use Exception;
 use ErrorException;
 use Monolyth\Cliff;
 use stdClass;
+use Generator;
 
+/**
+ * Tool to analyze your PHP source code and optionally setup unit tests.
+ * Usage: $ vendor/bin/gentry COMMAND
+ * "COMMAND" can be one of the following:
+ * - analyze : list the classes/methods no unit tests have been found for yet.
+ * - show : show which tests would be generated.
+ * - generate : actually generate unit tests according to Gentry.json settings.
+ * For more detailed information, see README.md.
+ */
 class Command extends Cliff\Command
 {
     private const VERSION = "0.16.0";
-
-    public bool $verbose = false;
 
     private stdClass $config;
 
@@ -31,9 +39,25 @@ class Command extends Cliff\Command
 
     private float $start;
 
-    public function __invoke()
+    private Sourcecode $sourcecode;
+
+    public function __invoke(?string $command = null)
     {
         Formatter::out("\n<magenta>Gentry ".self::VERSION." by Marijn Ophorst\n\n");
+
+        if ($command === null) {
+            echo <<<EOT
+Tool to analyze your PHP source code and optionally setup unit tests.
+Usage: $ vendor/bin/gentry COMMAND
+"COMMAND" can be one of the following:
+- analyze : list the classes/methods no unit tests have been found for yet.
+- show : show which tests would be generated.
+- generate : actually generate unit tests according to Gentry.json settings.
+For more detailed information, see README.md.
+
+EOT;
+            die();
+        }
         if (!ini_get('date.timezone')) {
             ini_set('date.timezone', 'UTC');
         }
@@ -43,9 +67,19 @@ class Command extends Cliff\Command
             ->checkConfigFile()
             ->runUnitTests()
             ->analyzeSourcecode()
-            ->showMissingTests()
             ->showSummary()
             ;
+        switch ($command) {
+            case 'analyze':
+                $this->showMissingTests();
+                break;
+            case 'show':
+                $this->showGeneratedTests();
+                break;
+            case 'generate':
+                $this->writeGeneratedTests();
+                break;
+        }
     }
 
     private function checkConfigFile() : self
@@ -78,15 +112,15 @@ class Command extends Cliff\Command
 
     private function analyzeSourcecode() : self
     {
-        $sourcecode = new Sourcecode($this->config);
+        $this->sourcecode = new Sourcecode($this->config);
         Formatter::out(sprintf(
             "<gray>Found %d file%s with testable source code.\n",
-            count($sourcecode->sources),
-            count($sourcecode->sources) == 1 ? '' : 's'
+            count($this->sourcecode->sources),
+            count($this->sourcecode->sources) == 1 ? '' : 's'
         ));
 
         $uncovered = [];
-        foreach ($sourcecode->sources as $file => $code) {
+        foreach ($this->sourcecode->sources as $file => $code) {
             if (!isset($this->coveredFeatures[$code[0]->name])) {
                 $uncovered[$code[0]->name] = [];
             }
@@ -114,18 +148,16 @@ class Command extends Cliff\Command
 
     private function showMissingTests() : self
     {
-        if ($this->verbose) {
-            Formatter::out("\n");
-            foreach ($this->uncoveredFeatures as $class => $methods) {
-                foreach ($methods as $name => $calls) {
-                    foreach ($calls as $call) {
-                        Formatter::out(sprintf(
-                            "<cyan>Missing test for %s::%s (%s).\n",
-                            $class,
-                            $name,
-                            $call ? implode(', ', $call) : 'void'
-                        ));
-                    }
+        Formatter::out("\n");
+        foreach ($this->uncoveredFeatures as $class => $methods) {
+            foreach ($methods as $name => $calls) {
+                foreach ($calls as $call) {
+                    Formatter::out(sprintf(
+                        "<cyan>Missing test for %s::%s (%s).\n",
+                        $class,
+                        $name,
+                        $call ? implode(', ', $call) : 'void'
+                    ));
                 }
             }
         }
@@ -170,28 +202,39 @@ class Command extends Cliff\Command
             microtime(true) - $this->start,
             memory_get_peak_usage(true) / 1048576
         ));
-        if ($totalU) {
-            Formatter::out("\n");
-            $yesno = Formatter::ask("Attempt to generate missing tests? [Y/n] ", [true => 'Y', 'n']);
-            if ($yesno == 'n') {
-                Formatter::out("\n<darkGray>Ok, suit yourself!\n\n");
-            } else {
-                $this->generateTests();
-            }
+    }
+
+    private function showGeneratedTests() : void
+    {
+        foreach ($this->generateTests() as $test) {
+            $test = $test->render();
+            fwrite(STDOUT, <<<EOT
+--------
+$test
+--------
+
+EOT
+            );
         }
     }
 
-    private function generateTests() : void
+    private function writeGeneratedTests() : void
     {
-        if (!$config->templates) {
-            Formatter::out("\n<red>Error: no templates defined.\n\n");
+        foreach ($this->generateTests() as $test) {
+            $test->write();
+        }
+    }
+
+    private function generateTests() : Generator
+    {
+        if (!$this->config->generator) {
+            Formatter::out("\n<red>Error: no generator defined.\n\n");
         } else {
-            foreach ($config->templates as $template) {
-                $generator = new Generator((object)$template);
-                foreach ($sourcecode->sources as $filename => $data) {
-                    if (isset($uncovered[$data[0]->name]) && $uncovered[$data[0]->name]) {
-                        $generator->generate($data[0], $data[1], $uncovered[$data[0]->name]);
-                    }
+            $class = $this->config->generator;
+            $generator = new $class($this->config);
+            foreach ($this->sourcecode->sources as $filename => $data) {
+                if (isset($uncovered[$data[0]->name]) && $uncovered[$data[0]->name]) {
+                    yield $generator->generate($data[0], $data[1], $uncovered[$data[0]->name]);
                 }
             }
         }
