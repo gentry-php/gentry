@@ -5,6 +5,6 @@ namespace Gentry\Gentry;
 
 require_once 'vendor/autoload.php';
 
-$command = new Command($argv);
-$command();
+$command = new Command;
+$command->execute();
 
