@@ -20,8 +20,6 @@ abstract class Generator
     /** @var int */
     const AS_RETURNCHECK = 2;
 
-    private stdClass $config;
-
     private ReflectionClass $objectUnderTest;
 
     private array $features = [];
@@ -32,9 +30,8 @@ abstract class Generator
      * @param stdClass $config
      * @return void
      */
-    public function __construct(stdClass $config)
+    public function __construct(private stdClass $config)
     {
-        $this->config = $config;
         $loader = new FilesystemLoader($this->getTemplatePath());
         $this->twig = new Environment($loader, ['cache' => false]);
     }
