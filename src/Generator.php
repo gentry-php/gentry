@@ -12,7 +12,7 @@ use Twig\{ Loader\FilesystemLoader, Environment };
  * A test generation object. Normally, this is automatically called when running
  * the Gentry executable.
  */
-class Generator
+abstract class Generator
 {
     /** @var int */
     const AS_INSTANCE = 1;
@@ -20,14 +20,11 @@ class Generator
     /** @var int */
     const AS_RETURNCHECK = 2;
 
-    /** @var stdClass */
-    private $config;
+    private stdClass $config;
 
-    /** @var ReflectionClass */
-    private $objectUnderTest;
+    private ReflectionClass $objectUnderTest;
 
-    /** @var stdClass[] */
-    private $features = [];
+    private array $features = [];
 
     /**
      * Constructor. Pass the configuration object.
@@ -38,7 +35,7 @@ class Generator
     public function __construct(stdClass $config)
     {
         $this->config = $config;
-        $loader = new FilesystemLoader($this->config->path);
+        $loader = new FilesystemLoader($this->getTemplatePath());
         $this->twig = new Environment($loader, ['cache' => false]);
     }
 
@@ -50,9 +47,9 @@ class Generator
      * @param array $methods Array of reflected methods to generate test
      *  skeletons for.
      * @param array $uncovered Array of uncovered method calls.
-     * @return void
+     * @return self
      */
-    public function generate(ReflectionClass $class, array $methods, array $uncovered) : void
+    public function generate(ReflectionClass $class, array $methods, array $uncovered) : self
     {
         $this->objectUnderTest = $class;
         $this->features = [];
@@ -61,7 +58,48 @@ class Generator
                 $this->addFeature($class, $method, $uncovered[$method->name]);
             }
         }
-        $this->write();
+        return clone $this;
+    }
+
+    /**
+     * Renders the testing code according to the supplied template.
+     *
+     * @return string
+     */
+    public function render() : string
+    {
+        return $this->twig->render('template.html.twig', [
+            'namespace' => $this->config->namespace ?? null,
+            'objectUnderTest' => $this->objectUnderTest->name,
+            'features' => $this->features,
+        ]);
+    }
+
+    /**
+     * Actually write the generated stubs to file. If a file by the name of the
+     * feature already exists, a number is appended.
+     *
+     * @return void
+     */
+    public function write() : void
+    {
+        if (!$this->features) {
+            return;
+        }
+        $i = 0;
+        while (true) {
+            $file = sprintf(
+                '%s/%s%s.php',
+                $this->config->output,
+                $this->convertTestNameToFilename($this->objectUnderTest->getName()),
+                $i ? ".$i" : ''
+            );
+            if (!file_exists($file)) {
+                break;
+            }
+            ++$i;
+        }
+        file_put_contents($file, $this->render());
     }
 
     /**
@@ -101,42 +139,6 @@ class Generator
                 'isStatic' => $method->isStatic(),
             ];
         }
-    }
-
-    /**
-     * Actually write the generated stubs to file. If a file by the name of the
-     * feature already exists, a number is appended.
-     *
-     * @return void
-     */
-    public function write() : void
-    {
-        if (!$this->features) {
-            return;
-        }
-        $i = 0;
-        while (true) {
-            $file = sprintf('%s/%s%s.php', $this->config->output, $this->normalize($this->objectUnderTest->getName()), $i ? ".$i" : '');
-            if (!file_exists($file)) {
-                break;
-            }
-            ++$i;
-        }
-        file_put_contents($file, $this->render());
-    }
-
-    /**
-     * Renders the testing code according to the supplied template.
-     *
-     * @return string
-     */
-    private function render() : string
-    {
-        return $this->twig->render('template.html.twig', [
-            'namespace' => $this->config->namespace ?? null,
-            'objectUnderTest' => $this->objectUnderTest->name,
-            'features' => $this->features,
-        ]);
     }
 
     /**
@@ -191,9 +193,11 @@ class Generator
      * @param string $name An object's name.
      * @return string
      */
-    private function normalize(string $name) : string
-    {
-        return strtolower(str_replace('\\', '_', $name));
-    }
+    abstract protected function convertTestNameToFilename(string $name) : string;
+
+    /**
+     * Returns the path where the templates are stored.
+     */
+    abstract protected function getTemplatePath() : string;
 }
 
