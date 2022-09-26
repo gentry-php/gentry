@@ -14,7 +14,6 @@
         "monomelodies/kingconf": "^1.1.0",
         "simoneast/simple-ansi-colors": "^1.0",
         "monomelodies/reflex": "^0.3.0",
-        "codger/php": "^0.9.7",
         "monolyth/cliff": "^0.7.0",
         "twig/twig": "^2.0|^3.0"
     },
