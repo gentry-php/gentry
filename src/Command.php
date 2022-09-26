@@ -233,8 +233,8 @@ EOT
             $class = $this->config->generator;
             $generator = new $class($this->config);
             foreach ($this->sourcecode->sources as $filename => $data) {
-                if (isset($uncovered[$data[0]->name]) && $uncovered[$data[0]->name]) {
-                    yield $generator->generate($data[0], $data[1], $uncovered[$data[0]->name]);
+                if (isset($this->uncoveredFeatures[$data[0]->name]) && $this->uncoveredFeatures[$data[0]->name]) {
+                    yield $generator->generate($data[0], $data[1], $this->uncoveredFeatures[$data[0]->name]);
                 }
             }
         }
