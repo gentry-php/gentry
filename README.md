@@ -26,7 +26,9 @@ following options:
     "test": "/path/to/testrunner/executable",
     "ignore": "some.*?regex",
     "bootstrap": "/path/to/file",
-    "templates": []
+    "generator": "Fully\\Qualified\\Namespace",
+    "output": "/path/to/directory",
+    "namespace": "Your\\Preferred\\Namespace"
 }
 ```
 
@@ -41,8 +43,8 @@ Directories are recursed automatically.
 The command you use to run your (unit)tests for PHP normally (e.g.
 `vendor/bin/phpunit`).
 
-### string `ignore` ###
-A regular expression of classnames to ignore in the `"src"` path. Useful for
+### string|array `ignore` ###
+(A) regular expression(s) of classnames to ignore in the `"src"` path. Useful for
 automatically ignoring classtypes that are hard to test, e.g. controllers. You
 could also utilise this if your tests and sourcecode are mixed in the same
 directory (some frameworks like that kind of thing).
@@ -63,14 +65,23 @@ in order.
 This isn't necessarily a bad thing; you could actually write tests that test the
 mock objects you use in other tests :)
 
-### array `templates` ###
-Array of templates to use during code generation. See below for an explanation.
+### string `generator` ###
+The "generator" used when creating stub tests. For instance, for the
+`gentry/toast` plugin this would be `Gentry\\Toast`. More about these plugins
+below. Note that `Gentry\\Toast` in this example is the _namespace_; by default,
+the actual class should be called `Generator` and extend the abstract base class
+`Gentry\Gentry\Generator`.
+
+### string `output` ###
+The directory where generated tests will be written to. No files will be
+overwritten; if a guesstimated filename already exists, it will be suffixed
+with `.1` (or `.2` etc.).
 
 ## CLI usage
 Now run Gentry from the command line and see what happens:
 
 ```sh
-vendor/bin/gentry
+$ vendor/bin/gentry analyze
 ```
 
 It will complain about zero code coverage, even if you already defined a bunch
@@ -110,30 +121,24 @@ only thing you _cannot_ do is pass it to other methods that actually expect a
 
 Note: the proxying of methods/properties extends to inaccessible ones, using
 reflection. This is because you might want to test if some internal state was
-set correctly. But, ideally one would only need to test public stuff.
+set correctly. But, ideally one would only need to test public stuff. Gentry
+only attempts to generate tests for _public_ methods to begin with. If a
+protected or private method is called on a wrapped object, it has no effect on
+the tests being generated, even though Gentry internally will know about it.
 
 ## Generating tests
-Notice how Gentry at the end of the examination phase offered to generate the
-missing tests for you? If you answered `Y[es]` here, you got an error. This is
-bescause we still need to tell Gentry which testing framework we want to use so
-it knows _how_ to generate tests.
+If you'd mostly like to see what Gentry would propose to do, run the following:
 
-That's where the `templates` configuration comes in. Each entry is an object
-defining how the template handler should generate tests for you. Two keys are
-especially important here: `"files"` and `"template"`.
+```sh
+$ vender/bin/gentry show
+```
 
-### string `files` ###
-Regular expression defining which files should be handled by this template
-handler. Defaults to `"@\.php$@"`.
+This will output all generated tests to STDOUT. Happy with what you see? Then
+you can run:
 
-### string `path` ###
-Path (usually relative to `getcwd()`) to your test template. Gentry templates
-are written in [Twig](https://twig.sensiolabs.org/), so it will normally be
-something in the form `/path/to/templates`.
-
-All other keys are simply passed to the template and exposed as variables. E.g.
-it is common for templates to support (optional) namespacing; this would be done
-via a `namespace` key (e.g. `{"namespace":"Foo\\MyTests"}`).
+```sh
+$ vendor/bin/gentry generate
+```
 
 ## Example using Toast
 Let's show an example of generating tests for the [Toast test
@@ -150,11 +155,8 @@ Next we configure it:
 ```json
 {
     //...
-    templates: [
-        {
-            "path": "vendor/gentry/toast"
-        }
-    ]
+    generator: "Gentry\\Toast"
+    //...
 }
 ```
 
@@ -164,4 +166,46 @@ of lambdas so it's generally not needed.
 The test file names are guesstimated based on the class names; you'll probably
 want to do some regrouping to keep things organized. But hey, at least you can
 copy/paste the boilerplate!
+
+## Writing custom Generators
+The base Generator contains two abstract methods you must implement:
+
+```php
+abstract protected function convertTestNameToFilename(string $name) : string;
+
+abstract protected function getTemplatePath() : string;
+```
+
+`convertTestNameToFilename` takes the class name of the object under test, and
+converts that to a filename. Subdirectories are currently not supported, in the
+sense that creating them is up to you.
+
+`getTemplatePath` returns the path of your Twig templates. One template should
+at least be available: `template.html.twig`. Of course, you're free to split out
+stuff into smaller templates using standard Twig `{% extends %}` and
+`{% include %}` functionality. Take a look at `gentry/toast` for an example.
+
+And... that's it, really. Your `template.html.twig` will receive three
+variables:
+
+- `namespace`: the namespace defined in the config file, or `null`.
+- `objectUnderTest`: the class name of the object under test.
+- `features`: an array of features to test (i.e., the public methods).
+
+`features` contains an array with method names as the keys, and a `stdClass`
+with a `calls` property containing an array in the following form:
+
+```php
+<?php
+
+$this->features[$method->name]->calls[] = (object)[
+    'name' => $method->name,
+    'parameters' => implode(', ', $arglist),
+    'expectedResult' => $expectedResult,
+    'isStatic' => $method->isStatic(),
+];
+```
+
+Note that the `parameters` key contains a string; you can just inject this
+verbatim when "calling" your method in the template.
 
