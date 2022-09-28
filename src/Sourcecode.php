@@ -112,11 +112,12 @@ class Sourcecode
      *
      * A method is considered testable when:
      * - It is public;
-     * - It's not annotated with @Untestable;
+     * - It doesn't have the `Gentry\Gentry\Untestable` attribute;
      * - It's not an internal PHP method;
      * - Its name doesn't start with `_`, with the exception of `__invoke`.
      *
-     * For inherited methods, the method is considered testable addionally when:
+     * For inherited methods, the method is considered testable additionally
+     * when:
      * - The parent class itself is abstract;
      * - The parent class is in a "known namespace".
      *
