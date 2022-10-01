@@ -46,7 +46,7 @@ class Wrapper
 
     public static function __callStatic(string $method, array $args) : mixed
     {
-        throw new StaticMethodsNotSupported(
+        throw new StaticMethodsNotSupportedException(
             "The method $method was called statically, which isn't supported.\n
 Simply call the method on the Wrapper instance, and it will forward the call statically."
         );
