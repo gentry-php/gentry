@@ -38,7 +38,7 @@ class Wrapper
             }
         }
         try {
-            return $reflectionMethod->invokeArgs($this->wrapped, $arguments);
+            return $reflectionMethod->invokeArgs($reflectionMethod->isStatic() ? null : $this->wrapped, $arguments);
         } catch (ReflectionException $e) {
             throw new MethodCouldNotBeInvokedException($this->wrapped, $method);
         }
@@ -46,8 +46,10 @@ class Wrapper
 
     public static function __callStatic(string $method, array $args) : mixed
     {
-        // Since we use reflection, this is now identical.
-        return $this->__call($method, $args);
+        throw new StaticMethodsNotSupported(
+            "The method $method was called statically, which isn't supported.\n
+Simply call the method on the Wrapper instance, and it will forward the call statically."
+        );
     }
 
     public function __get(string $name) : mixed
