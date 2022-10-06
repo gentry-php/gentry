@@ -58,5 +58,12 @@ Simply call the method on the Wrapper instance, and it will forward the call sta
         $property->setAccessible(true);
         return $property->getValue($this->wrapped);
     }
+
+    public function __set(string $name, mixed $value) : void
+    {
+        $property = new ReflectionProperty($this->wrapped, $name);
+        $property->setAccessible(true);
+        $property->setValue($this->wrapped, $value);
+    }
 }
 
