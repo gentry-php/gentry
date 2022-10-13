@@ -29,9 +29,11 @@ use Generator;
  */
 class Command extends Cliff\Command
 {
+    private const VERSION = "0.16.0";
+
     private stdClass $config;
 
-    private array $coveredFeatures;
+    private array $coveredFeatures = [];
 
     private array $uncoveredFeatures;
 
@@ -41,7 +43,7 @@ class Command extends Cliff\Command
 
     public function __invoke(?string $command = null)
     {
-        Formatter::out("\n<magenta>Gentry, by Marijn Ophorst\n\n");
+        Formatter::out("\n<magenta>Gentry ".self::VERSION." by Marijn Ophorst\n\n");
 
         if ($command === null) {
             echo <<<EOT
@@ -104,7 +106,9 @@ EOT;
     {
         Formatter::out("<green>Running unit tests from <darkGray>{$this->config->test}<green>...\n");
         exec($this->config->test);
-        $this->coveredFeatures = unserialize(Logger::read());
+        if ($covered = @unserialize(Logger::read())) {
+            $this->coveredFeatures = $covered;
+        }
         return $this;
     }
 
