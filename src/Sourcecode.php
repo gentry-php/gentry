@@ -98,9 +98,6 @@ class Sourcecode
         } else {
             return null;
         }
-        if (!(preg_match_all("@(?<!private|protected)\s*function\s+(\w+)\s*\(@", $code, $matches, PREG_SET_ORDER))) {
-            return null;
-        }
         if (isset($config->ignore) && preg_match("@{$config->ignore}@", "$ns$class")) {
             return null;
         }
