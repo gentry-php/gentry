@@ -141,6 +141,9 @@ class Sourcecode
             if ($method->isInternal()) {
                 continue;
             }
+            if ($reflection->isAbstract() && !$method->isAbstract()) {
+                continue;
+            }
             $declaring = $method->getDeclaringClass();
             if ($declaring->name != $reflection->name) {
                 if (!$declaring->isAbstract()) {
