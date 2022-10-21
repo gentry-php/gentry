@@ -69,8 +69,8 @@ Simply call the method on the Wrapper instance, and it will forward the call sta
 
     public function jsonSerialize() : mixed
     {
-        if (!($this->wrapper instanceof JsonSerializable)) {
-            return $this->wrapper;
+        if (!($this->wrapped instanceof JsonSerializable)) {
+            return $this->wrapped;
         }
         return $this->__call('jsonSerialize', []);
     }
