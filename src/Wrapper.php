@@ -5,11 +5,12 @@ namespace Gentry\Gentry;
 use ReflectionMethod;
 use ReflectionProperty;
 use ReflectionException;
+use JsonSerializable;
 
 /**
  * Wrapper class for logging method calls.
  */
-class Wrapper
+class Wrapper implements JsonSerializable
 {
     public function __construct(
         private object|string $wrapped
@@ -64,6 +65,11 @@ Simply call the method on the Wrapper instance, and it will forward the call sta
         $property = new ReflectionProperty($this->wrapped, $name);
         $property->setAccessible(true);
         $property->setValue($this->wrapped, $value);
+    }
+
+    public function jsonSerialize() : mixed
+    {
+        return $this->__call('jsonSerialize', []);
     }
 }
 
