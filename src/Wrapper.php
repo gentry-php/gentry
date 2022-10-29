@@ -6,11 +6,13 @@ use ReflectionMethod;
 use ReflectionProperty;
 use ReflectionException;
 use JsonSerializable;
+use ArrayAccess;
+use Stringable;
 
 /**
  * Wrapper class for logging method calls.
  */
-class Wrapper implements JsonSerializable
+class Wrapper implements JsonSerializable, ArrayAccess, Stringable
 {
     public function __construct(
         private object|string $wrapped
@@ -67,12 +69,44 @@ Simply call the method on the Wrapper instance, and it will forward the call sta
         $property->setValue($this->wrapped, $value);
     }
 
+    public function __toString() : string
+    {
+        if ($this->wrapped instanceof Stringable) {
+            return "{$this->wrapped}";
+        }
+        return '';
+    }
+
     public function jsonSerialize() : mixed
     {
         if (!($this->wrapped instanceof JsonSerializable)) {
             return $this->wrapped;
         }
         return $this->__call('jsonSerialize', []);
+    }
+
+    public function offsetExists(mixed $offset) : bool
+    {
+        return $this->wrapped instanceof ArrayAccess && isset($this->wrapped[$offset]);
+    }
+
+    public function offsetGet(mixed $offset) : mixed
+    {
+        return $this->wrapped instanceof ArrayAccess ? $this->wrapped[$offset] : null;
+    }
+
+    public function offsetSet(mixed $offset, mixed $value) : void
+    {
+        if ($this->wrapped instanceof ArrayAccess) {
+            $this->wrapped[$offset] = $value;
+        }
+    }
+
+    public function offsetUnset(mixed $offset) : void
+    {
+        if ($this->wrapped instanceof ArrayAccess) {
+            unset($this->wrapped[$offset]);
+        }
     }
 }
 
