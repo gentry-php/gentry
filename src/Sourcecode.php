@@ -141,7 +141,9 @@ class Sourcecode
             if ($method->isInternal()) {
                 continue;
             }
-            if ($reflection->isAbstract() && !$method->isAbstract()) {
+            if ($reflection->isAbstract() && !$method->isAbstract()
+                || $method->isAbstract() && !$reflection->isAbstract()
+            ) {
                 continue;
             }
             $declaring = $method->getDeclaringClass();
