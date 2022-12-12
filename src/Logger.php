@@ -5,6 +5,7 @@ namespace Gentry\Gentry;
 use ErrorException;
 use Monomelodies\Reflex\ReflectionMethod;
 use Shmop;
+use Monomelodies\Kingconf;
 
 class Logger
 {
@@ -72,54 +73,35 @@ class Logger
     }
 
     /**
-     * On destruction, write logged features to a shared memory block.
+     * On destruction, write logged features to a tmpfile.
      *
      * @return void
      */
     public function __destruct()
     {
-        self::write(serialize($this->logged));
+        $config = self::getConfig();
+        file_put_contents($config->tmpfile ?? sys_get_temp_dir().'/gentry', serialize($this->logged));
     }
 
     /**
-     * Read data from shared memory.
+     * Read data from the tmpfile.
      *
-     * @return string
+     * @return array
      */
-    public static function read() : string
+    public static function read() : array
     {
-        $shm = self::getShmHandle();
-        $data = shmop_read($shm, 0, 1024 * 1024);
-        shmop_delete($shm);
-        return $data;
+        $config = self::getConfig();
+        return unserialize(file_get_contents($config->tmpfile ?? sys_get_temp_dir().'/gentry'));
     }
 
-    /**
-     * Write data to shared memory.
-     *
-     * @param string $data
-     * @return void
-     */
-    private static function write(string $data) : void
+    private static function getConfig() : object
     {
-        $shm = self::getShmHandle();
-        shmop_write($shm, $data, 0);
-    }
-
-    /**
-     * Get a handle to the shared memory block.
-     *
-     * @return Shmop
-     * @throws Gentry\Gentry\ErrorGettingSharedMemoryBlockException
-     */
-    private static function getShmHandle() : Shmop
-    {
-        $shm_key = ftok(realpath(__FILE__), 't');
-        $shm = shmop_open($shm_key, 'c', 0644, 1024 * 1024);
-        if ($shm) {
-            return $shm;
-        } else {
-            throw new ErrorGettingSharedMemoryBlockException;
+        $config = 'Gentry.json';
+        try {
+            return (object)(array)(new Kingconf\Config($config));
+        } catch (Kingconf\Exception $e) {
+            Formatter::out("<red>Error: <reset> Config file $config not found or invalid.\n", STDERR);
+            die(1);
         }
     }
 }
