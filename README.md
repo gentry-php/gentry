@@ -212,6 +212,6 @@ verbatim when "calling" your method in the template.
 ## Customizing the location of the tempfile
 To communicate between your tests and the Gentry command, Gentry writes results
 to a tempfile. It's default location is `sys_get_temp_dir().'/gentry'`, but you
-may override it by specifying the `tempfile` key in your `Gentry.json`. If the
+may override it by specifying the `tmpfile` key in your `Gentry.json`. If the
 path is not absolute, it will be considered relative to `CWD`.
 
