@@ -104,8 +104,11 @@ EOT;
     {
         Formatter::out("<green>Running unit tests from <darkGray>{$this->config->test}<green>...\n");
         exec($this->config->test);
-        if ($covered = @unserialize(Logger::read())) {
+        $covered = Logger::read();
+        if ($covered) {
             $this->coveredFeatures = $covered;
+        } else {
+            trigger_error("No logged features read; this could be because there are no tests yet, or some other error.", E_USER_WARNING);
         }
         return $this;
     }
