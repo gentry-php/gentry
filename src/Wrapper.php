@@ -2,12 +2,11 @@
 
 namespace Gentry\Gentry;
 
-use ReflectionMethod;
-use ReflectionProperty;
-use ReflectionException;
+use ReflectionClass, ReflectionMethod, ReflectionProperty, ReflectionException;
 use JsonSerializable;
 use ArrayAccess;
 use Stringable;
+use Throwable;
 
 /**
  * Wrapper class for logging method calls.
@@ -15,19 +14,24 @@ use Stringable;
 class Wrapper implements JsonSerializable, ArrayAccess, Stringable
 {
     public function __construct(
-        private object|string $wrapped
+        private object|string $wrapped,
+        private ?int $methodFilter = null,
+        private ?int $propertyFilter = null
     ) {}
 
-    public function __call(string $method, array $args) : mixed
+    public function __call(string $name, array $args) : mixed
     {
-        try {
-            $reflectionMethod = new ReflectionMethod($this->wrapped, $method);
-        } catch (ReflectionException $e) {
-            throw new MethodDoesNotExistException($this->wrapped, $method);
+        $reflectionMethod = array_values(array_filter(
+            (new ReflectionClass($this->wrapped))->getMethods($this->methodFilter),
+            fn ($method) => $method->name === $name
+        ))[0] ?? null;
+        if (!$reflectionMethod) {
+            throw new MethodDoesNotExistException($this->wrapped, $name);
         }
+        $reflectionMethod->setAccessible(true);
         $attributes = $reflectionMethod->getAttributes(Untestable::class);
         if (!$attributes) {
-            Logger::getInstance()->logFeature($this->wrapped, $method, $args);
+            Logger::getInstance()->logFeature($this->wrapped, $name, $args);
         }
         $arguments = [];
         foreach ($reflectionMethod->getParameters() as $i => $parameter) {
@@ -43,7 +47,9 @@ class Wrapper implements JsonSerializable, ArrayAccess, Stringable
         try {
             return $reflectionMethod->invokeArgs($reflectionMethod->isStatic() ? null : $this->wrapped, $arguments);
         } catch (ReflectionException $e) {
-            throw new MethodCouldNotBeInvokedException($this->wrapped, $method);
+            throw new MethodCouldNotBeInvokedException($this->wrapped, $name);
+        } catch (Throwable $e) {
+            throw new MethodCouldNotBeInvokedException($this->wrapped, $name);
         }
     }
 
@@ -55,18 +61,51 @@ Simply call the method on the Wrapper instance, and it will forward the call sta
         );
     }
 
+    public function __isset(string $name) : bool
+    {
+        $property = array_values(array_filter(
+            (new ReflectionClass($this->wrapped))->getProperties($this->propertyFilter),
+            fn ($property) => $property->name === $name
+        ))[0] ?? null;
+        if (isset($property)) {
+            return $property->getValue($this->wrapped) !== null;
+        } else {
+            // Probably meant to forward to the wrapped __isset;
+            // throw an error otherwise.
+            return isset($this->wrapped->$name);
+        }
+        return isset($property);
+    }
+
     public function __get(string $name) : mixed
     {
-        $property = new ReflectionProperty($this->wrapped, $name);
-        $property->setAccessible(true);
-        return $property->getValue($this->wrapped);
+        $property = array_values(array_filter(
+            (new ReflectionClass($this->wrapped))->getProperties($this->propertyFilter),
+            fn ($property) => $property->name === $name
+        ))[0] ?? null;
+        if (isset($property)) {
+            $property->setAccessible(true);
+            return $property->getValue($this->wrapped);
+        } else {
+            // Probably meant to forward to the wrapped __get;
+            // throw an error otherwise.
+            return $this->wrapped->$name;
+        }
     }
 
     public function __set(string $name, mixed $value) : void
     {
-        $property = new ReflectionProperty($this->wrapped, $name);
-        $property->setAccessible(true);
-        $property->setValue($this->wrapped, $value);
+        $property = array_values(array_filter(
+            (new ReflectionClass($this->wrapped))->getProperties($this->propertyFilter),
+            fn ($property) => $property->name === $name
+        ))[0] ?? null;
+        if (isset($property)) {
+            // This is deliberate; if the property is non-public, we must
+            // assume the wrapped object supplies a magic `__set` method.
+            $this->wrapped->$name = $value;
+        } else {
+            throw new PropertyDoesNotExistException($this->wrapped, $name);
+        }
     }
 
     public function __toString() : string
