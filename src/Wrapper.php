@@ -47,9 +47,7 @@ class Wrapper implements JsonSerializable, ArrayAccess, Stringable
         try {
             return $reflectionMethod->invokeArgs($reflectionMethod->isStatic() ? null : $this->wrapped, $arguments);
         } catch (ReflectionException $e) {
-            throw new MethodCouldNotBeInvokedException($this->wrapped, $name);
-        } catch (Throwable $e) {
-            throw new MethodCouldNotBeInvokedException($this->wrapped, $name);
+            throw new MethodCouldNotBeInvokedException($this->wrapped, $name, $e);
         }
     }
 
