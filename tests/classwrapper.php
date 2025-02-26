@@ -5,7 +5,7 @@ use Gentry\Gentry\Logger;
 
 class Foo
 {
-    public function bar(int $foo, bool $bar = null, string $foobar = '', callable $baz = null) : void
+    public function bar(int $foo, ?bool $bar = null, string $foobar = '', ?callable $baz = null) : void
     {
     }
 }
